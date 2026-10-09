@@ -6,6 +6,9 @@
 #  - GITHUB_REPO : "usuario/repo"  (p. ej. tucuenta/FIJA)
 #  - GITHUB_TOKEN: token clásico con permiso `repo`
 #  El token viaja SOLO en la URL del push de este comando; no se guarda.
+#  Nota: en el entorno WorkBuddy hay un hook post-commit que ya empuja main
+#  automáticamente en cada commit (token cacheado), así que los cambios se
+#  publican solos sin necesidad de correr este script.
 # ============================================================
 set -e
 
