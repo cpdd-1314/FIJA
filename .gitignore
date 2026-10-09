@@ -1,0 +1,9 @@
+# WorkBuddy / entorno
+.codebuddy/
+
+# Entregable empaquetado (no es fuente)
+FIJA_web.zip
+
+# Sistema / SO
+.DS_Store
+Thumbs.db

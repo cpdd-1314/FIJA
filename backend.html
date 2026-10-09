@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIJA · Back-Office (Admin &amp; Vendedores)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        fija: { 900: '#0a0a0a', 800: '#1a1a1a', 700: '#27272a', 600: '#3f3f46',
+                                500: '#52525b', 400: '#a1a1aa', 300: '#d4d4d8', 200: '#e4e4e7', 100: '#f4f4f5',
+                                gold: '#d4af37' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        .hide { display: none !important; }
+        .hidden-fade { display: none !important; }
+        .modal-backdrop { background-color: rgba(10,10,10,0.7); backdrop-filter: blur(5px); }
+        body { font-family: 'Inter', sans-serif; }
+        .gold-gradient { background: linear-gradient(135deg, #d4af37 0%, #f5e7a3 50%, #d4af37 100%); }
+        .role-pill { transition: all 0.2s ease; }
+        .toast { transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-fija-100 text-fija-900 min-h-screen">
+
+    <!-- ===================== LOGIN SCREEN ===================== -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center px-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-fija-900 text-fija-gold text-3xl font-extrabold mb-4">F</div>
+                <h1 class="text-3xl font-extrabold tracking-tight">FIJA <span class="text-fija-gold">Back-Office</span></h1>
+                <p class="text-fija-500 text-sm mt-2">Acceso para administradores y vendedores</p>
+            </div>
+            <div class="bg-white rounded-2xl shadow-xl p-8">
+                <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Usuario o correo</label>
+                        <input type="text" id="login-email" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="admin"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Contraseña</label>
+                        <input type="password" id="login-password" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="••••••"></div>
+                    <div id="login-error" class="text-red-500 text-sm hidden-fade">Credenciales incorrectas.</div>
+                    <button type="submit" class="w-full bg-fija-900 hover:bg-fija-800 text-white font-medium py-3 rounded-lg transition-colors shadow-sm mt-2">Entrar</button>
+                </form>
+                <div class="mt-6 pt-5 border-t border-fija-200 text-center">
+                    <p class="text-xs text-fija-500">¿Eres una empresa y quieres vender en FIJA?</p>
+                    <button onclick="openRegisterModal()" class="mt-1.5 text-sm font-semibold text-fija-gold hover:underline"><i class="fa-solid fa-store mr-1"></i> Regístrate como empresa (vendedor)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== APP SHELL ===================== -->
+    <div id="app-shell" class="hide min-h-screen flex flex-col">
+        <!-- Top bar -->
+        <header class="bg-fija-900 text-white sticky top-0 z-30 shadow-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg gold-gradient text-fija-900 flex items-center justify-center font-extrabold text-xl">F</div>
+                    <div>
+                        <p class="font-bold leading-none">FIJA Back-Office</p>
+                        <p id="role-badge" class="text-[11px] text-fija-gold leading-none mt-0.5">—</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="fija_e_commerce.html" title="Volver a la tienda principal" class="hidden sm:flex items-center gap-2 bg-fija-gold hover:bg-yellow-500 text-fija-900 text-sm font-semibold px-3 py-2 rounded-lg transition-colors"><i class="fa-solid fa-store"></i> Ver tienda</a>
+                    <button onclick="openSettings()" title="Configuración / Conectar GitHub" class="w-9 h-9 rounded-lg bg-fija-800 hover:bg-fija-700 flex items-center justify-center transition-colors"><i class="fa-solid fa-gear"></i></button>
+                    <div class="text-right hidden sm:block">
+                        <p id="hdr-name" class="text-sm font-medium leading-none">—</p>
+                        <p id="hdr-email" class="text-[11px] text-fija-400 leading-none mt-0.5">—</p>
+                    </div>
+                    <button onclick="handleLogout()" class="text-sm text-fija-300 hover:text-white transition-colors"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 flex gap-8">
+            <!-- Sidebar -->
+            <aside class="hidden md:block w-56 shrink-0">
+                <nav class="space-y-1 sticky top-24" id="side-nav"><!-- filled by JS --></nav>
+            </aside>
+            <!-- Content -->
+            <main class="flex-1 min-w-0">
+                <!-- SELLER -->
+                <section id="seller-view" class="hide">
+                    <div class="flex flex-wrap justify-between items-end gap-3 mb-6">
+                        <div>
+                            <h1 class="text-2xl font-bold">Panel de Vendedor</h1>
+                            <p class="text-fija-500 text-sm">Gestiona tus productos y pedidos.</p>
+                        </div>
+                        <button onclick="showSellerForm()" class="bg-fija-900 hover:bg-fija-800 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm"><i class="fa-solid fa-plus mr-2"></i> Nuevo Producto</button>
+                    </div>
+                    <div id="seller-pending-banner" class="hide mb-6 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-4 text-sm flex items-center"><i class="fa-solid fa-clock mr-3 text-amber-500"></i> Tu cuenta está <strong class="mx-1">pendiente de verificación</strong> por un administrador. Podrás publicar productos al ser aprobado.</div>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Productos</p><p class="text-3xl font-bold" id="stat-products">0</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Pedidos</p><p class="text-3xl font-bold" id="stat-orders">0</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ventas brutas</p><p class="text-3xl font-bold" id="stat-gross">0,00 €</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (4,7%)</p><p class="text-3xl font-bold text-red-600" id="stat-commission">0,00 €</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">A cobrar (neto)</p><p class="text-3xl font-bold text-green-600" id="stat-net">0,00 €</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-fija-200 overflow-hidden mb-8">
+                        <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis Productos</div>
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[520px]">
+                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium">Precio</th><th class="px-6 py-3 font-medium">Acción</th></tr></thead>
+                            <tbody id="seller-products" class="divide-y divide-fija-100"></tbody>
+                        </table></div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-fija-200 overflow-hidden mb-8">
+                        <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex flex-wrap items-center justify-between gap-3">
+                            <h2 class="font-semibold"><i class="fa-solid fa-qrcode text-fija-gold mr-2"></i>Verificar Recogida de Pedidos</h2>
+                            <div class="flex flex-wrap gap-2">
+                                <input type="text" id="seller-verify-code" placeholder="Código del cliente (FIJA-XXXXXX)" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm w-56">
+                                <button onclick="verifyPickupCode(document.getElementById('seller-verify-code').value)" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-check mr-1"></i>Verificar</button>
+                            </div>
+                        </div>
+                        <div id="seller-pickup-list" class="divide-y divide-fija-100"></div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis Pedidos</div>
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[760px]">
+                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Cliente</th><th class="px-6 py-3 font-medium">Bruto</th><th class="px-6 py-3 font-medium">Comisión 4,7%</th><th class="px-6 py-3 font-medium">Neto</th><th class="px-6 py-3 font-medium">Estado</th></tr></thead>
+                            <tbody id="seller-orders" class="divide-y divide-fija-100"></tbody>
+                        </table></div>
+                    </div>
+                </section>
+
+                <!-- ADMIN -->
+                <section id="admin-view" class="hide">
+                    <!-- ===== PANEL ===== -->
+                    <section id="sec-panel">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Panel de Administración</h1><p class="text-fija-500 text-sm">Verifica vendedores y supervisa la plataforma.</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Vendedores pendientes</p><p class="text-3xl font-bold text-amber-600" id="admin-pending-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Vendedores activos</p><p class="text-3xl font-bold text-green-600" id="admin-sellers-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Productos</p><p class="text-3xl font-bold text-fija-900" id="admin-products-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Pedidos totales</p><p class="text-3xl font-bold text-fija-900" id="admin-orders-count">0</p></div>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Ventas brutas (precio empresa)</p><p class="text-3xl font-bold text-fija-900" id="admin-gross">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Cobrado a clientes</p><p class="text-3xl font-bold text-fija-900" id="admin-paid">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Coste descuentos (a cargo FIJA)</p><p class="text-3xl font-bold text-red-600" id="admin-discounts">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (4,7%)</p><p class="text-3xl font-bold text-fija-gold" id="admin-commission">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Neto a vendedores</p><p class="text-3xl font-bold text-green-600" id="admin-net">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Balance FIJA (comisión − descuentos)</p><p class="text-3xl font-bold" id="admin-balance">0,00 €</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center"><i class="fa-solid fa-sack-dollar text-fija-gold mr-2"></i><h2 class="font-semibold">Comisiones por Vendedor (4,7%)</h2></div>
+                            <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[620px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Vendedor</th><th class="px-6 py-3 font-medium">Ventas brutas</th><th class="px-6 py-3 font-medium">Comisión FIJA</th><th class="px-6 py-3 font-medium">Descuentos FIJA</th><th class="px-6 py-3 font-medium">Neto vendedor</th></tr></thead>
+                                <tbody id="admin-commission-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== SOLICITUDES ===== -->
+                    <section id="sec-pending" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Solicitudes de Vendedor</h1><p class="text-fija-500 text-sm">Empresas pendientes de aprobación.</p></div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-amber-50/60 flex items-center"><i class="fa-solid fa-clock text-amber-500 mr-2"></i><h2 class="font-semibold">Pendientes</h2></div>
+                            <div id="admin-pending-list" class="p-0 divide-y divide-fija-100"><div class="px-6 py-8 text-center text-fija-400">No hay solicitudes pendientes. 🎉</div></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== VENDEDORES ===== -->
+                    <section id="sec-sellers" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Vendedores</h1><p class="text-fija-500 text-sm">Todas las empresas registradas en la plataforma.</p></div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60"><h2 class="font-semibold">Todos los Vendedores</h2></div>
+                            <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Empresa</th><th class="px-6 py-3 font-medium">CIF/NIF</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Acción</th></tr></thead>
+                                <tbody id="admin-sellers-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== PRODUCTOS ===== -->
+                    <section id="sec-products" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Productos</h1><p class="text-fija-500 text-sm">Catálogo completo de la plataforma.</p></div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60"><h2 class="font-semibold">Todos los Productos</h2></div>
+                            <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[760px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium">Vendedor</th><th class="px-6 py-3 font-medium">Precio</th><th class="px-6 py-3 font-medium">Descuento</th><th class="px-6 py-3 font-medium">Acción</th></tr></thead>
+                                <tbody id="admin-products-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== PEDIDOS ===== -->
+                    <section id="sec-orders" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Pedidos</h1><p class="text-fija-500 text-sm">Verifica recogidas y revisa todos los pedidos.</p></div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex flex-wrap items-center justify-between gap-3">
+                                <h2 class="font-semibold"><i class="fa-solid fa-qrcode text-fija-gold mr-2"></i>Verificar Recogida de Pedidos</h2>
+                                <div class="flex flex-wrap gap-2">
+                                    <input type="text" id="admin-verify-code" placeholder="Código del cliente (FIJA-XXXXXX)" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm w-56">
+                                    <button onclick="verifyPickupCode(document.getElementById('admin-verify-code').value)" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-check mr-1"></i>Verificar</button>
+                                </div>
+                            </div>
+                            <div id="admin-pickup-list" class="divide-y divide-fija-100"></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center justify-between"><h2 class="font-semibold">Todos los Pedidos</h2><button onclick="downloadOrdersCSV()" class="text-sm bg-fija-900 hover:bg-fija-800 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar CSV</button></div>
+                            <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[1150px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Comprador</th><th class="px-6 py-3 font-medium">Cobrado</th><th class="px-6 py-3 font-medium">Bruto empresa</th><th class="px-6 py-3 font-medium">Comisión 4,7%</th><th class="px-6 py-3 font-medium">Descuento FIJA</th><th class="px-6 py-3 font-medium">Neto empresa</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Detalle</th></tr></thead>
+                                <tbody id="admin-orders-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- ===================== SELLER PRODUCT FORM MODAL ===================== -->
+    <div id="product-modal" class="fixed inset-0 modal-backdrop z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4 hide opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300 my-auto" id="product-modal-content">
+            <div class="flex flex-col max-h-[94vh]">
+                <div class="flex justify-between items-center px-6 sm:px-8 py-5 border-b border-fija-200 shrink-0">
+                    <h2 class="text-2xl font-bold" id="product-modal-title">Nuevo Producto</h2>
+                    <button type="button" onclick="closeModal('product-modal')" class="text-fija-400 hover:text-fija-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form id="product-form" onsubmit="handleAddProduct(event)" class="px-6 sm:px-8 py-6 space-y-4 overflow-y-auto">
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Título del Producto</label><input type="text" id="prod-title" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                    <div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-medium text-fija-700 mb-1">Precio (€)</label><input type="number" step="0.01" min="0.01" id="prod-price" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Precio anterior (€, opcional)</label><input type="number" step="0.01" min="0" id="prod-old" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div></div>
+                    <div>
+                        <label class="block text-sm font-medium text-fija-700 mb-1">Foto del producto</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="prod-image" required placeholder="https://... o sube una foto local" class="flex-1 border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none text-sm">
+                            <button type="button" onclick="document.getElementById('prod-image-file').click()" class="shrink-0 bg-fija-100 hover:bg-fija-200 text-fija-900 px-4 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-upload mr-1"></i>Subir</button>
+                        </div>
+                        <input type="file" id="prod-image-file" accept="image/*" class="hidden" onchange="handleProductPhoto(event)">
+                        <img id="prod-image-preview" alt="" class="hidden mt-2 w-20 h-20 object-cover rounded-lg border border-fija-200">
+                        <p class="text-[11px] text-fija-400 mt-1">Las fotos locales se comprimen automáticamente (calidad 90%).</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-fija-700 mb-1">Vídeo del producto (opcional)</label>
+                        <input type="file" id="prod-video-file" accept="video/*" class="hidden" onchange="handleProductVideo(event)">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" onclick="document.getElementById('prod-video-file').click()" class="bg-fija-100 hover:bg-fija-200 text-fija-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-film mr-1"></i>Subir vídeo</button>
+                            <span id="prod-video-status" class="text-xs text-fija-500">Ningún vídeo añadido</span>
+                            <button type="button" id="prod-video-remove" onclick="removeProductVideo()" class="hidden text-red-500 hover:underline text-xs">Quitar</button>
+                        </div>
+                        <p class="text-[11px] text-fija-400 mt-1">Se comprime automáticamente (calidad 90%). Duración recomendada: menos de 1 minuto.</p>
+                    </div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Categoría</label><input type="text" id="prod-category" required placeholder="Electrónica" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Especificaciones <span class="text-fija-400 font-normal">(una por línea: "Característica: valor")</span></label><textarea id="prod-specs" rows="3" placeholder="Peso: 250 g&#10;Batería: 30 h&#10;Garantía: 2 años" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none text-sm"></textarea></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Dirección de recogida (Click &amp; Collect)</label><input type="text" id="prod-pickup" placeholder="Dónde recoge el cliente el pedido" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none text-sm"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Descripción</label><textarea id="prod-desc" required rows="3" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></textarea></div>
+                </form>
+                <div class="px-6 sm:px-8 py-4 border-t border-fija-200 flex justify-end space-x-3 shrink-0 bg-white rounded-b-2xl">
+                    <button type="button" onclick="closeModal('product-modal')" class="px-5 py-2.5 rounded-lg font-medium text-fija-600 hover:bg-fija-100 transition-colors">Cancelar</button>
+                    <button type="submit" form="product-form" id="product-modal-submit" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Publicar Producto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== ADMIN DISCOUNT MODAL ===================== -->
+    <div id="discount-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center hide opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-300 mx-4" id="discount-modal-content">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-5"><h2 class="text-2xl font-bold">Descuento FIJA</h2><button onclick="closeModal('discount-modal')" class="text-fija-400 hover:text-fija-700"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+                <p class="text-sm text-fija-500 mb-1">Producto</p>
+                <p id="disc-product-name" class="font-bold text-fija-900 mb-5">—</p>
+                <form id="discount-form" onsubmit="handleSetDiscount(event)">
+                    <label class="block text-sm font-medium text-fija-700 mb-1">Porcentaje de descuento (0–90%)</label>
+                    <input type="number" id="disc-percent" min="0" max="90" step="1" value="0" required oninput="updateDiscPreview()" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none">
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        <button type="button" onclick="setDiscValue(10)" class="text-xs bg-fija-100 hover:bg-fija-200 px-3 py-1.5 rounded-full font-medium">-10%</button>
+                        <button type="button" onclick="setDiscValue(15)" class="text-xs bg-fija-100 hover:bg-fija-200 px-3 py-1.5 rounded-full font-medium">-15%</button>
+                        <button type="button" onclick="setDiscValue(20)" class="text-xs bg-fija-100 hover:bg-fija-200 px-3 py-1.5 rounded-full font-medium">-20%</button>
+                        <button type="button" onclick="setDiscValue(30)" class="text-xs bg-fija-100 hover:bg-fija-200 px-3 py-1.5 rounded-full font-medium">-30%</button>
+                        <button type="button" onclick="setDiscValue(50)" class="text-xs bg-fija-100 hover:bg-fija-200 px-3 py-1.5 rounded-full font-medium">-50%</button>
+                    </div>
+                    <div id="disc-preview" class="mt-5 text-sm bg-fija-50 border border-fija-200 rounded-lg p-4 space-y-1"></div>
+                    <div class="mt-3 text-[11px] text-fija-500 leading-relaxed bg-amber-50 border border-amber-200 rounded-lg p-3"><i class="fa-solid fa-circle-info text-amber-500 mr-1"></i> El cliente paga el precio rebajado, pero la <strong>empresa sigue cobrando su precio marcado</strong> menos la comisión del 4,7%. El coste del descuento lo asume FIJA.</div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button type="button" onclick="closeModal('discount-modal')" class="px-5 py-2.5 rounded-lg font-medium text-fija-600 hover:bg-fija-100 transition-colors">Cancelar</button>
+                        <button type="submit" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Aplicar descuento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== SETTINGS MODAL ===================== -->
+    <div id="settings-modal" class="fixed inset-0 modal-backdrop z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4 hide opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300 my-auto" id="settings-modal-content">
+            <div class="flex flex-col max-h-[94vh]">
+                <div class="flex justify-between items-center px-6 sm:px-8 py-5 border-b border-fija-200 shrink-0">
+                    <h2 class="text-2xl font-bold">Configuración / Backend</h2>
+                    <button type="button" onclick="closeModal('settings-modal')" class="text-fija-400 hover:text-fija-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form id="settings-form" onsubmit="saveSettings(event)" class="px-6 sm:px-8 py-6 space-y-4 overflow-y-auto">
+                    <p class="text-sm text-fija-500">Conecta tu repositorio de GitHub (gratis). Los datos se guardan en archivos JSON del repo y se sincronizan con tu token.</p>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Usuario de GitHub (owner)</label><input type="text" id="cfg-owner" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="tu-usuario"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Repositorio</label><input type="text" id="cfg-repo" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="fija-marketplace"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Rama (branch)</label><input type="text" id="cfg-branch" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="main"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Token de GitHub (PAT) <span class="text-fija-400 font-normal">(para escribir)</span></label><input type="text" id="cfg-token" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none font-mono text-xs" placeholder="github_pat_..."><p class="text-[11px] text-fija-400 mt-1">Fine-grained token con "Contents: Read and Write" solo para ESTE repo.</p></div>
+                </form>
+                <div class="px-6 sm:px-8 py-4 border-t border-fija-200 flex justify-end shrink-0 bg-white rounded-b-2xl">
+                    <button type="submit" form="settings-form" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== SELLER / COMPANY REGISTER MODAL ===================== -->
+    <div id="register-modal" class="fixed inset-0 modal-backdrop z-50 flex items-start sm:items-center justify-center overflow-y-auto p-4 hide opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300 my-auto" id="register-modal-content">
+            <div class="flex flex-col max-h-[94vh]">
+                <div class="flex justify-between items-center px-6 sm:px-8 py-5 border-b border-fija-200 shrink-0">
+                    <h2 class="text-2xl font-bold">Registro de Empresa</h2>
+                    <button type="button" onclick="closeModal('register-modal')" class="text-fija-400 hover:text-fija-700"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form id="register-form" onsubmit="handleRegister(event)" class="px-6 sm:px-8 py-6 space-y-4 overflow-y-auto">
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Nombre de la empresa</label><input type="text" id="reg-company" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="Audio Lux SL"></div>
+                    <div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-medium text-fija-700 mb-1">Usuario / Contacto</label><input type="text" id="reg-username" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="audio_lux"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Email</label><input type="email" id="reg-email" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="ventas@empresa.com"></div></div>
+                    <div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-medium text-fija-700 mb-1">CIF / NIF</label><input type="text" id="reg-cif" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="B12345678"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Tipo de IVA</label><select id="reg-iva" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none bg-white"><option value="general">General (21%)</option><option value="reducido">Reducido (10%)</option><option value="superreducido">Superreducido (4%)</option><option value="exento">Exento (0%)</option></select></div></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Dirección fiscal</label><input type="text" id="reg-address" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none" placeholder="Calle, número, ciudad"></div>
+                    <div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-medium text-fija-700 mb-1">Contraseña</label><input type="password" id="reg-password" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Repetir contraseña</label><input type="password" id="reg-password2" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div></div>
+                    <div id="register-error" class="text-red-500 text-sm hidden"></div>
+                    <p class="text-[11px] text-fija-400 leading-relaxed">Tu cuenta quedará <strong>pendiente de verificación</strong> por un administrador. Comisión por venta: <strong class="text-fija-600">4,7%</strong> (se la queda FIJA).</p>
+                </form>
+                <div class="px-6 sm:px-8 py-4 border-t border-fija-200 flex justify-end space-x-3 shrink-0 bg-white rounded-b-2xl">
+                    <button type="button" onclick="closeModal('register-modal')" class="px-5 py-2.5 rounded-lg font-medium text-fija-600 hover:bg-fija-100 transition-colors">Cancelar</button>
+                    <button type="submit" form="register-form" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm">Enviar solicitud</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== ORDER DETAIL MODAL ===================== -->
+    <div id="order-detail-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center hide opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform scale-95 transition-transform duration-300 mx-4" id="order-detail-modal-content">
+            <div class="p-8">
+                <div class="flex justify-between items-center mb-2"><h2 class="text-2xl font-bold">Detalle del Pedido</h2><button onclick="closeModal('order-detail-modal')" class="text-fija-400 hover:text-fija-700"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+                <p id="order-detail-id" class="text-fija-500 text-sm font-mono mb-5">—</p>
+                <div id="order-detail-body" class="max-h-[55vh] overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== TOAST ===================== -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-fija-900 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center border border-fija-700">
+        <i class="fa-solid fa-circle-check text-fija-gold mr-3"></i><span id="toast-message">¡Hecho!</span>
+    </div>
+
+    <script>
+        // ===================== Config =====================
+        function loadConfig() {
+            let s = {};
+            try { s = JSON.parse(localStorage.getItem('fija_backend_config') || '{}'); } catch (e) {}
+            return { owner: s.owner || '', repo: s.repo || '', branch: s.branch || 'main', token: s.token || '' };
+        }
+        const CONFIG = loadConfig();
+        const COMMISSION_RATE = 0.047; // Comisión de FIJA por cada venta (4,7%)
+
+        const state = {
+            products: [], orders: [], profiles: [], approvedSellers: new Set(),
+            session: null, profile: null, _sha: { products: null, orders: null, profiles: null },
+            view: 'products', editingId: null, pendingVideo: null, videoBusy: false
+        };
+        try { state.session = JSON.parse(localStorage.getItem('fija_backend_session') || 'null'); } catch (e) {}
+
+        // ===================== Default data (modo demo local) =====================
+        function clone(o) { return JSON.parse(JSON.stringify(o)); }
+        const DEFAULT_PRODUCTS = [
+            { id: "demo-001", title: "Auriculares Inalámbricos Premium", price: 89.99, oldPrice: 119.99, category: "Electrónica", imageUrl: "https://picsum.photos/seed/fija-audio/400/500", description: "Sonido envolvente con cancelación de ruido y 30h de batería.", sellerId: "demo-seller", sellerName: "Audio Lux SL", verified: true, createdAt: 1700000000000 },
+            { id: "demo-002", title: "Reloj Inteligente Titanio", price: 149.0, category: "Moda", imageUrl: "https://picsum.photos/seed/fija-watch/400/500", description: "Caja de titanio, monitor de salud y resistente al agua.", sellerId: "demo-seller", sellerName: "Audio Lux SL", verified: true, createdAt: 1700000100000 },
+            { id: "demo-003", title: "Mochila Urbana Antirrobo", price: 59.5, oldPrice: 79.0, category: "Deportes", imageUrl: "https://picsum.photos/seed/fija-bag/400/500", description: "Tejido resistente al corte, USB integrado y compartimento para portátil.", sellerId: "demo-seller", sellerName: "Audio Lux SL", verified: true, createdAt: 1700000200000 }
+        ];
+        const DEFAULT_PROFILES = [
+            { userId: "admin", username: "admin", email: "admin@fija.com", role: "admin", verificationStatus: "approved", createdAt: 1700000000000, pwHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" },
+            { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", createdAt: 1700000000000 }
+        ];
+        const DEFAULT_ORDERS = [];
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES };
+        // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
+        let _dataPathP = null;
+
+        // ===================== Helpers =====================
+        function isAdmin() { return !!(state.profile && (state.profile.role === 'admin')); }
+        function isApprovedSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'approved'); }
+        function isPendingSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'pending'); }
+        function formatEuro(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' €'; }
+        function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        function uid() { return (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2)); }
+        async function hashPassword(pw) { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+        function statusBadge(status) {
+            const map = { pending:['Pendiente','bg-amber-100 text-amber-700'], approved:['Aprobado','bg-green-100 text-green-700'], rejected:['Rechazado','bg-red-100 text-red-700'], completed:['Completado','bg-green-100 text-green-700'], cancelled:['Cancelado','bg-red-100 text-red-700'], 'click-collect':['Click & Collect','bg-blue-100 text-blue-700'], collected:['Recogido','bg-purple-100 text-purple-700'] };
+            const [label, cls] = map[status] || ['—','bg-fija-100 text-fija-600'];
+            return `<span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${cls}">${label}</span>`;
+        }
+        function ivaLabel(t) { return ({ general: 'General 21%', reducido: 'Reducido 10%', superreducido: 'Superreducido 4%', exento: 'Exento 0%' })[t] || '—'; }
+        function itemGross(it) { return it.gross != null ? it.gross : (it.basePrice != null ? it.basePrice * it.quantity : it.price * it.quantity); }
+        function itemCommission(it) { return it.commission != null ? it.commission : +(itemGross(it) * COMMISSION_RATE).toFixed(2); }
+        function itemNet(it) { return it.sellerNet != null ? it.sellerNet : +(itemGross(it) - itemCommission(it)).toFixed(2); }
+        // Lo que el cliente paga por la línea (con descuento FIJA aplicado)
+        function itemPaid(it) { return it.paid != null ? it.paid : (it.price * it.quantity); }
+        // Coste del descuento asumido por FIJA (la empresa cobra el precio marcado)
+        function itemDiscount(it) { return it.discount != null ? it.discount : +(itemGross(it) - itemPaid(it)).toFixed(2); }
+        function productDiscount(p) { return Math.max(0, Math.min(90, Number(p.discountPercent) || 0)); }
+        function effectivePrice(p) { const d = productDiscount(p); return d > 0 ? +(p.price * (1 - d / 100)).toFixed(2) : p.price; }
+
+        // ===================== GitHub backend =====================
+        function ghHeaders(extra = {}) {
+            const h = Object.assign({ 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' }, extra);
+            if (CONFIG.token) h['Authorization'] = 'Bearer ' + CONFIG.token;
+            return h;
+        }
+        async function ghApi(path, options = {}) {
+            const res = await fetch('https://api.github.com' + path, Object.assign({ headers: ghHeaders() }, options));
+            if (!res.ok) { const t = await res.text(); throw new Error('GitHub ' + res.status + ': ' + t); }
+            return res;
+        }
+        function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+        function b64decode(b64) { return decodeURIComponent(escape(atob(b64.replace(/\s/g, '')))); }
+
+        async function readDataFile(name) {
+            if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
+                try {
+                    const res = await ghApi(`/repos/${CONFIG.owner}/${CONFIG.repo}/contents/data/${name}.json`);
+                    const j = await res.json();
+                    return { data: JSON.parse(b64decode(j.content)), sha: j.sha };
+                } catch (e) { if (e.message.includes('404')) return { data: clone(DEFAULTS[name] || []), sha: null }; throw e; }
+            }
+            // Lee las MISMAS claves de datos que la tienda (fija_*) para que pedidos,
+            // productos y perfiles estén conectados. Compatibilidad legacy con fija_backend_*.
+            try {
+                let raw = localStorage.getItem('fija_' + name);
+                if (!raw) raw = localStorage.getItem('fija_backend_' + name);
+                if (raw) return { data: JSON.parse(raw), sha: null };
+            } catch (e) {}
+            // Resuelve una sola vez dónde viven los JSON (carpeta data/ o raíz plana)
+            // para no repetir errores 404 en cada carga. Se memoriza la promesa porque
+            // productos/pedidos/perfiles se piden en paralelo.
+            if (!_dataPathP) {
+                _dataPathP = (async () => {
+                    let base = null;
+                    try { base = localStorage.getItem('fija_datapath'); } catch (e) {}
+                    if (base !== null) return base;
+                    base = './data/';
+                    try {
+                        const probe = await fetch('./data/products.json', { method: 'HEAD', cache: 'no-store' });
+                        if (!probe.ok) base = './';
+                    } catch (e) { base = './'; }
+                    try { localStorage.setItem('fija_datapath', base); } catch (e) {}
+                    return base;
+                })();
+            }
+            const base = await _dataPathP;
+            try {
+                const res = await fetch(base + name + '.json', { cache: 'no-store' });
+                if (res.ok) return { data: await res.json(), sha: null };
+            } catch (e) {}
+            return { data: clone(DEFAULTS[name] || []), sha: null };
+        }
+        async function writeDataFile(name, data, sha) {
+            if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
+                const body = { message: `FIJA backend: actualiza ${name}.json`, content: b64encode(JSON.stringify(data, null, 2)) };
+                if (sha) body.sha = sha;
+                const res = await ghApi(`/repos/${CONFIG.owner}/${CONFIG.repo}/contents/data/${name}.json`, { method: 'PUT', body: JSON.stringify(body) });
+                const j = await res.json(); return j.content.sha;
+            }
+            // Escribe en la MISMA clave que la tienda (fija_*) para mantener los datos conectados.
+            localStorage.setItem('fija_' + name, JSON.stringify(data));
+            return null;
+        }
+        async function mutateCollection(name, mutator, attempt = 0) {
+            try {
+                const cur = await readDataFile(name);
+                const arr = Array.isArray(cur.data) ? cur.data : [];
+                mutator(arr);
+                const sha = await writeDataFile(name, arr, cur.sha);
+                state._sha[name] = sha;
+            } catch (e) { if (e.message.includes('409') && attempt < 2) return mutateCollection(name, mutator, attempt + 1); throw e; }
+        }
+
+        async function loadAll() {
+            try {
+                const [products, orders, profiles] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles')]);
+                state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || [];
+                state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha };
+                state.approvedSellers = new Set(state.profiles.filter(p => p.role === 'seller' && p.verificationStatus === 'approved').map(p => p.userId));
+                if (state.session) state.profile = state.profiles.find(p => p.userId === state.session.userId) || null;
+                if (state.profile) { if (isAdmin()) renderAdmin(); else if (isApprovedSeller()) renderSeller(); else if (isPendingSeller()) renderSeller(); else renderSeller(); }
+            } catch (e) { console.error('loadAll', e); showToast('Error al cargar datos', true); }
+        }
+
+        // ===================== Auth =====================
+        window.handleLogin = async (e) => {
+            e.preventDefault();
+            const v = document.getElementById('login-email').value.trim().toLowerCase();
+            const pw = document.getElementById('login-password').value;
+            const err = document.getElementById('login-error'); err.classList.add('hidden-fade');
+            try {
+                const profiles = (await readDataFile('profiles')).data || [];
+                const profile = profiles.find(p => (p.email && p.email.toLowerCase() === v) || (p.username && p.username.toLowerCase() === v));
+                const pwHash = await hashPassword(pw);
+                if (!profile || profile.pwHash !== pwHash) { err.classList.remove('hidden-fade'); return; }
+                if (profile.role === 'user') { err.textContent = 'Esta cuenta es de cliente. Usa la tienda pública.'; err.classList.remove('hidden-fade'); return; }
+                state.session = { userId: profile.userId, email: profile.email };
+                localStorage.setItem('fija_backend_session', JSON.stringify(state.session));
+                state.profile = profile;
+                enterApp(); await loadAll();
+            } catch (error) { console.error(error); err.classList.remove('hidden-fade'); }
+        };
+        window.handleLogout = () => {
+            state.session = null; state.profile = null;
+            localStorage.removeItem('fija_backend_session');
+            document.getElementById('app-shell').classList.add('hide');
+            document.getElementById('login-screen').classList.remove('hide');
+        };
+        window.openRegisterModal = () => {
+            const err = document.getElementById('register-error'); if (err) { err.classList.add('hidden'); err.textContent = ''; }
+            document.getElementById('register-form').reset();
+            openModal('register-modal');
+        };
+        window.handleRegister = async (e) => {
+            e.preventDefault();
+            const companyName = (document.getElementById('reg-company').value || '').trim();
+            const username = (document.getElementById('reg-username').value || '').trim();
+            const email = (document.getElementById('reg-email').value || '').trim().toLowerCase();
+            const cif = (document.getElementById('reg-cif').value || '').trim();
+            const ivaType = document.getElementById('reg-iva').value;
+            const address = (document.getElementById('reg-address').value || '').trim();
+            const pw = document.getElementById('reg-password').value;
+            const pw2 = document.getElementById('reg-password2').value;
+            const err = document.getElementById('register-error'); err.classList.add('hidden'); err.textContent = '';
+            if (!companyName || !username || !email || !cif || !address || !pw) { err.textContent = 'Completa todos los campos.'; err.classList.remove('hidden'); return; }
+            if (pw.length < 4) { err.textContent = 'La contraseña debe tener al menos 4 caracteres.'; err.classList.remove('hidden'); return; }
+            if (pw !== pw2) { err.textContent = 'Las contraseñas no coinciden.'; err.classList.remove('hidden'); return; }
+            try {
+                const profiles = (await readDataFile('profiles')).data || [];
+                if (profiles.some(p => (p.email && p.email.toLowerCase() === email) || (p.username && p.username.toLowerCase() === username))) {
+                    err.textContent = 'Ese usuario o correo ya existe.'; err.classList.remove('hidden'); return;
+                }
+                const pwHash = await hashPassword(pw);
+                const newSeller = { userId: uid(), companyName, username, email, cif, address, ivaType,
+                    role: 'seller', verificationStatus: 'pending', commissionRate: COMMISSION_RATE, createdAt: Date.now(), pwHash };
+                await mutateCollection('profiles', arr => arr.push(newSeller));
+                closeModal('register-modal'); document.getElementById('register-form').reset();
+                showToast('Solicitud enviada. Espera la verificación del admin.');
+            } catch (error) {
+                console.error(error);
+                err.textContent = CONFIG.token ? 'Error al enviar la solicitud.' : 'Configura tu token de GitHub para registrar.';
+                err.classList.remove('hidden');
+            }
+        };
+
+        function enterApp() {
+            document.getElementById('login-screen').classList.add('hide');
+            document.getElementById('app-shell').classList.remove('hide');
+            document.getElementById('hdr-name').textContent = state.profile.username || state.session.email;
+            document.getElementById('hdr-email').textContent = state.profile.email || '';
+            const role = state.profile.role === 'admin' ? 'Administrador' : (state.profile.role === 'seller' ? (isApprovedSeller() ? 'Vendedor verificado' : 'Vendedor (pendiente)') : 'Usuario');
+            document.getElementById('role-badge').textContent = role;
+            buildSideNav();
+        }
+
+        function buildSideNav() {
+            const nav = document.getElementById('side-nav');
+            let items = '';
+            if (isAdmin()) {
+                items += navItem('panel', 'Panel Admin', 'fa-shield-halved');
+                items += navItem('pending', 'Solicitudes', 'fa-clock');
+                items += navItem('sellers', 'Vendedores', 'fa-store');
+            }
+            if (isAdmin() || isApprovedSeller()) {
+                items += navItem('products', 'Productos', 'fa-box');
+            }
+            if (isAdmin()) items += navItem('orders', 'Pedidos', 'fa-cart-shopping');
+            if (isApprovedSeller()) items += navItem('myorders', 'Mis Pedidos', 'fa-receipt');
+            if (isPendingSeller()) items += `<div class="px-4 py-2 text-[11px] text-amber-600"><i class="fa-solid fa-clock mr-2"></i>Verificación pendiente</div>`;
+            if (items === '') items = `<div class="px-4 py-2 text-xs text-fija-400">Sin secciones disponibles.</div>`;
+            nav.innerHTML = items;
+            showSection(state.view && document.getElementById(state.view + '-section') ? state.view : (isAdmin() ? 'panel' : 'products'));
+        }
+        function navItem(id, label, icon) {
+            return `<button onclick="showSection('${id}')" id="nav-${id}" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-fija-600 hover:bg-fija-100 hover:text-fija-900 transition-colors flex items-center"><i class="fa-solid ${icon} mr-3 w-4"></i> ${label}</button>`;
+        }
+
+        // ===================== Views / sections =====================
+        const ADMIN_SECTIONS = { panel:'sec-panel', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders' };
+        function showSection(id) {
+            state.view = id;
+            const map = { panel:'admin-view', pending:'admin-view', sellers:'admin-view', products: (isAdmin()?'admin-view':'seller-view'), orders:'admin-view', myorders:'seller-view' };
+            const target = map[id] || 'seller-view';
+            document.getElementById('seller-view').classList.toggle('hide', target !== 'seller-view');
+            document.getElementById('admin-view').classList.toggle('hide', target !== 'admin-view');
+            // mostrar solo la sub-sección de admin seleccionada
+            Object.entries(ADMIN_SECTIONS).forEach(([k, secId]) => {
+                const el = document.getElementById(secId);
+                if (el) el.classList.toggle('hide', k !== id);
+            });
+            document.querySelectorAll('#side-nav button').forEach(b => b.classList.remove('bg-fija-900','text-white'));
+            const active = document.getElementById('nav-' + id);
+            if (active) active.className = 'w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-fija-900 text-white transition-colors flex items-center';
+            const main = document.querySelector('main'); if (main) main.scrollTop = 0;
+            if (isAdmin()) renderAdmin(); else renderSeller();
+        }
+
+        function renderSeller() {
+            document.getElementById('seller-pending-banner').classList.toggle('hide', !isPendingSeller());
+            const myProducts = state.products.filter(p => p.sellerId === state.profile.userId);
+            document.getElementById('stat-products').textContent = myProducts.length;
+            const myOrders = state.orders.filter(o => o.items.some(it => it.sellerId === state.profile.userId));
+            document.getElementById('stat-orders').textContent = myOrders.length;
+            let gross = 0, commission = 0, net = 0;
+            myOrders.filter(o => o.status !== 'cancelled').forEach(o => o.items.filter(it => it.sellerId === state.profile.userId).forEach(it => {
+                gross += itemGross(it); commission += itemCommission(it); net += itemNet(it);
+            }));
+            document.getElementById('stat-gross').textContent = formatEuro(gross);
+            document.getElementById('stat-commission').textContent = formatEuro(commission);
+            document.getElementById('stat-net').textContent = formatEuro(net);
+            renderPickupLists();
+            if (myProducts.length === 0) {
+                document.getElementById('seller-products').innerHTML = `<tr><td colspan="3" class="px-6 py-10 text-center text-fija-400">Aún no tienes productos. Pulsa "Nuevo Producto".</td></tr>`;
+            } else {
+                document.getElementById('seller-products').innerHTML = myProducts.map(p => {
+                    const d = productDiscount(p);
+                    return `<tr class="hover:bg-fija-50">
+                    <td class="px-6 py-4"><div class="flex items-center"><img src="${escapeHtml(p.imageUrl)}" class="w-10 h-10 rounded-lg object-cover mr-3 bg-fija-100" onerror="this.src='https://placehold.co/100x100/f4f4f5/a1a1aa?text=Img'"><div class="font-medium">${escapeHtml(p.title)}</div></div></td>
+                    <td class="px-6 py-4"><span class="font-medium">${formatEuro(p.price)}</span>${d > 0 ? `<div class="text-xs text-fija-gold font-semibold mt-0.5"><i class="fa-solid fa-tag mr-1"></i>FIJA aplica -${d}% · tú cobras igual</div>` : ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><button onclick="editProduct('${p.id}')" class="text-fija-900 hover:underline text-sm font-medium mr-3"><i class="fa-solid fa-pen mr-1"></i>Editar</button><button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline text-sm">Eliminar</button></td></tr>`;
+                }).join('');
+            }
+            if (myOrders.length === 0) {
+                document.getElementById('seller-orders').innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-fija-400">Sin pedidos todavía.</td></tr>`;
+            } else {
+                document.getElementById('seller-orders').innerHTML = myOrders.map(o => {
+                    let og = 0, oc = 0, on = 0;
+                    o.items.filter(it => it.sellerId === state.profile.userId).forEach(it => { og += itemGross(it); oc += itemCommission(it); on += itemNet(it); });
+                    return `<tr>
+                        <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id||'').slice(0,8).toUpperCase())}</td>
+                        <td class="px-6 py-4">${escapeHtml(o.buyerName || o.buyerEmail || '—')}</td>
+                        <td class="px-6 py-4 font-medium">${formatEuro(og)}</td>
+                        <td class="px-6 py-4 text-red-600">− ${formatEuro(oc)}</td>
+                        <td class="px-6 py-4 font-bold text-green-700">${formatEuro(on)}</td>
+                        <td class="px-6 py-4">${statusBadge(o.status)}</td></tr>`;
+                }).join('');
+            }
+        }
+
+        function renderAdmin() {
+            const pending = state.profiles.filter(s => s.role === 'seller' && s.verificationStatus === 'pending');
+            const active = state.profiles.filter(s => s.role === 'seller' && s.verificationStatus === 'approved');
+            document.getElementById('admin-pending-count').textContent = pending.length;
+            document.getElementById('admin-sellers-count').textContent = active.length;
+            document.getElementById('admin-products-count').textContent = state.products.length;
+            document.getElementById('admin-orders-count').textContent = state.orders.length;
+            // Totales (solo pedidos no cancelados)
+            let gross = 0, paid = 0, disc = 0, commission = 0, net = 0;
+            state.orders.filter(o => o.status !== 'cancelled').forEach(o => {
+                o.items.forEach(it => { gross += itemGross(it); commission += itemCommission(it); net += itemNet(it); });
+                paid += (o.total != null ? o.total : o.items.reduce((s, it) => s + itemPaid(it), 0));
+                disc += (o.discountTotal != null ? o.discountTotal : o.items.reduce((s, it) => s + itemDiscount(it), 0));
+            });
+            document.getElementById('admin-gross').textContent = formatEuro(gross);
+            document.getElementById('admin-paid').textContent = formatEuro(paid);
+            document.getElementById('admin-discounts').textContent = formatEuro(disc);
+            document.getElementById('admin-commission').textContent = formatEuro(commission);
+            document.getElementById('admin-net').textContent = formatEuro(net);
+            const balance = commission - disc;
+            const balanceEl = document.getElementById('admin-balance');
+            balanceEl.textContent = formatEuro(balance);
+            balanceEl.className = 'text-3xl font-bold ' + (balance < 0 ? 'text-red-600' : 'text-green-700');
+            renderPickupLists();
+            // pending list
+            if (pending.length === 0) {
+                document.getElementById('admin-pending-list').innerHTML = `<div class="px-6 py-8 text-center text-fija-400">No hay solicitudes pendientes. 🎉</div>`;
+            } else {
+                document.getElementById('admin-pending-list').innerHTML = pending.map(p => `<div class="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                    <div><p class="font-medium text-fija-900">${escapeHtml(p.companyName || p.username)}</p><p class="text-xs text-fija-500">${escapeHtml(p.email)} · CIF ${escapeHtml(p.cif || '—')} · IVA ${escapeHtml(ivaLabel(p.ivaType))}${p.address ? ' · ' + escapeHtml(p.address) : ''}</p></div>
+                    <div class="flex gap-2">
+                        <button onclick="verifySeller('${p.userId}','approved')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-check mr-1"></i> Aprobar</button>
+                        <button onclick="verifySeller('${p.userId}','rejected')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-xmark mr-1"></i> Rechazar</button>
+                    </div></div>`).join('');
+            }
+            // sellers table
+            const allSellers = state.profiles.filter(s => s.role === 'seller');
+            if (allSellers.length === 0) {
+                document.getElementById('admin-sellers-table').innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-fija-400">Sin vendedores.</td></tr>`;
+            } else {
+                document.getElementById('admin-sellers-table').innerHTML = allSellers.map(p => `<tr>
+                    <td class="px-6 py-4 font-medium">${escapeHtml(p.companyName || p.username)}</td>
+                    <td class="px-6 py-4 text-fija-600">${escapeHtml(p.cif || '—')}</td>
+                    <td class="px-6 py-4 text-fija-600">${escapeHtml(ivaLabel(p.ivaType))}</td>
+                    <td class="px-6 py-4 text-fija-600 max-w-[220px] truncate" title="${escapeHtml(p.address || '')}">${escapeHtml(p.address || '—')}</td>
+                    <td class="px-6 py-4">${statusBadge(p.verificationStatus)}</td>
+                    <td class="px-6 py-4">${p.verificationStatus === 'pending' ? `<button onclick="verifySeller('${p.userId}','approved')" class="text-green-600 hover:underline text-sm">Aprobar</button>` : (p.verificationStatus === 'approved' ? `<span class="text-fija-400 text-sm">—</span>` : `<button onclick="verifySeller('${p.userId}','approved')" class="text-green-600 hover:underline text-sm">Reactivar</button>`)}</td></tr>`).join('');
+            }
+            // products table
+            if (state.products.length === 0) {
+                document.getElementById('admin-products-table').innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Sin productos.</td></tr>`;
+            } else {
+                document.getElementById('admin-products-table').innerHTML = state.products.map(p => {
+                    const d = productDiscount(p);
+                    return `<tr>
+                    <td class="px-6 py-4"><div class="flex items-center"><img src="${escapeHtml(p.imageUrl)}" class="w-10 h-10 rounded-lg object-cover mr-3 bg-fija-100" onerror="this.src='https://placehold.co/100x100/f4f4f5/a1a1aa?text=Img'"><div class="font-medium">${escapeHtml(p.title)}</div></div></td>
+                    <td class="px-6 py-4 text-fija-600">${escapeHtml(p.sellerName || '—')}</td>
+                    <td class="px-6 py-4"><span class="font-medium">${formatEuro(p.price)}</span>${d > 0 ? `<div class="text-xs text-green-700 mt-0.5">Cliente paga: ${formatEuro(effectivePrice(p))}</div>` : ''}</td>
+                    <td class="px-6 py-4">${d > 0 ? `<span class="inline-block text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-bold">-${d}%</span>` : '<span class="text-fija-400 text-sm">—</span>'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><button onclick="openDiscountModal('${p.id}')" class="text-fija-gold hover:underline text-sm font-semibold mr-3"><i class="fa-solid fa-tag mr-1"></i>Descuento</button><button onclick="editProduct('${p.id}')" class="text-fija-900 hover:underline text-sm mr-3">Editar</button><button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline text-sm">Eliminar</button></td></tr>`;
+                }).join('');
+            }
+            // comisiones por vendedor
+            const commMap = {};
+            state.orders.filter(o => o.status !== 'cancelled').forEach(o => o.items.forEach(it => {
+                const k = it.sellerId || it.sellerName || '—';
+                if (!commMap[k]) commMap[k] = { name: it.sellerName || '—', gross: 0, commission: 0, discount: 0, net: 0 };
+                commMap[k].gross += itemGross(it); commMap[k].commission += itemCommission(it); commMap[k].discount += itemDiscount(it); commMap[k].net += itemNet(it);
+            }));
+            const commRows = Object.values(commMap);
+            if (commRows.length === 0) {
+                document.getElementById('admin-commission-table').innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Sin ventas todavía.</td></tr>`;
+            } else {
+                document.getElementById('admin-commission-table').innerHTML = commRows.sort((a, b) => b.commission - a.commission).map(r => `<tr>
+                    <td class="px-6 py-4 font-medium">${escapeHtml(r.name)}</td>
+                    <td class="px-6 py-4">${formatEuro(r.gross)}</td>
+                    <td class="px-6 py-4 font-bold text-fija-gold">${formatEuro(r.commission)}</td>
+                    <td class="px-6 py-4 text-red-600">${r.discount > 0 ? '− ' + formatEuro(r.discount) : '—'}</td>
+                    <td class="px-6 py-4 text-green-700">${formatEuro(r.net)}</td></tr>`).join('');
+            }
+            // orders table
+            if (state.orders.length === 0) {
+                document.getElementById('admin-orders-table').innerHTML = `<tr><td colspan="9" class="px-6 py-8 text-center text-fija-400">Sin pedidos.</td></tr>`;
+            } else {
+                document.getElementById('admin-orders-table').innerHTML = state.orders.map(o => {
+                    const paid = o.total != null ? o.total : o.items.reduce((s, it) => s + itemPaid(it), 0);
+                    const g = o.items.reduce((s, it) => s + itemGross(it), 0);
+                    const c = o.commissionTotal != null ? o.commissionTotal : o.items.reduce((s, it) => s + itemCommission(it), 0);
+                    const d = o.discountTotal != null ? o.discountTotal : o.items.reduce((s, it) => s + itemDiscount(it), 0);
+                    const n = o.netTotal != null ? o.netTotal : o.items.reduce((s, it) => s + itemNet(it), 0);
+                    return `<tr>
+                    <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id||'').slice(0,8).toUpperCase())}</td>
+                    <td class="px-6 py-4">${escapeHtml(o.buyerName || o.buyerEmail || '—')}</td>
+                    <td class="px-6 py-4 font-medium">${formatEuro(paid)}</td>
+                    <td class="px-6 py-4">${formatEuro(g)}</td>
+                    <td class="px-6 py-4 text-fija-gold font-medium">${formatEuro(c)}</td>
+                    <td class="px-6 py-4 text-red-600">${d > 0 ? '− ' + formatEuro(d) : '—'}</td>
+                    <td class="px-6 py-4 text-green-700 font-medium">${formatEuro(n)}</td>
+                    <td class="px-6 py-4"><select onchange="updateOrderStatus('${o.id}', this.value)" class="border border-fija-300 rounded-lg px-2 py-1 text-sm">
+                        ${['pending','click-collect','completed','collected','cancelled'].map(s => `<option value="${s}" ${o.status===s?'selected':''}>${s}</option>`).join('')}
+                    </select></td>
+                    <td class="px-6 py-4"><button onclick="openOrderDetail('${o.id}')" class="text-fija-900 hover:underline text-sm font-medium"><i class="fa-solid fa-eye mr-1"></i> Ver</button></td></tr>`;
+                }).join('');
+            }
+        }
+
+        // ===================== Compresión de medios (calidad 90%) =====================
+        function fileToDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
+        // Foto: redimensiona (máx. 1000px) y comprime a JPEG calidad 0.9
+        async function compressImageFile(file, maxDim = 1000, quality = 0.9) {
+            const url = await fileToDataURL(file);
+            return await new Promise((res, rej) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.max(1, Math.round(img.width * scale));
+                    c.height = Math.max(1, Math.round(img.height * scale));
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    res(c.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => rej(new Error('imagen no válida'));
+                img.src = url;
+            });
+        }
+        // Vídeo: re-comprime con MediaRecorder a ~10% del bitrate original (~90% menos peso)
+        async function compressVideoFile(file, onProgress) {
+            if (file.size > 150 * 1048576) throw new Error('el vídeo es demasiado grande (máx. 150 MB)');
+            const url = URL.createObjectURL(file);
+            const video = document.createElement('video');
+            video.src = url; video.muted = false; video.playsInline = true; video.preload = 'auto';
+            await new Promise((res, rej) => { video.onloadeddata = res; video.onerror = () => rej(new Error('vídeo no válido')); });
+            if (!isFinite(video.duration) || video.duration <= 0) { video.currentTime = 1e7; await new Promise(res => { video.onseeked = res; }); video.currentTime = 0; await new Promise(res => { setTimeout(res, 100); }); }
+            const w = video.videoWidth || 640, h = video.videoHeight || 360;
+            const scale = Math.min(1, 720 / Math.max(w, h));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(2, Math.round(w * scale / 2) * 2);
+            canvas.height = Math.max(2, Math.round(h * scale / 2) * 2);
+            const ctx = canvas.getContext('2d');
+            const stream = canvas.captureStream(30);
+            try {
+                const ACX = window.AudioContext || window.webkitAudioContext;
+                const acx = new ACX();
+                const src = acx.createMediaElementSource(video);
+                const dest = acx.createMediaStreamDestination();
+                src.connect(dest); // el audio va al stream, no a los altavoces
+                dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+                acx.resume().catch(() => {});
+            } catch (e) { console.warn('audio no capturado', e); }
+            const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'].find(m => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+            if (!mime) { URL.revokeObjectURL(url); throw new Error('tu navegador no soporta compresión de vídeo'); }
+            const origBps = (file.size * 8) / Math.max(video.duration || 1, 0.5);
+            const targetBps = Math.round(Math.min(Math.max(origBps * 0.1, 200000), 600000)); // ~90% de compresión
+            const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: targetBps });
+            const chunks = []; rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+            const stopped = new Promise(res => { rec.onstop = res; });
+            if (onProgress) video.ontimeupdate = () => { if (video.duration) onProgress(Math.min(99, Math.round(video.currentTime / video.duration * 100))); };
+            const draw = () => { if (video.ended || video.paused) return; ctx.drawImage(video, 0, 0, canvas.width, canvas.height); requestAnimationFrame(draw); };
+            try { await video.play(); } catch (e) { video.muted = true; await video.play().catch(() => {}); }
+            rec.start(250); draw();
+            await Promise.race([
+                new Promise(res => { video.onended = res; }),
+                new Promise((_, rej) => setTimeout(() => rej(new Error('tiempo de procesado agotado')), 240000))
+            ]);
+            rec.stop(); await stopped;
+            URL.revokeObjectURL(url);
+            const blob = new Blob(chunks, { type: mime.split(';')[0] });
+            if (!blob.size) throw new Error('no se pudo procesar el vídeo');
+            return await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+        }
+
+        window.handleProductPhoto = async (e) => {
+            const f = e.target.files && e.target.files[0]; e.target.value = '';
+            if (!f) return;
+            const img = document.getElementById('prod-image');
+            try { img.placeholder = 'Comprimiendo foto (90%)...'; const data = await compressImageFile(f);
+                img.value = data;
+                const prev = document.getElementById('prod-image-preview');
+                prev.src = data; prev.classList.remove('hidden');
+                showToast('Foto lista (comprimida al 90%)');
+            } catch (err) { console.error(err); showToast('No se pudo procesar la foto', true); }
+            finally { img.placeholder = 'https://... o sube una foto local'; }
+        };
+        window.handleProductVideo = async (e) => {
+            const f = e.target.files && e.target.files[0]; e.target.value = '';
+            if (!f || state.videoBusy) return;
+            state.videoBusy = true;
+            const st = document.getElementById('prod-video-status');
+            try {
+                st.textContent = 'Comprimiendo vídeo (90%)... 0%';
+                const data = await compressVideoFile(f, pct => { st.textContent = `Comprimiendo vídeo (90%)... ${pct}%`; });
+                if (data.length > 4000000) { state.videoBusy = false; st.textContent = 'El vídeo es demasiado largo incluso comprimido; usa uno más corto (~1 min o menos).'; showToast('Vídeo demasiado pesado', true); return; }
+                state.pendingVideo = data;
+                st.textContent = `Vídeo listo ✓ (${(data.length * 0.75 / 1048576).toFixed(1)} MB)`;
+                document.getElementById('prod-video-remove').classList.remove('hidden');
+                showToast('Vídeo listo (comprimido al 90%)');
+            } catch (err) { console.error(err); st.textContent = 'No se pudo procesar el vídeo: ' + err.message; }
+            finally { state.videoBusy = false; }
+        };
+        window.removeProductVideo = () => {
+            state.pendingVideo = null;
+            document.getElementById('prod-video-status').textContent = 'Ningún vídeo añadido';
+            document.getElementById('prod-video-remove').classList.add('hidden');
+        };
+        function setVideoUI() {
+            const st = document.getElementById('prod-video-status'), rm = document.getElementById('prod-video-remove');
+            if (state.pendingVideo) { st.textContent = `Vídeo añadido ✓ (${(state.pendingVideo.length * 0.75 / 1048576).toFixed(1)} MB)`; rm.classList.remove('hidden'); }
+            else { st.textContent = 'Ningún vídeo añadido'; rm.classList.add('hidden'); }
+        }
+
+        // ===================== Seller actions =====================
+        window.showSellerForm = () => {
+            if (!isApprovedSeller()) { showToast(isPendingSeller() ? 'Tu cuenta está pendiente de verificación' : 'Solo vendedores verificados pueden publicar', true); return; }
+            state.editingId = null; state.pendingVideo = null;
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-image-preview').classList.add('hidden');
+            setVideoUI();
+            document.getElementById('product-modal-title').textContent = 'Nuevo Producto';
+            document.getElementById('product-modal-submit').textContent = 'Publicar Producto';
+            openModal('product-modal');
+        };
+        // Editar producto (el vendedor solo puede editar los suyos; el admin, cualquiera)
+        window.editProduct = (id) => {
+            const p = state.products.find(x => x.id === id);
+            if (!p) return;
+            if (!isAdmin() && p.sellerId !== state.profile.userId) { showToast('Solo puedes editar tus propios productos', true); return; }
+            state.editingId = id;
+            document.getElementById('prod-title').value = p.title || '';
+            document.getElementById('prod-price').value = p.price ?? '';
+            document.getElementById('prod-old').value = p.oldPrice ?? '';
+            document.getElementById('prod-image').value = p.imageUrl || '';
+            document.getElementById('prod-category').value = p.category || '';
+            document.getElementById('prod-desc').value = p.description || '';
+            document.getElementById('prod-specs').value = Array.isArray(p.specs) ? p.specs.join('\n') : '';
+            document.getElementById('prod-pickup').value = p.pickupAddress || '';
+            const prev = document.getElementById('prod-image-preview');
+            if (p.imageUrl) { prev.src = p.imageUrl; prev.classList.remove('hidden'); } else prev.classList.add('hidden');
+            state.pendingVideo = p.videoUrl || null;
+            setVideoUI();
+            document.getElementById('product-modal-title').textContent = 'Editar Producto';
+            document.getElementById('product-modal-submit').textContent = 'Guardar Cambios';
+            openModal('product-modal');
+        };
+        window.handleAddProduct = async (e) => {
+            e.preventDefault();
+            if (!isApprovedSeller() && !isAdmin()) { showToast('No autorizado para publicar', true); return; }
+            const editing = state.editingId || null;
+            if (editing) {
+                const target = state.products.find(x => x.id === editing);
+                if (!target) { showToast('Producto no encontrado', true); return; }
+                if (!isAdmin() && target.sellerId !== state.profile.userId) { showToast('Solo puedes editar tus propios productos', true); return; }
+            }
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const old = parseFloat(document.getElementById('prod-old').value) || null;
+            const specs = (document.getElementById('prod-specs').value || '').split('\n').map(l => l.trim()).filter(Boolean);
+            const fields = {
+                title: document.getElementById('prod-title').value,
+                price,
+                oldPrice: old && old > price ? old : null,
+                category: document.getElementById('prod-category').value,
+                imageUrl: document.getElementById('prod-image').value,
+                description: document.getElementById('prod-desc').value,
+                specs,
+                pickupAddress: (document.getElementById('prod-pickup').value || '').trim(),
+                videoUrl: state.pendingVideo || null
+            };
+            try {
+                if (editing) {
+                    await mutateCollection('products', arr => { const p = arr.find(x => x.id === editing); if (p) Object.assign(p, fields); });
+                    showToast('Producto actualizado');
+                } else {
+                    const newProduct = { id: uid(), ...fields, sellerId: state.profile.userId, sellerName: state.profile.companyName || state.profile.username, verified: true, createdAt: Date.now() };
+                    await mutateCollection('products', arr => arr.push(newProduct));
+                    showToast('Producto publicado');
+                }
+                state.editingId = null;
+                closeModal('product-modal'); document.getElementById('product-form').reset();
+                await loadAll();
+            } catch (error) { console.error(error); showToast(CONFIG.token ? 'Error al guardar' : 'Configura tu token de GitHub para guardar', true); }
+        };
+        window.deleteProduct = async (id) => {
+            const p = state.products.find(x => x.id === id);
+            if (!isAdmin() && p && p.sellerId !== state.profile.userId) { showToast('Solo puedes eliminar tus propios productos', true); return; }
+            if (!confirm('¿Eliminar este producto?')) return;
+            try { await mutateCollection('products', arr => { const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }); await loadAll(); showToast('Producto eliminado'); }
+            catch (error) { console.error(error); showToast('Error al eliminar', true); }
+        };
+
+        // ===================== Admin: descuentos =====================
+        // El descuento lo paga FIJA: la empresa sigue cobrando su precio marcado menos la comisión.
+        let discProductId = null;
+        window.openDiscountModal = (productId) => {
+            if (!isAdmin()) { showToast('Solo el administrador puede poner descuentos', true); return; }
+            const p = state.products.find(x => x.id === productId);
+            if (!p) return;
+            discProductId = productId;
+            document.getElementById('disc-product-name').textContent = p.title;
+            document.getElementById('disc-percent').value = productDiscount(p);
+            updateDiscPreview();
+            openModal('discount-modal');
+        };
+        window.setDiscValue = (v) => { document.getElementById('disc-percent').value = v; updateDiscPreview(); };
+        window.updateDiscPreview = () => {
+            const p = state.products.find(x => x.id === discProductId);
+            const box = document.getElementById('disc-preview');
+            if (!p || !box) return;
+            const d = Math.max(0, Math.min(90, parseFloat(document.getElementById('disc-percent').value) || 0));
+            const eff = d > 0 ? +(p.price * (1 - d / 100)).toFixed(2) : p.price;
+            const sellerNet = +(p.price * (1 - COMMISSION_RATE)).toFixed(2);
+            box.innerHTML = `<div class="flex justify-between"><span class="text-fija-500">Cliente paga:</span> <strong>${formatEuro(eff)}</strong></div>
+                <div class="flex justify-between"><span class="text-fija-500">La empresa cobra (neto):</span> <strong class="text-green-700">${formatEuro(sellerNet)}</strong></div>
+                <div class="flex justify-between"><span class="text-fija-500">Coste para FIJA:</span> <strong class="text-red-600">${formatEuro(p.price - eff)}</strong></div>`;
+        };
+        window.handleSetDiscount = async (e) => {
+            e.preventDefault();
+            if (!isAdmin() || !discProductId) return;
+            const pct = Math.max(0, Math.min(90, parseFloat(document.getElementById('disc-percent').value) || 0));
+            try {
+                await mutateCollection('products', arr => { const p = arr.find(x => x.id === discProductId); if (p) { if (pct > 0) p.discountPercent = pct; else delete p.discountPercent; } });
+                closeModal('discount-modal');
+                await loadAll();
+                showToast(pct > 0 ? `Descuento del ${pct}% aplicado` : 'Descuento eliminado');
+            } catch (error) { console.error(error); showToast(CONFIG.token ? 'Error al aplicar el descuento' : 'Configura tu token de GitHub para guardar', true); }
+        };
+
+        // ===================== Admin: exportar pedidos CSV =====================
+        window.downloadOrdersCSV = () => {
+            if (state.orders.length === 0) { showToast('No hay pedidos para exportar', true); return; }
+            const esc = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+            const rows = [['ID', 'Fecha', 'Comprador', 'Email', 'Metodo', 'Estado', 'Cobrado EUR', 'Bruto empresas EUR', 'Comision FIJA EUR', 'Coste descuentos EUR', 'Neto empresas EUR'].join(';')];
+            state.orders.forEach(o => {
+                const paid = o.total != null ? o.total : o.items.reduce((s, it) => s + itemPaid(it), 0);
+                const g = o.items.reduce((s, it) => s + itemGross(it), 0);
+                const c = o.commissionTotal != null ? o.commissionTotal : o.items.reduce((s, it) => s + itemCommission(it), 0);
+                const d = o.discountTotal != null ? o.discountTotal : o.items.reduce((s, it) => s + itemDiscount(it), 0);
+                const n = o.netTotal != null ? o.netTotal : o.items.reduce((s, it) => s + itemNet(it), 0);
+                rows.push([(o.id || '').slice(0, 8).toUpperCase(), new Date(o.createdAt || Date.now()).toLocaleString('es-ES'), o.buyerName || '', o.buyerEmail || '', o.method || '', o.status || '', paid.toFixed(2), g.toFixed(2), c.toFixed(2), d.toFixed(2), n.toFixed(2)].map(esc).join(';'));
+            });
+            const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'pedidos_fija.csv';
+            document.body.appendChild(a); a.click(); a.remove();
+            showToast('CSV descargado');
+        };
+
+        // ===================== Admin actions =====================
+        window.verifySeller = async (userId, decision) => {
+            try { await mutateCollection('profiles', arr => { const p = arr.find(x => x.userId === userId); if (p) p.verificationStatus = decision; });
+                await loadAll(); showToast(decision === 'approved' ? 'Vendedor aprobado' : 'Vendedor rechazado'); }
+            catch (error) { console.error(error); showToast('Error al actualizar', true); }
+        };
+        window.updateOrderStatus = async (orderId, status) => {
+            try { await mutateCollection('orders', arr => { const o = arr.find(x => x.id === orderId); if (o) o.status = status; });
+                await loadAll(); showToast('Estado actualizado'); }
+            catch (error) { console.error(error); showToast('Error al actualizar', true); }
+        };
+
+        // ===================== Verificación de recogida (Click & Collect) =====================
+        function normalizePickupCode(v) { return String(v || '').trim().toUpperCase().replace(/^FIJA-?/, ''); }
+        function orderPickupCode(o) { return o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase()); }
+        // Verifica por código escrito (o directamente por id de pedido desde la lista)
+        window.verifyPickupCode = async (raw, orderId) => {
+            let o = null;
+            if (orderId) o = state.orders.find(x => x.id === orderId);
+            else {
+                const code = normalizePickupCode(raw);
+                if (!code) { showToast('Escribe el código que muestra el cliente', true); return; }
+                o = state.orders.find(x => normalizePickupCode(orderPickupCode(x)) === code);
+            }
+            if (!o) { showToast('Código no encontrado', true); return; }
+            if (!isAdmin() && !o.items.some(it => it.sellerId === state.profile.userId)) { showToast('Este pedido no contiene productos tuyos', true); return; }
+            if (o.status === 'cancelled') { showToast('Ese pedido está cancelado', true); return; }
+            if (o.status === 'collected') { showToast('Ese pedido ya fue recogido', true); return; }
+            if (!confirm(`Entregar pedido de ${o.buyerName || 'cliente'} (${o.items.reduce((s, it) => s + it.quantity, 0)} artículos)?`)) return;
+            try {
+                await mutateCollection('orders', arr => { const x = arr.find(y => y.id === o.id); if (x) { x.status = 'collected'; x.verifiedAt = Date.now(); x.verifiedBy = (state.profile.companyName || state.profile.username) + (isAdmin() ? ' (admin)' : ' (vendedor)'); } });
+                const inp = document.getElementById(isAdmin() ? 'admin-verify-code' : 'seller-verify-code'); if (inp) inp.value = '';
+                await loadAll();
+                showToast('Pedido entregado y verificado ✓');
+            } catch (error) { console.error(error); showToast('Error al verificar la recogida', true); }
+        };
+        // Lista de pedidos esperando recogida (código a la vista para entregar con un clic)
+        function renderPickupLists() {
+            const waiting = state.orders.filter(o => o.status === 'pending' || o.status === 'click-collect');
+            const fill = (listId, filterFn) => {
+                const el = document.getElementById(listId); if (!el) return;
+                const list = waiting.filter(filterFn);
+                el.innerHTML = list.length === 0
+                    ? '<div class="px-6 py-6 text-center text-fija-400 text-sm">No hay pedidos pendientes de recogida.</div>'
+                    : list.map(o => `<div class="px-6 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <div><span class="font-mono font-bold text-fija-900">${escapeHtml(orderPickupCode(o))}</span> · ${escapeHtml(o.buyerName || o.buyerEmail || '—')} · ${o.items.reduce((s, it) => s + it.quantity, 0)} art. · ${formatEuro(o.total)}</div>
+                        <button onclick="verifyPickupCode(null, '${o.id}')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"><i class="fa-solid fa-check mr-1"></i>Marcar recogido</button>
+                    </div>`).join('');
+            };
+            fill('seller-pickup-list', o => o.items.some(it => it.sellerId === state.profile.userId));
+            fill('admin-pickup-list', () => true);
+        }
+        window.openOrderDetail = (orderId) => {
+            const o = state.orders.find(x => x.id === orderId);
+            if (!o) return;
+            document.getElementById('order-detail-id').textContent = 'Pedido #' + (o.id || '').slice(0, 8).toUpperCase() + ' · ' + new Date(o.createdAt || Date.now()).toLocaleString('es-ES');
+            const hasDiscount = o.items.some(it => itemDiscount(it) > 0);
+            const rows = o.items.map(it => {
+                const paid = itemPaid(it), g = itemGross(it), c = itemCommission(it), d = itemDiscount(it), n = itemNet(it);
+                return `<tr class="border-b border-fija-100">
+                    <td class="py-3 pr-2"><div class="font-medium">${escapeHtml(it.title)}</div><div class="text-xs text-fija-500">${escapeHtml(it.sellerName || '—')} · x${it.quantity}${it.basePrice != null && it.basePrice !== it.price ? ` · <span class="line-through">${formatEuro(it.basePrice)}</span> ${formatEuro(it.price)}/ud` : ''}</div></td>
+                    <td class="py-3 px-2 text-right font-medium">${formatEuro(paid)}</td>
+                    <td class="py-3 px-2 text-right">${hasDiscount ? formatEuro(g) : '—'}</td>
+                    <td class="py-3 px-2 text-right text-red-600">− ${formatEuro(c)}</td>
+                    ${hasDiscount ? `<td class="py-3 px-2 text-right text-red-600">− ${formatEuro(d)}</td>` : ''}
+                    <td class="py-3 pl-2 text-right font-semibold text-green-700">${formatEuro(n)}</td></tr>`;
+            }).join('');
+            const paidT = o.total != null ? o.total : o.items.reduce((s, it) => s + itemPaid(it), 0);
+            const gT = o.items.reduce((s, it) => s + itemGross(it), 0);
+            const cT = o.commissionTotal != null ? o.commissionTotal : o.items.reduce((s, it) => s + itemCommission(it), 0);
+            const dT = o.discountTotal != null ? o.discountTotal : o.items.reduce((s, it) => s + itemDiscount(it), 0);
+            const nT = o.netTotal != null ? o.netTotal : o.items.reduce((s, it) => s + itemNet(it), 0);
+            document.getElementById('order-detail-body').innerHTML = `
+                <div class="mb-4 text-sm"><span class="text-fija-500">Comprador:</span> <strong>${escapeHtml(o.buyerName || '—')}</strong> · ${escapeHtml(o.buyerEmail || '')}
+                <br><span class="text-fija-500">Código de recogida:</span> <strong class="font-mono">${escapeHtml(orderPickupCode(o))}</strong> ${statusBadge(o.status)}
+                ${o.verifiedAt ? `<br><span class="text-fija-500">Recogido el:</span> ${new Date(o.verifiedAt).toLocaleString('es-ES')} · <span class="text-fija-500">Verificado por:</span> ${escapeHtml(o.verifiedBy || '—')}` : ''}
+                <br><span class="text-fija-500">Método:</span> ${escapeHtml(o.method || '—')}</div>
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead><tr class="text-xs uppercase text-fija-500 border-b border-fija-200"><th class="py-2 font-medium">Producto</th><th class="py-2 text-right font-medium">Cliente paga</th><th class="py-2 text-right font-medium">Bruto empresa</th><th class="py-2 text-right font-medium">Comisión 4,7%</th>${hasDiscount ? '<th class="py-2 text-right font-medium">Descuento FIJA</th>' : ''}<th class="py-2 text-right font-medium">Neto empresa</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot>
+                        <tr class="font-bold border-t-2 border-fija-200"><td class="py-3">Total cobrado</td><td class="py-3 text-right">${formatEuro(paidT)}</td><td class="py-3 text-right">${hasDiscount ? formatEuro(gT) : '—'}</td><td class="py-3 text-right text-red-600">− ${formatEuro(cT)}</td>${hasDiscount ? `<td class="py-3 text-right text-red-600">− ${formatEuro(dT)}</td>` : ''}<td class="py-3 text-right text-green-700">${formatEuro(nT)}</td></tr>
+                        ${hasDiscount ? `<tr class="text-sm"><td class="py-2" colspan="3"></td><td class="py-2 text-right font-semibold">Balance FIJA:</td><td class="py-2 text-right font-bold ${cT - dT < 0 ? 'text-red-600' : 'text-green-700'}">${formatEuro(cT - dT)}</td></tr>` : ''}
+                    </tfoot>
+                </table>
+                ${hasDiscount ? '<p class="text-[11px] text-fija-500 mt-3"><i class="fa-solid fa-circle-info mr-1"></i> Las empresas cobran por su precio marcado; el coste de los descuentos lo asume FIJA.</p>' : ''}`;
+            openModal('order-detail-modal');
+        };
+
+        // ===================== Settings =====================
+        window.openSettings = () => {
+            document.getElementById('cfg-owner').value = CONFIG.owner || '';
+            document.getElementById('cfg-repo').value = CONFIG.repo || '';
+            document.getElementById('cfg-branch').value = CONFIG.branch || 'main';
+            document.getElementById('cfg-token').value = CONFIG.token || '';
+            openModal('settings-modal');
+        };
+        window.saveSettings = (e) => {
+            e.preventDefault();
+            const cfg = { owner: document.getElementById('cfg-owner').value.trim(), repo: document.getElementById('cfg-repo').value.trim(),
+                branch: document.getElementById('cfg-branch').value.trim() || 'main', token: document.getElementById('cfg-token').value.trim() };
+            if (!cfg.owner || !cfg.repo) { showToast('Pon usuario y repositorio de GitHub', true); return; }
+            localStorage.setItem('fija_backend_config', JSON.stringify(cfg));
+            showToast('Configuración guardada. Recargando...');
+            setTimeout(() => location.reload(), 800);
+        };
+
+        // ===================== Modal / Toast =====================
+        window.openModal = (id) => {
+            const modal = document.getElementById(id); const content = document.getElementById(id + '-content');
+            modal.classList.remove('hide', 'hidden'); void modal.offsetWidth; modal.classList.remove('opacity-0');
+            if (content) { content.classList.remove('scale-95'); content.classList.add('scale-100'); }
+        };
+        window.closeModal = (id) => {
+            const modal = document.getElementById(id); const content = document.getElementById(id + '-content');
+            modal.classList.add('opacity-0');
+            if (content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
+            setTimeout(() => modal.classList.add('hide', 'hidden'), 300);
+        };
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast'), msgEl = document.getElementById('toast-message'), icon = toast.querySelector('i');
+            msgEl.textContent = message;
+            if (isError) { toast.classList.replace('bg-fija-900','bg-red-600'); toast.classList.replace('border-fija-700','border-red-700'); icon.className = 'fa-solid fa-circle-exclamation text-white mr-3'; }
+            else { toast.classList.replace('bg-red-600','bg-fija-900'); toast.classList.replace('border-red-700','border-fija-700'); icon.className = 'fa-solid fa-circle-check text-fija-gold mr-3'; }
+            toast.classList.remove('translate-y-20','opacity-0');
+            setTimeout(() => toast.classList.add('translate-y-20','opacity-0'), 3000);
+        }
+        window.showToast = showToast;
+
+        // ===================== Boot =====================
+        if (state.session) {
+            // intentamos restaurar sesión; necesitamos el perfil
+            (async () => {
+                try {
+                    const profiles = (await readDataFile('profiles')).data || [];
+                    state.profile = profiles.find(p => p.userId === state.session.userId) || null;
+                    if (state.profile && state.profile.role !== 'user') { enterApp(); await loadAll(); }
+                    else { handleLogout(); }
+                } catch (e) { handleLogout(); }
+            })();
+        }
+    </script>
+</body>
+</html>

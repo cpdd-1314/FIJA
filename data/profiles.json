@@ -1,0 +1,25 @@
+[
+  {
+    "userId": "admin",
+    "username": "admin",
+    "email": "admin@fija.com",
+    "role": "admin",
+    "verificationStatus": "approved",
+    "createdAt": 1700000000000,
+    "pwHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+  },
+  {
+    "userId": "demo-seller",
+    "username": "Audio Lux",
+    "email": "vendedor@fija.com",
+    "role": "seller",
+    "companyName": "Audio Lux SL",
+    "cif": "B12345678",
+    "address": "Calle Mayor 1, Madrid",
+    "ivaType": "general",
+    "commissionRate": 0.047,
+    "verificationStatus": "approved",
+    "createdAt": 1700000000000,
+    "pwHash": "e8827f3c0bcc90509b7d6841d446b163a671cac807a5f1bf41218667546ce80b"
+  }
+]

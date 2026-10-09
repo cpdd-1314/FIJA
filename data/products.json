@@ -1,0 +1,1998 @@
+[
+  {
+    "id": "demo-001",
+    "title": "Auriculares Inalámbricos Premium",
+    "price": 89.99,
+    "oldPrice": 119.99,
+    "category": "Electrónica",
+    "imageUrl": "https://picsum.photos/seed/fija-audio/400/500",
+    "description": "Sonido envolvente con cancelación de ruido y 30h de batería. Edición limitada FIJA.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000000000
+  },
+  {
+    "id": "demo-002",
+    "title": "Reloj Inteligente Titanio",
+    "price": 149,
+    "category": "Moda",
+    "imageUrl": "https://picsum.photos/seed/fija-watch/400/500",
+    "description": "Caja de titanio, monitor de salud y resistente al agua. Estilo minimalista.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000100000
+  },
+  {
+    "id": "demo-003",
+    "title": "Mochila Urbana Antirrobo",
+    "price": 59.5,
+    "oldPrice": 79,
+    "category": "Deportes",
+    "imageUrl": "https://picsum.photos/seed/fija-bag/400/500",
+    "description": "Tejido resistente al corte, USB integrado y compartimento para portátil 15\".",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000200000
+  },
+  {
+    "id": "demo-004",
+    "title": "Altavoz Bluetooth 360°",
+    "price": 45.9,
+    "category": "Electrónica",
+    "imageUrl": "https://picsum.photos/seed/fija-speaker/400/500",
+    "description": "Sonido potente, resistente al agua y 20h de reproducción continua.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000300000
+  },
+  {
+    "id": "demo-005",
+    "title": "Camiseta Premiun Algodón",
+    "price": 24.95,
+    "oldPrice": 34.95,
+    "category": "Moda",
+    "imageUrl": "https://picsum.photos/seed/fija-tee/400/500",
+    "description": "Algodón orgánico de alta densidad, corte moderno y máxima comodidad.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000400000
+  },
+  {
+    "id": "demo-006",
+    "title": "Lámpara LED Inteligente",
+    "price": 39,
+    "oldPrice": 55,
+    "category": "Hogar",
+    "imageUrl": "https://picsum.photos/seed/fija-lamp/400/500",
+    "description": "16 millones de colores, control por app y compatible con asistentes de voz.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000500000
+  },
+  {
+    "id": "demo-007",
+    "title": "Botella Térmica Acero",
+    "price": 19.9,
+    "category": "Deportes",
+    "imageUrl": "https://picsum.photos/seed/fija-bottle/400/500",
+    "description": "Mantiene frío 24h y caliente 12h. Acero inoxidable libre de BPA.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000600000
+  },
+  {
+    "id": "demo-008",
+    "title": "Teclado Mecánico RGB",
+    "price": 72.5,
+    "category": "Electrónica",
+    "imageUrl": "https://picsum.photos/seed/fija-keyboard/400/500",
+    "description": "Switches rojos silenciosos, retroiluminación RGB y diseño compacto 75%.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000700000
+  },
+  {
+    "id": "demo-009",
+    "title": "Set de Café Cerámica",
+    "price": 34,
+    "category": "Hogar",
+    "imageUrl": "https://picsum.photos/seed/fija-coffee/400/500",
+    "description": "Juego de 6 tazas y tetera artesanal. Acabado mate elegante.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000800000
+  },
+  {
+    "id": "demo-010",
+    "title": "Zapatillas Running Pro",
+    "price": 89,
+    "oldPrice": 119,
+    "category": "Deportes",
+    "imageUrl": "https://picsum.photos/seed/fija-shoes/400/500",
+    "description": "Amortiguación reactiva, malla transpirable y peso ultraligero.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700000900000
+  },
+  {
+    "id": "demo-011",
+    "title": "Gafas de Sol Polarizadas",
+    "price": 49.9,
+    "category": "Moda",
+    "imageUrl": "https://picsum.photos/seed/fija-sunglasses/400/500",
+    "description": "Protección UV400, montura ligera y diseño retro premium.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001000000
+  },
+  {
+    "id": "demo-012",
+    "title": "Difusor de Aroma",
+    "price": 28.5,
+    "category": "Hogar",
+    "imageUrl": "https://picsum.photos/seed/fija-diffuser/400/500",
+    "description": "Difusor ultrasónico silencioso con luz ambiental y apagado automático.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001100000
+  },
+  {
+    "id": "demo-013",
+    "title": "Auriculares Deporte BT",
+    "price": 71.43,
+    "category": "Electrónica",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-13/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700002400000,
+    "unitsSold": 187,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 112.37,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-014",
+    "title": "Cargador GaN 65W",
+    "price": 167,
+    "category": "Electrónica",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-14/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700002500000,
+    "unitsSold": 25,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 216.28,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-015",
+    "title": "Webcam 4K",
+    "price": 68.51,
+    "category": "Electrónica",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-15/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700002600000,
+    "unitsSold": 297,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-016",
+    "title": "Disco SSD 1TB",
+    "price": 117.13,
+    "category": "Electrónica",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-16/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700002700000,
+    "unitsSold": 397,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-017",
+    "title": "Hub USB-C 7in1",
+    "price": 66.95,
+    "category": "Electrónica",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-17/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700002800000,
+    "unitsSold": 147,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      }
+    ],
+    "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4"
+  },
+  {
+    "id": "demo-018",
+    "title": "Chaqueta Impermeable",
+    "price": 155.17,
+    "category": "Moda",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-18/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700002900000,
+    "unitsSold": 355,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 4,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-019",
+    "title": "Vestido Lino",
+    "price": 21.43,
+    "category": "Moda",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-19/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700003000000,
+    "unitsSold": 366,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-020",
+    "title": "Cinturón Cuero",
+    "price": 21.1,
+    "category": "Moda",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-20/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700003100000,
+    "unitsSold": 203,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 5,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-021",
+    "title": "Bufanda Lana",
+    "price": 191.87,
+    "category": "Moda",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-21/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700003200000,
+    "unitsSold": 6,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 242.63,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-022",
+    "title": "Pantalón Chino",
+    "price": 141.09,
+    "category": "Moda",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-22/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700003300000,
+    "unitsSold": 399,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-023",
+    "title": "Esterilla Yoga Pro",
+    "price": 196.99,
+    "category": "Deportes",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-23/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700003400000,
+    "unitsSold": 0,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 240.61
+  },
+  {
+    "id": "demo-024",
+    "title": "Balón Fútbol 5",
+    "price": 23.26,
+    "category": "Deportes",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-24/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700003500000,
+    "unitsSold": 308,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 32.44
+  },
+  {
+    "id": "demo-025",
+    "title": "Guantes Boxeo",
+    "price": 98.44,
+    "category": "Deportes",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-25/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700003600000,
+    "unitsSold": 52,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false
+  },
+  {
+    "id": "demo-026",
+    "title": "Cuerda Saltar",
+    "price": 108,
+    "category": "Deportes",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-26/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700003700000,
+    "unitsSold": 353,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 191.03
+  },
+  {
+    "id": "demo-027",
+    "title": "Pesas Ajustables",
+    "price": 173.93,
+    "category": "Deportes",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-27/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700003800000,
+    "unitsSold": 85,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-028",
+    "title": "Juego Toallas",
+    "price": 77.46,
+    "category": "Hogar",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-28/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700003900000,
+    "unitsSold": 132,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 90.49
+  },
+  {
+    "id": "demo-029",
+    "title": "Organizador Cocina",
+    "price": 147.29,
+    "category": "Hogar",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-29/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700004000000,
+    "unitsSold": 52,
+    "isNew": true,
+    "priceDrop": true,
+    "giftIdea": true,
+    "oldPrice": 262.68
+  },
+  {
+    "id": "demo-030",
+    "title": "Espejo LED",
+    "price": 180.96,
+    "category": "Hogar",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-30/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700004100000,
+    "unitsSold": 409,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-031",
+    "title": "Set Velas",
+    "price": 97.9,
+    "category": "Hogar",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-31/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700004200000,
+    "unitsSold": 87,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-032",
+    "title": "Cojín Decorativo",
+    "price": 34.79,
+    "category": "Hogar",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-32/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700004300000,
+    "unitsSold": 222,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 61.96,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 5,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-033",
+    "title": "Sérum Vitamina C",
+    "price": 155,
+    "category": "Belleza",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-33/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700004400000,
+    "unitsSold": 378,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 233.09
+  },
+  {
+    "id": "demo-034",
+    "title": "Crema Hidratante",
+    "price": 89.82,
+    "category": "Belleza",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-34/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700004500000,
+    "unitsSold": 268,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4"
+  },
+  {
+    "id": "demo-035",
+    "title": "Kit Maquillaje",
+    "price": 157.35,
+    "category": "Belleza",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-35/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700004600000,
+    "unitsSold": 166,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 195.43
+  },
+  {
+    "id": "demo-036",
+    "title": "Perfume Unisex",
+    "price": 177.71,
+    "category": "Belleza",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-36/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700004700000,
+    "unitsSold": 259,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 226.46,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-037",
+    "title": "Exfoliante Facial",
+    "price": 95.85,
+    "category": "Belleza",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-37/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700004800000,
+    "unitsSold": 357,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false
+  },
+  {
+    "id": "demo-038",
+    "title": "Bloques Constructor",
+    "price": 179.52,
+    "category": "Juguetes",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-38/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700004900000,
+    "unitsSold": 200,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": true,
+    "oldPrice": 258.67,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-039",
+    "title": "Puzzle 1000pc",
+    "price": 151.77,
+    "category": "Juguetes",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-39/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700005000000,
+    "unitsSold": 82,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 261.83,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 4,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-040",
+    "title": "Peluche Oso",
+    "price": 97.05,
+    "category": "Juguetes",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-40/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700005100000,
+    "unitsSold": 264,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-041",
+    "title": "Juego Mesa",
+    "price": 159.69,
+    "category": "Juguetes",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-41/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700005200000,
+    "unitsSold": 135,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-042",
+    "title": "Figura Colección",
+    "price": 165.66,
+    "category": "Juguetes",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-42/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700005300000,
+    "unitsSold": 76,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-043",
+    "title": "Novela BestSeller",
+    "price": 188.19,
+    "category": "Libros",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-43/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700005400000,
+    "unitsSold": 311,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-044",
+    "title": "Libro Cocina",
+    "price": 110.01,
+    "category": "Libros",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-44/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700005500000,
+    "unitsSold": 25,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 134.34,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 4,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-045",
+    "title": "Atlas Mundial",
+    "price": 137.61,
+    "category": "Libros",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-45/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700005600000,
+    "unitsSold": 7,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 230.14,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-046",
+    "title": "Cuentos Infanto",
+    "price": 134.64,
+    "category": "Libros",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-46/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700005700000,
+    "unitsSold": 352,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-047",
+    "title": "Guía Inversión",
+    "price": 148.38,
+    "category": "Libros",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-47/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700005800000,
+    "unitsSold": 7,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 266.07,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-048",
+    "title": "Batidora Varilla",
+    "price": 123.67,
+    "category": "Cocina",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-48/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700005900000,
+    "unitsSold": 94,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-049",
+    "title": "Juego Cuchillos",
+    "price": 194.7,
+    "category": "Cocina",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-49/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700006000000,
+    "unitsSold": 158,
+    "isNew": true,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 5,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-050",
+    "title": "Olla Slow Cooker",
+    "price": 27.16,
+    "category": "Cocina",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-50/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700006100000,
+    "unitsSold": 300,
+    "isNew": true,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-051",
+    "title": "Molde Silicona",
+    "price": 132.11,
+    "category": "Cocina",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-51/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700006200000,
+    "unitsSold": 268,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 223.65,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 5,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Llegó rápido y bien."
+      }
+    ],
+    "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4"
+  },
+  {
+    "id": "demo-052",
+    "title": "Tabla Cortar",
+    "price": 192.21,
+    "category": "Cocina",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-52/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700006300000,
+    "unitsSold": 320,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 277.44,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-053",
+    "title": "Manguera Reforzada",
+    "price": 135.17,
+    "category": "Jardín",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-53/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700006400000,
+    "unitsSold": 135,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 220.18
+  },
+  {
+    "id": "demo-054",
+    "title": "Set Plantación",
+    "price": 97.36,
+    "category": "Jardín",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-54/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700006500000,
+    "unitsSold": 350,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-055",
+    "title": "Maceta Autoriego",
+    "price": 21.43,
+    "category": "Jardín",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-55/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700006600000,
+    "unitsSold": 148,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 34.01
+  },
+  {
+    "id": "demo-056",
+    "title": "Tijeras Podar",
+    "price": 198.63,
+    "category": "Jardín",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-56/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700006700000,
+    "unitsSold": 242,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false
+  },
+  {
+    "id": "demo-057",
+    "title": "Abono Orgánico",
+    "price": 95.3,
+    "category": "Jardín",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-57/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700006800000,
+    "unitsSold": 297,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": true,
+    "oldPrice": 122.59,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 4,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-058",
+    "title": "Portabebés Ergonómico",
+    "price": 40.12,
+    "category": "Bebés",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-58/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700006900000,
+    "unitsSold": 154,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-059",
+    "title": "Sonajero Madera",
+    "price": 145.37,
+    "category": "Bebés",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-59/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700007000000,
+    "unitsSold": 190,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-060",
+    "title": "Cambiador Viaje",
+    "price": 130.54,
+    "category": "Bebés",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-60/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700007100000,
+    "unitsSold": 97,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 232.51,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-061",
+    "title": "Mordedor Silicona",
+    "price": 95.56,
+    "category": "Bebés",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-61/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700007200000,
+    "unitsSold": 25,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-062",
+    "title": "Body Algodón",
+    "price": 67.06,
+    "category": "Bebés",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-62/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700007300000,
+    "unitsSold": 85,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false
+  },
+  {
+    "id": "demo-063",
+    "title": "Aspirador Coche",
+    "price": 114.47,
+    "category": "Automóvil",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-63/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700007400000,
+    "unitsSold": 218,
+    "isNew": true,
+    "priceDrop": true,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-064",
+    "title": "Soporte Móvil",
+    "price": 58.99,
+    "category": "Automóvil",
+    "brand": "FIJA",
+    "imageUrl": "https://picsum.photos/seed/fija-64/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700007500000,
+    "unitsSold": 196,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 4,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-065",
+    "title": "Limpia Parabrisas",
+    "price": 193.76,
+    "category": "Automóvil",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-65/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700007600000,
+    "unitsSold": 138,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 286.22,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 5,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-066",
+    "title": "Alfombrilla Set",
+    "price": 193.87,
+    "category": "Automóvil",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-66/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700007700000,
+    "unitsSold": 270,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-067",
+    "title": "Cargador Coche",
+    "price": 188.78,
+    "category": "Automóvil",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-67/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700007800000,
+    "unitsSold": 282,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-068",
+    "title": "Comedero Auto",
+    "price": 17.04,
+    "category": "Mascotas",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-68/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700007900000,
+    "unitsSold": 270,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Cumple lo prometido."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Cumple lo prometido."
+      }
+    ],
+    "videoUrl": "https://www.w3schools.com/html/mov_bbb.mp4"
+  },
+  {
+    "id": "demo-069",
+    "title": "Arnés Perro",
+    "price": 67.19,
+    "category": "Mascotas",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-69/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700008000000,
+    "unitsSold": 243,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 4,
+        "text": "Calidad excelente."
+      }
+    ]
+  },
+  {
+    "id": "demo-070",
+    "title": "Juguete Gato",
+    "price": 136.7,
+    "category": "Mascotas",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-70/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700008100000,
+    "unitsSold": 17,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Marta Vidal",
+        "rating": 5,
+        "text": "Cumple lo prometido."
+      }
+    ]
+  },
+  {
+    "id": "demo-071",
+    "title": "Cama Ortopédica",
+    "price": 22.71,
+    "category": "Mascotas",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-71/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700008200000,
+    "unitsSold": 392,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-072",
+    "title": "Cepillo Peludo",
+    "price": 65.94,
+    "category": "Mascotas",
+    "brand": "PetCare",
+    "imageUrl": "https://picsum.photos/seed/fija-72/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-2",
+    "sellerName": "Casa Nova SL",
+    "verified": true,
+    "createdAt": 1700008300000,
+    "unitsSold": 114,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true
+  },
+  {
+    "id": "demo-073",
+    "title": "Tensiómetro Digital",
+    "price": 185.07,
+    "category": "Salud",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-73/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700008400000,
+    "unitsSold": 26,
+    "isNew": false,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 215.67
+  },
+  {
+    "id": "demo-074",
+    "title": "Termómetro IR",
+    "price": 69.6,
+    "category": "Salud",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-74/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700008500000,
+    "unitsSold": 97,
+    "isNew": true,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 83.63,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Muy contento con la compra."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-075",
+    "title": "Vitamina D3",
+    "price": 25.24,
+    "category": "Salud",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-75/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700008600000,
+    "unitsSold": 182,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "oldPrice": 43.55,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 4,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-076",
+    "title": "Masajeador Cervical",
+    "price": 15.65,
+    "category": "Salud",
+    "brand": "VeraModa",
+    "imageUrl": "https://picsum.photos/seed/fija-76/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700008700000,
+    "unitsSold": 192,
+    "isNew": true,
+    "priceDrop": true,
+    "giftIdea": false,
+    "oldPrice": 26.26,
+    "reviews": [
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Marta Vidal",
+        "rating": 4,
+        "text": "Llegó rápido y bien."
+      },
+      {
+        "author": "Elena Parera",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-077",
+    "title": "Pedímetro",
+    "price": 151.72,
+    "category": "Salud",
+    "brand": "BioVida",
+    "imageUrl": "https://picsum.photos/seed/fija-77/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700008800000,
+    "unitsSold": 1,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false
+  },
+  {
+    "id": "demo-078",
+    "title": "Silla Ergonómica",
+    "price": 22.31,
+    "category": "Oficina",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-78/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700008900000,
+    "unitsSold": 366,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-079",
+    "title": "Lámpara Escritorio",
+    "price": 166.22,
+    "category": "Oficina",
+    "brand": "SportPro",
+    "imageUrl": "https://picsum.photos/seed/fija-79/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700009000000,
+    "unitsSold": 163,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Lo recomiendo."
+      },
+      {
+        "author": "Ana Ruiz",
+        "rating": 5,
+        "text": "Muy contento con la compra."
+      }
+    ]
+  },
+  {
+    "id": "demo-080",
+    "title": "Set Bolígrafos",
+    "price": 101.42,
+    "category": "Oficina",
+    "brand": "CasaLuz",
+    "imageUrl": "https://picsum.photos/seed/fija-80/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-4",
+    "sellerName": "Bio Natural",
+    "verified": true,
+    "createdAt": 1700009100000,
+    "unitsSold": 53,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Carlos Soto",
+        "rating": 3,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 4,
+        "text": "Lo recomiendo."
+      }
+    ]
+  },
+  {
+    "id": "demo-081",
+    "title": "Carpeta Archivo",
+    "price": 127.76,
+    "category": "Oficina",
+    "brand": "NovaTech",
+    "imageUrl": "https://picsum.photos/seed/fija-81/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "seller-3",
+    "sellerName": "Sport Total",
+    "verified": true,
+    "createdAt": 1700009200000,
+    "unitsSold": 150,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": true,
+    "reviews": [
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Calidad excelente."
+      },
+      {
+        "author": "Luis Gómez",
+        "rating": 3,
+        "text": "Llegó rápido y bien."
+      }
+    ]
+  },
+  {
+    "id": "demo-082",
+    "title": "Agenda Semanal",
+    "price": 177.89,
+    "category": "Oficina",
+    "brand": "Lumen",
+    "imageUrl": "https://picsum.photos/seed/fija-82/400/500",
+    "description": "Producto seleccionado por FIJA con la mejor relación calidad-precio. Recogida en punto local.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700009300000,
+    "unitsSold": 202,
+    "isNew": false,
+    "priceDrop": false,
+    "giftIdea": false
+  },
+  {
+    "id": "budget-001",
+    "title": "Gorro de Algodón Básico",
+    "price": 4.99,
+    "oldPrice": 7.99,
+    "category": "Moda",
+    "imageUrl": "https://picsum.photos/seed/fija-cap/400/500",
+    "description": "Gorro unisex de algodón suave, perfecto para el día a día.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001200000
+  },
+  {
+    "id": "budget-002",
+    "title": "Set de 3 Bolsas Reutilizables",
+    "price": 6.5,
+    "category": "Hogar",
+    "imageUrl": "https://picsum.photos/seed/fija-bags/400/500",
+    "description": "Bolsas ecológicas plegables, resistentes y lavables.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001300000
+  },
+  {
+    "id": "budget-003",
+    "title": "Pelota Anti-Estrés",
+    "price": 5.95,
+    "oldPrice": 9.5,
+    "category": "Deportes",
+    "imageUrl": "https://picsum.photos/seed/fija-ball/400/500",
+    "description": "Alivia la tensión y fortalece la mano. Tamaño ideal.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001400000
+  },
+  {
+    "id": "budget-004",
+    "title": "Marcapáginas de Regalo",
+    "price": 3.99,
+    "category": "Libros",
+    "imageUrl": "https://picsum.photos/seed/fija-book/400/500",
+    "description": "Pack de 10 marcapáginas ilustrados para lectores.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001500000
+  },
+  {
+    "id": "budget-005",
+    "title": "Cinta Métrica Mini",
+    "price": 8.95,
+    "oldPrice": 12,
+    "category": "Oficina",
+    "imageUrl": "https://picsum.photos/seed/fija-tape/400/500",
+    "description": "Cinta de 3m compacta para manualidades y viaje.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001600000
+  },
+  {
+    "id": "budget-006",
+    "title": "Pinzas de Lavandería Pack 24",
+    "price": 7.25,
+    "category": "Hogar",
+    "imageUrl": "https://picsum.photos/seed/fija-pin/400/500",
+    "description": "Pinzas resistentes con resorte reforzado, pack familiar.",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "verified": true,
+    "createdAt": 1700001700000
+  }
+]
