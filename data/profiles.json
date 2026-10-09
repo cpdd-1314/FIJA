@@ -21,11 +21,5 @@
     "verificationStatus": "approved",
     "createdAt": 1700000000000,
     "pwHash": "e8827f3c0bcc90509b7d6841d446b163a671cac807a5f1bf41218667546ce80b"
-  },
-  {
-    "userId": "TEST_SYNC_1791570086",
-    "username": "testsyncmarker",
-    "role": "buyer",
-    "_test": true
   }
 ]
