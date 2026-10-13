@@ -6,7 +6,14 @@
     "role": "admin",
     "verificationStatus": "approved",
     "createdAt": 1700000000000,
-    "pwHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
+    "pwHash": "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    "usedCoupons": [
+      {
+        "code": "FIJA10",
+        "usedAt": 1791914959354,
+        "orderId": "1472a532-00b7-48ec-b445-f37f98c00fb0"
+      }
+    ]
   },
   {
     "userId": "demo-seller",
