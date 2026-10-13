@@ -35,5 +35,42 @@
     "buyerEmail": "admin@fija.com",
     "status": "pending",
     "createdAt": 1791914958250
+  },
+  {
+    "id": "094d32cf-8305-4c71-b261-1199f6449a30",
+    "items": [
+      {
+        "productId": "demo-002",
+        "title": "Reloj Inteligente Titanio",
+        "price": 149,
+        "basePrice": 149,
+        "discountPercent": 0,
+        "quantity": 4,
+        "imageUrl": "https://picsum.photos/seed/fija-watch/400/500",
+        "sellerId": "demo-seller",
+        "sellerName": "Audio Lux SL",
+        "gross": 596,
+        "paid": 596,
+        "commission": 28.01,
+        "sellerNet": 567.99,
+        "discount": 0
+      }
+    ],
+    "total": 596,
+    "commissionRate": 0.047,
+    "commissionTotal": 28.01,
+    "netTotal": 567.99,
+    "discountTotal": 0,
+    "couponCode": null,
+    "couponPercent": 0,
+    "couponDiscount": 0,
+    "giftWrapFee": 0,
+    "pickupCode": "FIJA-FNY9VJ",
+    "method": "Tarjeta",
+    "buyerUid": "admin",
+    "buyerName": "admin",
+    "buyerEmail": "admin@fija.com",
+    "status": "pending",
+    "createdAt": 1791915054563
   }
 ]
