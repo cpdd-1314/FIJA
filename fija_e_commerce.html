@@ -111,10 +111,17 @@
         img { height: auto; }
         table { max-width: 100%; }
         html, body { overflow-x: hidden; max-width: 100%; }
+        /* 'clip' no crea contenedor de scroll: conserva position:sticky del nav */
+        @supports (overflow-x: clip) { html, body { overflow-x: clip; } }
         body { font-family: 'Inter', sans-serif; background-color: #fafafa; color: #18181b; width: 100%; }
         /* Doble seguridad: contenedores principales no dejan desbordar en móvil */
-        main, nav { overflow-x: hidden; }
+        main { overflow-x: hidden; }
         .hide { display: none !important; }
+        /* FIX espacio blanco móvil: los .sr-only (position:absolute, 1px, invisibles) sin
+           left/top quedan en su posición estática (p. ej. tras las tarjetas de un carrusel),
+           escapan del clip del carrusel y amplían el documento hasta ~1800px -> scroll
+           horizontal. Anclados a la esquina no ocupan sitio visible. */
+        .sr-only { left: 0 !important; top: 0 !important; }
         .modal-backdrop { background-color: rgba(24, 24, 27, 0.7); backdrop-filter: blur(5px); }
         .product-card:hover { transform: translateY(-4px); transition: all 0.3s ease; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); }
         .tab-active { border-bottom: 2px solid #18181b; color: #18181b; font-weight: 600; }
@@ -7798,7 +7805,8 @@ const FIJA_THEMES = {
             const box = document.getElementById('search-suggest');
             if (box && !box.contains(e.target) && e.target.id !== 'search-input') box.classList.add('hide');
             const mm = document.getElementById('mega-menu'), mb = document.getElementById('mega-btn');
-            if (mm && !mm.contains(e.target) && !(mb && mb.contains(e.target))) mm.classList.add('hide');
+            const megaTrigger = e.target.closest && (e.target.closest('[onclick*=\"toggleMegaMenu\"]') || (mb && mb.contains(e.target)));
+            if (mm && !mm.contains(e.target) && !megaTrigger) mm.classList.add('hide');
             const lm = document.getElementById('lang-menu');
             const lb = e.target.closest && e.target.closest('button[onclick="toggleLangMenu()"]');
             if (lm && !lm.contains(e.target) && !lb) lm.classList.add('hide');
