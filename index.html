@@ -103,7 +103,17 @@
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fafafa; color: #18181b; }
+        /* ===== FIX MÓVIL: evitar zoom-out por desborde antes de que cargue Tailwind =====
+           En conexiones lentas, las <img> se pintan a tamaño natural (hasta 1800px+)
+           mientras Tailwind CDN no ha cargado; Chrome aleja el zoom para encajar el
+           ancho y se queda pegado ahí. Estas reglas CSS planas aplican SIEMPRE. */
+        img, video, iframe, svg { max-width: 100%; }
+        img { height: auto; }
+        table { max-width: 100%; }
+        html, body { overflow-x: hidden; max-width: 100%; }
+        body { font-family: 'Inter', sans-serif; background-color: #fafafa; color: #18181b; width: 100%; }
+        /* Doble seguridad: contenedores principales no dejan desbordar en móvil */
+        main, nav { overflow-x: hidden; }
         .hide { display: none !important; }
         .modal-backdrop { background-color: rgba(24, 24, 27, 0.7); backdrop-filter: blur(5px); }
         .product-card:hover { transform: translateY(-4px); transition: all 0.3s ease; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); }
@@ -403,6 +413,27 @@
             <div class="md:hidden pb-3 relative">
                 <input type="text" id="search-input-mobile" autocomplete="off" class="w-full bg-gray-100 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-fija-900" placeholder="Buscar en FIJA...">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-2.5 text-gray-400"></i>
+            </div>
+        </div>
+        <!-- BARRA DE CATEGORÍAS MÓVIL (antes estaba oculta en móvil: bug del menú) -->
+        <div class="md:hidden bg-fija-900 text-white">
+            <div class="flex items-center gap-1 h-10 px-3 text-xs overflow-x-auto no-scrollbar">
+                <button type="button" onclick="toggleMegaMenu()" class="flex items-center gap-2 font-bold hover:text-fija-gold transition-colors shrink-0 py-2 px-2">
+                    <i class="fa-solid fa-bars"></i> Todos
+                </button>
+                <span class="opacity-25 shrink-0">|</span>
+                <button type="button" onclick="navigate('todaysDeals')" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2 font-semibold"><i class="fa-solid fa-tag mr-1 text-fija-gold"></i>Ofertas del día</button>
+                <button type="button" onclick="navigate('newArrivals')" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2">Novedades</button>
+                <button type="button" onclick="navigate('bestsellers')" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2">Más vendidos</button>
+                <button type="button" onclick="navigate('topRated')" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2">Mejor valorados</button>
+                <button type="button" onclick="navigate('under25')" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2">Menos de 25 €</button>
+                <button type="button" onclick="openCompare()" class="hover:text-fija-gold transition-colors shrink-0 py-2 px-2"><i class="fa-solid fa-code-compare mr-1"></i>Comparar <span id="cmp-count-m" class="bg-fija-gold text-fija-900 font-bold rounded-full px-1.5 text-[10px]">0</span></button>
+                <button type="button" onclick="navigate('trending')" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-fire mr-1"></i>Tendencias</button>
+                <button type="button" onclick="navigate('deals')" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-tag mr-1"></i>Todas las ofertas</button>
+                <button type="button" onclick="navigate('customerReviews')" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-comment-dots mr-1"></i>Opiniones</button>
+                <button type="button" onclick="openHelp()" class="hover:text-fija-gold transition-colors py-2 px-2">Ayuda</button>
+                <button type="button" onclick="openStoresDirectory()" class="hover:text-fija-gold transition-colors py-2 px-2">Tiendas</button>
+                <button type="button" onclick="toggleTheme()" title="Modo oscuro" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-moon"></i></button>
             </div>
         </div>
         <!-- MEGAMENÚ / BARRA DE CATEGORÍAS (estilo Amazon) -->
@@ -4679,7 +4710,7 @@
             const i = state.compare.indexOf(id);
             if (i >= 0) state.compare.splice(i, 1);
             else { if (state.compare.length >= 4) { showToast('Máximo 4 productos a comparar', true); return; } state.compare.push(id); }
-            const badge = document.getElementById('cmp-count'); if (badge) badge.textContent = state.compare.length;
+            const badge = document.getElementById('cmp-count'); if (badge) badge.textContent = state.compare.length; const badgeM = document.getElementById('cmp-count-m'); if (badgeM) badgeM.textContent = state.compare.length;
             renderStorefront();
             if (state.currentView === 'page' && state.currentPageDesc && state.currentPageDesc.type === 'compare') renderComparePageUI();
             if (window._pdId === id) { const p = state.products.find(x => x.id === id); if (p && !document.getElementById('product-detail-modal').classList.contains('hide')) openProductDetail(id, window._pdTab); }
@@ -5637,10 +5668,10 @@
         };
         window.removeFromCompare = (id) => {
             state.compare = state.compare.filter(x => x !== id);
-            const cc = document.getElementById('cmp-count'); if (cc) cc.textContent = String(state.compare.length);
+            const cc = document.getElementById('cmp-count'); if (cc) cc.textContent = String(state.compare.length); const ccM = document.getElementById('cmp-count-m'); if (ccM) ccM.textContent = String(state.compare.length);
             openCompare(); renderStorefront();
         };
-        window.clearCompare = () => { state.compare = []; const cc = document.getElementById('cmp-count'); if (cc) cc.textContent = '0'; if (state.currentView === 'page' && state.currentPageDesc && state.currentPageDesc.type === 'compare') { renderComparePageUI(); } else { try { closeModal('compare-modal'); } catch (e) {} renderStorefront(); } showToast('Comparación vacía'); };
+        window.clearCompare = () => { state.compare = []; const cc = document.getElementById('cmp-count'); if (cc) cc.textContent = '0'; const ccM = document.getElementById('cmp-count-m'); if (ccM) ccM.textContent = '0'; if (state.currentView === 'page' && state.currentPageDesc && state.currentPageDesc.type === 'compare') { renderComparePageUI(); } else { try { closeModal('compare-modal'); } catch (e) {} renderStorefront(); } showToast('Comparación vacía'); };
 
         // ---------- 44. BÚSQUEDA AVANZADA: PREFIJO Y SUGERENCIAS ----------
         window.searchWithCategory = (cat) => {
@@ -8805,7 +8836,7 @@ window.toggleCompactMode2 = () => { state.bigText=!state.bigText; try{ localStor
 window.toggleAnimations2 = () => { document.documentElement.classList.toggle('fija-no-anim'); showToast('Animaciones alternadas'); };
 window.setAccentColor2 = (c) => { if(c) document.documentElement.style.setProperty('--f-gold', c); };
 window.resetFilters22 = () => { state.categoryFilter='all'; state.search=''; state.sellerFilter='all'; state.sort='relevance'; state.advanced={maxPrice:1000,minRating:0,deals:false,shipping:false,verified:false}; if(typeof renderStorefront==='function') renderStorefront(); showToast('Filtros reiniciados'); };
-window.clearCompare22 = () => { if(typeof clearCompare==='function') clearCompare(); else { state.compare=[]; const cc=document.getElementById('cmp-count'); if(cc) cc.textContent='0'; showToast('Comparación vacía'); } };
+window.clearCompare22 = () => { if(typeof clearCompare==='function') clearCompare(); else { state.compare=[]; const cc=document.getElementById('cmp-count'); if(cc) cc.textContent='0'; const ccM=document.getElementById('cmp-count-m'); if(ccM) ccM.textContent='0'; showToast('Comparación vacía'); } };
 window.clearFavs22 = () => { if(state.profile){ state.profile.favorites=[]; showToast('Favoritos borrados'); } };
 window.shareCurrentPage2 = () => { try{ navigator.clipboard&&safeClip(location.href); showToast('Enlace copiado'); }catch(e){ showToast('Enlace: '+location.href); } };
 window.printCurrentPage2 = () => { try{ window.print(); }catch(e){ showToast('No se pudo imprimir'); } };
