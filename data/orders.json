@@ -184,5 +184,42 @@
     "buyerEmail": "admin@fija.com",
     "status": "pending",
     "createdAt": 1792151941105
+  },
+  {
+    "id": "fd59befd-0143-4221-bc28-4059ceb3905e",
+    "items": [
+      {
+        "productId": "demo-009",
+        "title": "Set de Café Cerámica",
+        "price": 34,
+        "basePrice": 34,
+        "discountPercent": 0,
+        "quantity": 64,
+        "imageUrl": "https://picsum.photos/seed/fija-coffee/400/500",
+        "sellerId": "demo-seller",
+        "sellerName": "Audio Lux SL",
+        "gross": 2176,
+        "paid": 2176,
+        "commission": 102.27,
+        "sellerNet": 2073.73,
+        "discount": 0
+      }
+    ],
+    "total": 2176,
+    "commissionRate": 0.047,
+    "commissionTotal": 102.27,
+    "netTotal": 2073.73,
+    "discountTotal": 0,
+    "couponCode": null,
+    "couponPercent": 0,
+    "couponDiscount": 0,
+    "giftWrapFee": 0,
+    "pickupCode": "FIJA-HLQQ2V",
+    "method": "Transferencia",
+    "buyerUid": "admin",
+    "buyerName": "admin",
+    "buyerEmail": "admin@fija.com",
+    "status": "pending",
+    "createdAt": 1792152388829
   }
 ]
