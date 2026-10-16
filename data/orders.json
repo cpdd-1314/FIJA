@@ -70,8 +70,9 @@
     "buyerUid": "admin",
     "buyerName": "admin",
     "buyerEmail": "admin@fija.com",
-    "status": "pending",
-    "createdAt": 1791915054563
+    "status": "cancelled",
+    "createdAt": 1791915054563,
+    "cancelledAt": 1792151341105
   },
   {
     "id": "041b7e2c-01dc-4f42-bdf2-0a6e18d02d17",
