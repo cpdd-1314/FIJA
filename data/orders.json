@@ -72,5 +72,42 @@
     "buyerEmail": "admin@fija.com",
     "status": "pending",
     "createdAt": 1791915054563
+  },
+  {
+    "id": "041b7e2c-01dc-4f42-bdf2-0a6e18d02d17",
+    "items": [
+      {
+        "productId": "demo-078",
+        "title": "Silla Ergonómica",
+        "price": 22.31,
+        "basePrice": 22.31,
+        "discountPercent": 0,
+        "quantity": 11,
+        "imageUrl": "https://picsum.photos/seed/fija-78/400/500",
+        "sellerId": "seller-4",
+        "sellerName": "Bio Natural",
+        "gross": 245.41,
+        "paid": 245.41,
+        "commission": 11.53,
+        "sellerNet": 233.88,
+        "discount": 0
+      }
+    ],
+    "total": 245.41,
+    "commissionRate": 0.047,
+    "commissionTotal": 11.53,
+    "netTotal": 233.88,
+    "discountTotal": 0,
+    "couponCode": null,
+    "couponPercent": 0,
+    "couponDiscount": 0,
+    "giftWrapFee": 0,
+    "pickupCode": "FIJA-2DCUMS",
+    "method": "Tarjeta",
+    "buyerUid": "admin",
+    "buyerName": "admin",
+    "buyerEmail": "admin@fija.com",
+    "status": "pending",
+    "createdAt": 1792151052152
   }
 ]
