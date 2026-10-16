@@ -147,5 +147,42 @@
     "buyerEmail": "admin@fija.com",
     "status": "pending",
     "createdAt": 1792151827290
+  },
+  {
+    "id": "e0aae878-45de-49fe-b6da-ef3cb36ea407",
+    "items": [
+      {
+        "productId": "demo-058",
+        "title": "Portabebés Ergonómico",
+        "price": 40.12,
+        "basePrice": 40.12,
+        "discountPercent": 0,
+        "quantity": 1,
+        "imageUrl": "https://picsum.photos/seed/fija-58/400/500",
+        "sellerId": "seller-4",
+        "sellerName": "Bio Natural",
+        "gross": 40.12,
+        "paid": 40.12,
+        "commission": 1.89,
+        "sellerNet": 38.23,
+        "discount": 0
+      }
+    ],
+    "total": 40.12,
+    "commissionRate": 0.047,
+    "commissionTotal": 1.89,
+    "netTotal": 38.23,
+    "discountTotal": 0,
+    "couponCode": null,
+    "couponPercent": 0,
+    "couponDiscount": 0,
+    "giftWrapFee": 0,
+    "pickupCode": "FIJA-S2RTQE",
+    "method": "Tarjeta",
+    "buyerUid": "admin",
+    "buyerName": "admin",
+    "buyerEmail": "admin@fija.com",
+    "status": "pending",
+    "createdAt": 1792151941105
   }
 ]
