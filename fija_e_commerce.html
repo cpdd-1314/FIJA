@@ -3355,6 +3355,49 @@
             if (error) throw error;
             return null;
         }
+        // Lee el catálogo "semilla" tal cual vive en data/*.json (o DEFAULTS si no hay fetch).
+        // Se usa para subir el catálogo actual a Supabase sin depender del proveedor activo.
+        async function localSeedData(name) {
+            try {
+                const res = await fetch('./data/' + name + '.json', { cache: 'no-store' });
+                if (res.ok) return await res.json();
+            } catch (e) {}
+            return clone(DEFAULTS[name] || []);
+        }
+        // Sube productos + pedidos + perfiles a Supabase con un solo clic.
+        window.seedToSupabase = async () => {
+            const url = ((document.getElementById('sync-url') || {}).value || '').trim();
+            const key = ((document.getElementById('sync-key') || {}).value || '').trim();
+            if (!url || !key) { showToast('Introduce primero la URL y la anon key', true); return; }
+            // Guarda y aplica las credenciales en caliente (sin recargar).
+            let cfg = {}; try { cfg = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
+            cfg.supabaseUrl = url; cfg.supabaseKey = key;
+            try { localStorage.setItem('fija_config', JSON.stringify(cfg)); } catch (e) {}
+            CONFIG.supabaseUrl = url; CONFIG.supabaseKey = key; _sbClient = null;
+            const sb = sbClient();
+            if (!sb) { showToast('No se pudo cargar la librería de Supabase', true); return; }
+            showToast('Subiendo catálogo a Supabase…');
+            const files = ['products', 'orders', 'profiles'];
+            const counts = { products: 0, orders: 0, profiles: 0 };
+            let done = 0; const errs = [];
+            for (const name of files) {
+                try {
+                    const data = await localSeedData(name);
+                    counts[name] = Array.isArray(data) ? data.length : (data ? Object.keys(data).length : 0);
+                    const { error } = await sb.from('fija_data').upsert({ name: name, content: data, updated_at: new Date().toISOString() }, { onConflict: 'name' });
+                    if (error) throw error;
+                    done++;
+                } catch (e) { errs.push(name + ': ' + String((e && e.message) || e)); }
+            }
+            if (errs.length) {
+                showGenericModal('Sincronización: errores', `<p class="text-sm mb-2">Subidos ${done}/3. Fallos:</p><pre class="text-xs bg-gray-900 text-red-200 p-3 rounded overflow-auto">${escapeHtml(errs.join('\n'))}</pre><p class="text-xs text-gray-500 mt-2">Si aparece "relation fija_data does not exist", ejecuta primero el SQL de creación de tabla (abajo).</p>`);
+                return;
+            }
+            showGenericModal('¡Sincronizado con Supabase!', `<p class="text-sm mb-3">Catálogo subido correctamente:</p>
+                <ul class="text-sm list-disc ml-5 space-y-1"><li><b>${counts.products}</b> productos</li><li><b>${counts.orders}</b> pedidos</li><li><b>${counts.profiles}</b> perfiles</li></ul>
+                <p class="text-xs text-gray-500 mt-3">La web ahora lee y escribe en Supabase (prioridad sobre GitHub). Recarga para activarlo del todo.</p>
+                <button type="button" onclick="closeModal('generic-modal'); location.reload()" class="mt-3 w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Recargar la web</button>`);
+        };
 
         async function readDataFile(name) {
             const prov = cloudProvider();
@@ -5139,6 +5182,8 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                     <button type="button" onclick="saveSyncSettings()" class="flex-1 bg-fija-900 hover:bg-fija-800 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">Guardar y recargar</button>
                     <button type="button" onclick="clearSyncSettings()" class="border border-gray-300 text-gray-600 text-sm px-4 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">Usar GitHub/local</button>
                 </div>
+                <button type="button" onclick="seedToSupabase()" class="w-full mt-3 bg-fija-gold hover:bg-yellow-600 text-fija-900 text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i>Subir catálogo a Supabase</button>
+                <p class="text-[11px] text-gray-400 mt-2 text-center">Sube tus 88 productos, pedidos y perfiles actuales a Supabase de un clic.</p>
                 <details class="mt-4 text-xs text-gray-500">
                     <summary class="cursor-pointer text-fija-gold">SQL para crear la tabla en Supabase</summary>
                     <pre class="mt-2 bg-gray-900 text-gray-100 rounded-lg p-3 overflow-x-auto text-[11px]">${escapeHtml(SB_DDL)}</pre>
