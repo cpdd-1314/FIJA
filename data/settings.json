@@ -2,6 +2,6 @@
   "commissionRate": 0.047,
   "freeShipThreshold": 0,
   "storeName": "FIJA",
-  "maintenance": true,
+  "maintenance": false,
   "supportEmail": "soporte@fija.demo"
 }
