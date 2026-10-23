@@ -1,0 +1,23 @@
+{
+  "FIJA10": {
+    "type": "pct",
+    "value": 10,
+    "label": "10% de descuento",
+    "active": true,
+    "createdAt": 1700000000000
+  },
+  "BIENVENIDA": {
+    "type": "pct",
+    "value": 15,
+    "label": "15% en tu primera compra",
+    "active": true,
+    "createdAt": 1700000000000
+  },
+  "FIJA20": {
+    "type": "pct",
+    "value": 20,
+    "label": "20% de descuento",
+    "active": true,
+    "createdAt": 1700000000000
+  }
+}
