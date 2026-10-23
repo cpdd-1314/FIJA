@@ -384,6 +384,33 @@
                         </div>
                     </section>
 
+                    <!-- ===== ANALÍTICAS ===== -->
+                    <section id="sec-analytics" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Analíticas de producto</h1><p class="text-fija-500 text-sm">Interés real de los compradores: clics y tiempo de visualización (datos agregados de la tienda).</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Producto más clicado</p><p class="text-xl font-bold text-fija-900 leading-tight" id="an-top-click">—</p><p class="text-xs text-fija-400 mt-1"><span id="an-top-click-n">0</span> clics</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Más tiempo visto</p><p class="text-xl font-bold text-fija-900 leading-tight" id="an-top-time">—</p><p class="text-xs text-fija-400 mt-1"><span id="an-top-time-s">0</span> vistos</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Tiempo medio / vista</p><p class="text-3xl font-bold text-fija-900" id="an-avg-time">0s</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Total clics / visitas</p><p class="text-3xl font-bold text-fija-900" id="an-totals">0 / 0</p></div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold"><i class="fa-solid fa-hand-pointer text-fija-gold mr-2"></i>Top 10 productos más clicados</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium w-8">#</th><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium text-right">Clics</th><th class="px-6 py-3 font-medium text-right">Visitas</th></tr></thead>
+                                    <tbody id="an-top-clicks" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold"><i class="fa-solid fa-stopwatch text-fija-gold mr-2"></i>Top 10 por tiempo de visualización</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium w-8">#</th><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium text-right">Tiempo</th><th class="px-6 py-3 font-medium text-right">Visitas</th></tr></thead>
+                                    <tbody id="an-top-time-table" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                        </div>
+                    </section>
+
                     <!-- ===== RESEÑAS ===== -->
                     <section id="sec-reviews" class="hide">
                         <div class="mb-6"><h1 class="text-2xl font-bold">Reseñas</h1><p class="text-fija-500 text-sm">Modera las opiniones de los productos.</p></div>
@@ -834,6 +861,7 @@
             if (isAdmin()) {
                 items += navItem('panel', 'Panel Admin', 'fa-shield-halved');
                 items += navItem('reports', 'Informes', 'fa-chart-line');
+                items += navItem('analytics', 'Analíticas', 'fa-chart-pie');
                 items += navItem('orders', 'Pedidos', 'fa-cart-shopping');
                 items += navItem('products', 'Productos', 'fa-box');
                 items += navItem('sellers', 'Vendedores', 'fa-store');
@@ -862,7 +890,7 @@
         }
 
         // ===================== Views / sections =====================
-        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
+        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', analytics:'sec-analytics', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
         const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', promos:'sec-s-promos', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
         function showSection(id) {
             state.view = id;
@@ -881,6 +909,7 @@
             if (active) active.className = 'w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-fija-900 text-white transition-colors flex items-center';
             const main = document.querySelector('main'); if (main) main.scrollTop = 0;
             if (isAdmin()) renderAdmin(); else renderSeller();
+            if (isAdmin() && id === 'analytics') renderAdminAnalytics();
         }
 
         function renderSeller() {
@@ -1113,6 +1142,44 @@
             await sbMirror('settings', obj);
             state.settings = obj;
             document.querySelectorAll('[data-comm-label]').forEach(el => { el.innerHTML = '<span data-comm-rate>' + fmtRate(commissionRate()) + '</span>'; });
+        }
+
+        // ---------- ADMIN: Analíticas de producto (clics + tiempo de visualización) ----------
+        function anFmtDur(sec) {
+            sec = Math.max(0, Math.round(Number(sec) || 0));
+            if (sec < 60) return sec + 's';
+            const m = Math.floor(sec / 60), s = sec % 60;
+            if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
+            const h = Math.floor(m / 60);
+            return `${h}h ${m % 60}m`;
+        }
+        function renderAdminAnalytics() {
+            const ps = (state.products || []).filter(p => p && (Number(p.views) > 0 || Number(p.clicks) > 0 || Number(p.viewSeconds) > 0));
+            const totalClicks = ps.reduce((s, p) => s + (Number(p.clicks) || 0), 0);
+            const totalViews = ps.reduce((s, p) => s + (Number(p.views) || 0), 0);
+            const totalSec = ps.reduce((s, p) => s + (Number(p.viewSeconds) || 0), 0);
+            const byClicks = [...ps].sort((a, b) => (Number(b.clicks) || 0) - (Number(a.clicks) || 0));
+            const byTime = [...ps].sort((a, b) => (Number(b.viewSeconds) || 0) - (Number(a.viewSeconds) || 0));
+            const topClick = byClicks[0];
+            const topTime = byTime[0];
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            set('an-top-click', topClick ? (topClick.name || topClick.title || '—') : '—');
+            set('an-top-click-n', topClick ? (Number(topClick.clicks) || 0) : 0);
+            set('an-top-time', topTime ? (topTime.name || topTime.title || '—') : '—');
+            set('an-top-time-s', topTime ? anFmtDur(topTime.viewSeconds) : '0s');
+            set('an-avg-time', totalViews > 0 ? anFmtDur(totalSec / totalViews) : '0s');
+            set('an-totals', `${totalClicks} / ${totalViews}`);
+            const row = (p, metric, fmt) => `<tr>
+                <td class="px-6 py-2.5 text-fija-400">${metric}</td>
+                <td class="px-6 py-2.5 font-medium text-fija-900">${escapeHtml(p.name || p.title || '—')}</td>
+                <td class="px-6 py-2.5 text-right font-semibold text-fija-900">${fmt(p)}</td>
+                <td class="px-6 py-2.5 text-right text-fija-500">${Number(p.views) || 0}</td>
+            </tr>`;
+            const noData = '<tr><td colspan="4" class="px-6 py-8 text-center text-fija-400">Aún no hay datos de interacción. Abre productos en la tienda para empezar a medir.</td></tr>';
+            const tC = document.getElementById('an-top-clicks');
+            if (tC) tC.innerHTML = byClicks.length ? byClicks.slice(0, 10).map((p, i) => row(p, i + 1, x => (Number(x.clicks) || 0))).join('') : noData;
+            const tT = document.getElementById('an-top-time-table');
+            if (tT) tT.innerHTML = byTime.length ? byTime.slice(0, 10).map((p, i) => row(p, i + 1, x => anFmtDur(x.viewSeconds))).join('') : noData;
         }
 
         // ---------- ADMIN: Informes ----------

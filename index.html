@@ -3698,7 +3698,12 @@
             // Contador de VISITAS REALES: solo al entrar a un producto distinto
             // (los re-render del mismo producto —cambio de pestaña, valorar— no cuentan).
             if (state._openProductId !== productId) { state._openProductId = productId; countView(productId); }
+            // Estadística de interés: cada clic en un producto suma 1 (sin importar si es el mismo).
+            try { if (window.countClick) window.countClick(productId); } catch (e) {}
             goPage({ type: 'product', id: productId, tab: window._pdTab });
+            // Arranca el cronómetro de tiempo de visualización DESPUÉS de navegar,
+            // para no contabilizar el instante de apertura como tiempo visto.
+            try { if (window.startDwell) window.startDwell(productId); } catch (e) {}
         };
         // ---------- Contador de visitas reales (persistido con debounce) ----------
         let _viewDirty = {}; let _viewTimer = null;
@@ -3714,6 +3719,48 @@
                 await mutateCollection('products', arr => { arr.forEach(pr => { if (dirty[pr.id] != null) pr.views = dirty[pr.id]; }); });
             } catch (e) { console.warn('No se pudieron guardar las visitas:', e); Object.assign(_viewDirty, dirty); if (!_viewTimer) _viewTimer = setTimeout(flushViews, 8000); }
         }
+        // ---------- Estadísticas de interés: clics y TIEMPO de visualización ----------
+        // Se acumulan por producto y se persisten en la nube (mismo canal que 'views'),
+        // así el administrador ve datos agregados de todos los visitantes en Back-Office.
+        let _statDirty = {}; let _statTimer = null;
+        function _scheduleStatFlush() { if (!_statTimer) _statTimer = setTimeout(flushProductStats, 4000); }
+        window.countClick = (id) => {
+            const p = state.products.find(x => x.id === id); if (!p) return;
+            p.clicks = (Number(p.clicks) || 0) + 1;
+            _statDirty[id] = _statDirty[id] || {}; _statDirty[id].clicks = p.clicks;
+            _scheduleStatFlush();
+        };
+        window.startDwell = (id) => {
+            // Al entrar a un producto nuevo, volca primero el tiempo del anterior.
+            flushDwell();
+            state._dwellProd = id; state._dwellStart = Date.now();
+        };
+        function flushDwell() {
+            if (!state._dwellProd || !state._dwellStart) return;
+            const id = state._dwellProd, p = state.products.find(x => x.id === id);
+            if (p) {
+                const sec = Math.max(0, Math.round((Date.now() - state._dwellStart) / 1000));
+                if (sec > 0) {
+                    p.viewSeconds = (Number(p.viewSeconds) || 0) + sec;
+                    _statDirty[id] = _statDirty[id] || {}; _statDirty[id].viewSeconds = p.viewSeconds;
+                    _scheduleStatFlush();
+                }
+            }
+            state._dwellProd = null; state._dwellStart = 0;
+        }
+        window.leaveProductView = flushDwell;
+        async function flushProductStats() {
+            _statTimer = null;
+            const dirty = _statDirty; _statDirty = {};
+            try {
+                await mutateCollection('products', arr => {
+                    arr.forEach(pr => { const d = dirty[pr.id]; if (d) { if (d.clicks != null) pr.clicks = d.clicks; if (d.viewSeconds != null) pr.viewSeconds = d.viewSeconds; } });
+                });
+            } catch (e) { console.warn('No se pudieron guardar las estadísticas:', e); Object.assign(_statDirty, dirty); if (!_statTimer) _statTimer = setTimeout(flushProductStats, 8000); }
+        }
+        // Vuelca el tiempo visto al ocultar la pestaña o cerrar la página (mejor esfuerzo).
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { try { window.leaveProductView && window.leaveProductView(); } catch (e) {} } });
+        window.addEventListener('pagehide', () => { try { window.leaveProductView && window.leaveProductView(); } catch (e) {} });
         function renderProductDetailUI(p, tab) {
             if (tab) window._pdTab = tab;
             window._pdId = p.id;
@@ -4940,7 +4987,21 @@
                     <i class="fa-solid ${CAT_ICONS[c] || CAT_ICONS.Default} text-fija-gold w-4"></i>${escapeHtml(c)}
                 </button>`).join('');
         }
-        window.toggleMegaMenu = () => { const m = document.getElementById('mega-menu'); if (m) m.classList.toggle('hide'); };
+        window.toggleMegaMenu = () => {
+            const m = document.getElementById('mega-menu');
+            const c = document.getElementById('mega-menu-content');
+            if (!m) return;
+            const isOpen = !m.classList.contains('hide') && !m.classList.contains('hidden');
+            if (isOpen) {
+                m.classList.add('hide', 'hidden', 'opacity-0');
+                if (c) { c.classList.remove('scale-100'); c.classList.add('scale-95'); }
+            } else {
+                // Abre: limpia TODAS las clases de cierre (hide/hidden/opacity-0/scale-95)
+                // que pueda haber dejado closeModal, para que nunca quede "atascado".
+                m.classList.remove('hide', 'hidden', 'opacity-0');
+                if (c) { c.classList.remove('scale-95'); c.classList.add('scale-100'); }
+            }
+        };
 
         // ---------- 2. BUSCADOR: SUGERENCIAS + HISTORIAL ----------
         function buildSearchHistoryBar() {
@@ -8380,6 +8441,7 @@ window.setListingSort = (s) => {
 
 // ---- Volver (historial de páginas) ----
 window.pageBack = () => {
+    try { if (window.leaveProductView) window.leaveProductView(); } catch (e) {}
     const prev = (state.pageStack || []).pop();
     if (!prev) { try { if (typeof switchView === 'function') switchView('storefront'); } catch (e) {} return; }
     if (prev.type === 'view') { state.currentPageDesc = null; try { if (typeof switchView === 'function') switchView(prev.view); } catch (e) {} return; }
@@ -8468,6 +8530,8 @@ window.renderPage = () => {
 state.pageStack = state.pageStack || [];
 state.currentPageDesc = null;
 function goPage(desc) {
+    // Al salir de una ficha de producto, volca el tiempo de visualización acumulado.
+    try { if (window.leaveProductView && desc && desc.type !== 'product') window.leaveProductView(); } catch (e) {}
     // Al navegar a otra página/apartado se limpia la búsqueda activa (antes de renderizar)
     try { if (window.resetSearchUI) window.resetSearchUI(); } catch (e) {}
     if (desc && desc.type !== 'product') state._openProductId = null;
