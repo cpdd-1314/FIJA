@@ -1193,11 +1193,11 @@
                 repo: stored.repo || 'FIJA',
                 branch: stored.branch || 'main',
                 token: stored.token || cloudToken,
-                // --- Sincronización con Supabase (opcional, prioritario si está configurado) ---
-                // Pega aquí la URL y la anon key de tu proyecto Supabase (engranaje ⚙ → "Sincronización").
-                // Si no se configura, la app sigue usando GitHub (o el almacenamiento local) como antes.
-                supabaseUrl: stored.supabaseUrl || '',
-                supabaseKey: stored.supabaseKey || '',
+                // --- Sincronización con Supabase (ACTIVO POR DEFECTO) ---
+                // La app lee/escribe en Supabase (tabla fija_data) con prioridad sobre GitHub/local.
+                // Se pueden sobrescribir o desactivar desde el panel ⚙ → "Sincronización".
+                supabaseUrl: (stored.supabaseUrl !== undefined) ? stored.supabaseUrl : 'https://qacogtfreowsptgiozie.supabase.co',
+                supabaseKey: (stored.supabaseKey !== undefined) ? stored.supabaseKey : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhY29ndGZyZW93c3B0Z2lvemllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NTIwMjQsImV4cCI6MjEwODMyODAyNH0.cgif_jqhCJ6F9LUHFml1eHtX2ZCsJ8urAu-ztT27GCs',
                 adminEmails: stored.adminEmails ? stored.adminEmails.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : []
             };
         }
@@ -5199,9 +5199,9 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         };
         window.clearSyncSettings = () => {
             let cfg = {}; try { cfg = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
-            delete cfg.supabaseUrl; delete cfg.supabaseKey;
+            cfg.supabaseUrl = ''; cfg.supabaseKey = '';
             localStorage.setItem('fija_config', JSON.stringify(cfg));
-            showToast('Supabase desactivado. Recargando…'); setTimeout(() => location.reload(), 700);
+            showToast('Supabase desactivado (usando GitHub/local). Recargando…'); setTimeout(() => location.reload(), 700);
         };
         // ---------- 13. AYUDA / FAQ ----------
         const FAQ = {
