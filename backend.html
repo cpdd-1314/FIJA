@@ -104,9 +104,10 @@
                         <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Productos</p><p class="text-3xl font-bold" id="stat-products">0</p></div>
                         <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Pedidos</p><p class="text-3xl font-bold" id="stat-orders">0</p></div>
                         <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ventas brutas</p><p class="text-3xl font-bold" id="stat-gross">0,00 €</p></div>
-                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (4,7%)</p><p class="text-3xl font-bold text-red-600" id="stat-commission">0,00 €</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (<span data-comm-label>4,7%</span>)</p><p class="text-3xl font-bold text-red-600" id="stat-commission">0,00 €</p></div>
                         <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">A cobrar (neto)</p><p class="text-3xl font-bold text-green-600" id="stat-net">0,00 €</p></div>
                     </div>
+                    <section id="sec-s-products">
                     <div class="bg-white rounded-xl border border-fija-200 overflow-hidden mb-8">
                         <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis Productos</div>
                         <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[520px]">
@@ -114,6 +115,8 @@
                             <tbody id="seller-products" class="divide-y divide-fija-100"></tbody>
                         </table></div>
                     </div>
+                    </section>
+                    <section id="sec-s-myorders" class="hide">
                     <div class="bg-white rounded-xl border border-fija-200 overflow-hidden mb-8">
                         <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex flex-wrap items-center justify-between gap-3">
                             <h2 class="font-semibold"><i class="fa-solid fa-qrcode text-fija-gold mr-2"></i>Verificar Recogida de Pedidos</h2>
@@ -127,10 +130,84 @@
                     <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
                         <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis Pedidos</div>
                         <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[760px]">
-                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Cliente</th><th class="px-6 py-3 font-medium">Bruto</th><th class="px-6 py-3 font-medium">Comisión 4,7%</th><th class="px-6 py-3 font-medium">Neto</th><th class="px-6 py-3 font-medium">Estado</th></tr></thead>
+                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Cliente</th><th class="px-6 py-3 font-medium">Bruto</th><th class="px-6 py-3 font-medium">Comisión <span data-comm-label>4,7%</span></th><th class="px-6 py-3 font-medium">Neto</th><th class="px-6 py-3 font-medium">Estado</th></tr></thead>
                             <tbody id="seller-orders" class="divide-y divide-fija-100"></tbody>
                         </table></div>
                     </div>
+                    </section>
+
+                    <!-- ===== ESTADÍSTICAS ===== -->
+                    <section id="sec-s-stats" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Estadísticas de ventas</h1><p class="text-fija-500 text-sm">Evolución de tu negocio en FIJA.</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ventas (30 días)</p><p class="text-3xl font-bold" id="st-30d">0,00 €</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Unidades vendidas</p><p class="text-3xl font-bold" id="st-units">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ticket medio</p><p class="text-3xl font-bold" id="st-avg">0,00 €</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Nota media</p><p class="text-3xl font-bold text-fija-gold" id="st-rating">—</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-8">
+                            <h2 class="font-semibold mb-4"><i class="fa-solid fa-chart-simple text-fija-gold mr-2"></i>Ventas brutas · últimos 14 días</h2>
+                            <div id="st-bars" class="flex items-end gap-1.5 h-40"></div>
+                            <div id="st-bars-labels" class="flex gap-1.5 mt-2 text-[10px] text-fija-400"></div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold">Top productos por unidades</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium text-right">Uds.</th><th class="px-6 py-3 font-medium text-right">Bruto</th></tr></thead>
+                                    <tbody id="st-top-products" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold">Productos más vistos</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium text-right">Visitas</th></tr></thead>
+                                    <tbody id="st-top-views" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== INVENTARIO ===== -->
+                    <section id="sec-s-inventory" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Inventario</h1><p class="text-fija-500 text-sm">Controla el stock de tus productos.</p></div>
+                        <div id="inv-alerts" class="mb-6 space-y-2"></div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 font-semibold">Stock por producto</div>
+                            <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[640px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium">Stock</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Ajuste rápido</th></tr></thead>
+                                <tbody id="inv-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== MIS VALORACIONES ===== -->
+                    <section id="sec-s-reviews" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Mis valoraciones</h1><p class="text-fija-500 text-sm">Lo que opinan los clientes de tus productos.</p></div>
+                        <div class="grid grid-cols-3 gap-4 mb-8">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Nota media</p><p class="text-3xl font-bold text-fija-gold" id="rv-avg">—</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Total opiniones</p><p class="text-3xl font-bold" id="rv-count">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Productos valorados</p><p class="text-3xl font-bold" id="rv-products">0</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 font-semibold">Últimas opiniones</div>
+                            <div id="rv-list" class="divide-y divide-fija-100"></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== FACTURACIÓN ===== -->
+                    <section id="sec-s-billing" class="hide">
+                        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                            <div><h1 class="text-2xl font-bold">Facturación</h1><p class="text-fija-500 text-sm">Resumen de ingresos por mes (bruto, comisión y neto).</p></div>
+                            <button onclick="exportBillingCSV()" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar CSV</button>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[560px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Mes</th><th class="px-6 py-3 font-medium text-right">Pedidos</th><th class="px-6 py-3 font-medium text-right">Bruto</th><th class="px-6 py-3 font-medium text-right">Comisión <span data-comm-label>4,7%</span></th><th class="px-6 py-3 font-medium text-right">Neto</th></tr></thead>
+                                <tbody id="billing-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
                 </section>
 
                 <!-- ADMIN -->
@@ -148,12 +225,12 @@
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Ventas brutas (precio empresa)</p><p class="text-3xl font-bold text-fija-900" id="admin-gross">0,00 €</p></div>
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Cobrado a clientes</p><p class="text-3xl font-bold text-fija-900" id="admin-paid">0,00 €</p></div>
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Coste descuentos (a cargo FIJA)</p><p class="text-3xl font-bold text-red-600" id="admin-discounts">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (4,7%)</p><p class="text-3xl font-bold text-fija-gold" id="admin-commission">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (<span data-comm-label>4,7%</span>)</p><p class="text-3xl font-bold text-fija-gold" id="admin-commission">0,00 €</p></div>
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Neto a vendedores</p><p class="text-3xl font-bold text-green-600" id="admin-net">0,00 €</p></div>
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Balance FIJA (comisión − descuentos)</p><p class="text-3xl font-bold" id="admin-balance">0,00 €</p></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
-                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center"><i class="fa-solid fa-sack-dollar text-fija-gold mr-2"></i><h2 class="font-semibold">Comisiones por Vendedor (4,7%)</h2></div>
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center"><i class="fa-solid fa-sack-dollar text-fija-gold mr-2"></i><h2 class="font-semibold">Comisiones por Vendedor (<span data-comm-label>4,7%</span>)</h2></div>
                             <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[620px]">
                                 <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Vendedor</th><th class="px-6 py-3 font-medium">Ventas brutas</th><th class="px-6 py-3 font-medium">Comisión FIJA</th><th class="px-6 py-3 font-medium">Descuentos FIJA</th><th class="px-6 py-3 font-medium">Neto vendedor</th></tr></thead>
                                 <tbody id="admin-commission-table" class="divide-y divide-fija-100"></tbody>
@@ -210,10 +287,120 @@
                         <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden">
                             <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center justify-between"><h2 class="font-semibold">Todos los Pedidos</h2><button onclick="downloadOrdersCSV()" class="text-sm bg-fija-900 hover:bg-fija-800 text-white px-3 py-1.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar CSV</button></div>
                             <div class="p-0 overflow-x-auto"><table class="w-full text-left border-collapse min-w-[1150px]">
-                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Comprador</th><th class="px-6 py-3 font-medium">Cobrado</th><th class="px-6 py-3 font-medium">Bruto empresa</th><th class="px-6 py-3 font-medium">Comisión 4,7%</th><th class="px-6 py-3 font-medium">Descuento FIJA</th><th class="px-6 py-3 font-medium">Neto empresa</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Detalle</th></tr></thead>
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">ID</th><th class="px-6 py-3 font-medium">Comprador</th><th class="px-6 py-3 font-medium">Cobrado</th><th class="px-6 py-3 font-medium">Bruto empresa</th><th class="px-6 py-3 font-medium">Comisión <span data-comm-label>4,7%</span></th><th class="px-6 py-3 font-medium">Descuento FIJA</th><th class="px-6 py-3 font-medium">Neto empresa</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Detalle</th></tr></thead>
                                 <tbody id="admin-orders-table" class="divide-y divide-fija-100"></tbody>
                             </table></div>
                         </div>
+                    </section>
+
+                    <!-- ===== INFORMES ===== -->
+                    <section id="sec-reports" class="hide">
+                        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+                            <div><h1 class="text-2xl font-bold">Informes</h1><p class="text-fija-500 text-sm">Evolución de ventas y rendimiento del catálogo.</p></div>
+                            <button onclick="exportReportsCSV()" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar resumen</button>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-8">
+                            <h2 class="font-semibold mb-4"><i class="fa-solid fa-chart-line text-fija-gold mr-2"></i>Ventas por mes (últimos 6 meses)</h2>
+                            <div id="rp-bars" class="flex items-end gap-3 h-48"></div>
+                            <div id="rp-bars-labels" class="flex gap-3 mt-2 text-xs text-fija-400"></div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold">Top 10 productos (unidades)</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium text-right">Uds.</th><th class="px-6 py-3 font-medium text-right">Bruto</th></tr></thead>
+                                    <tbody id="rp-top-products" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold">Ventas por categoría</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Categoría</th><th class="px-6 py-3 font-medium text-right">Uds.</th><th class="px-6 py-3 font-medium text-right">Bruto</th></tr></thead>
+                                    <tbody id="rp-categories" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ===== CLIENTES ===== -->
+                    <section id="sec-customers" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Clientes</h1><p class="text-fija-500 text-sm">Todos los usuarios registrados en la plataforma.</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Total usuarios</p><p class="text-3xl font-bold" id="cu-total">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Con compras</p><p class="text-3xl font-bold text-green-600" id="cu-buyers">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Nuevos (30 días)</p><p class="text-3xl font-bold text-fija-gold" id="cu-new">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Gasto medio</p><p class="text-3xl font-bold" id="cu-avg">0,00 €</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 flex flex-wrap items-center justify-between gap-3">
+                                <h2 class="font-semibold">Directorio</h2>
+                                <div class="flex gap-2">
+                                    <input type="text" id="cu-search" oninput="renderAdminCustomers()" placeholder="Buscar por nombre o correo…" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm w-64">
+                                    <select id="cu-role" onchange="renderAdminCustomers()" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm"><option value="all">Todos los roles</option><option value="user">Clientes</option><option value="seller">Vendedores</option><option value="admin">Admins</option></select>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[900px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Usuario</th><th class="px-6 py-3 font-medium">Rol</th><th class="px-6 py-3 font-medium">Pedidos</th><th class="px-6 py-3 font-medium">Gasto total</th><th class="px-6 py-3 font-medium">Última compra</th><th class="px-6 py-3 font-medium">Alta</th><th class="px-6 py-3 font-medium">Acciones</th></tr></thead>
+                                <tbody id="cu-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== RESEÑAS ===== -->
+                    <section id="sec-reviews" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Reseñas</h1><p class="text-fija-500 text-sm">Modera las opiniones de los productos.</p></div>
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Total reseñas</p><p class="text-3xl font-bold" id="rw-total">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Nota media</p><p class="text-3xl font-bold text-fija-gold" id="rw-avg">—</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ocultas</p><p class="text-3xl font-bold text-red-600" id="rw-hidden">0</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 font-semibold">Todas las opiniones</div>
+                            <div id="rw-list" class="divide-y divide-fija-100"></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== CUPONES ===== -->
+                    <section id="sec-coupons" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Cupones</h1><p class="text-fija-500 text-sm">Códigos de descuento válidos en toda la tienda.</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <h2 class="font-semibold mb-4">Nuevo cupón</h2>
+                            <form id="coupon-form" onsubmit="createCoupon(event)" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Código</label><input type="text" id="cp-code" required maxlength="20" placeholder="VERANO25" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm uppercase"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Tipo</label><select id="cp-type" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"><option value="pct">Porcentaje (%)</option><option value="ship">Envío/recogida</option></select></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Valor</label><input type="number" id="cp-value" min="0" step="1" value="10" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Etiqueta visible</label><input type="text" id="cp-label" required placeholder="25% de descuento" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                                <button type="submit" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-plus mr-1"></i>Crear cupón</button>
+                            </form>
+                            <p class="text-[11px] text-fija-400 mt-2">Los códigos se aplican en la cesta de la tienda (un solo uso por cuenta). Desactivar un cupón lo retira inmediatamente del listado de la tienda.</p>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[720px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Código</th><th class="px-6 py-3 font-medium">Etiqueta</th><th class="px-6 py-3 font-medium">Tipo</th><th class="px-6 py-3 font-medium">Valor</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Acciones</th></tr></thead>
+                                <tbody id="cp-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
+
+                    <!-- ===== AJUSTES ===== -->
+                    <section id="sec-settings" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Ajustes</h1><p class="text-fija-500 text-sm">Configuración general de la plataforma.</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <h2 class="font-semibold mb-4">Comisiones y ventas</h2>
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Comisión FIJA por venta (%)</label><input type="number" id="set-commission" min="0" max="50" step="0.1" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Umbral de envío gratis (€, 0 = desactivado)</label><input type="number" id="set-freeship" min="0" step="0.01" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <h2 class="font-semibold mb-4">Tienda</h2>
+                            <div class="grid sm:grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Nombre de la tienda</label><input type="text" id="set-storename" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Correo de soporte</label><input type="email" id="set-support" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm"></div>
+                            </div>
+                            <label class="flex items-center gap-2 mt-4 text-sm text-fija-700"><input type="checkbox" id="set-maintenance" class="rounded border-fija-300"><span>Modo mantenimiento (muestra un aviso en la tienda)</span></label>
+                        </div>
+                        <button onclick="savePlatformSettings()" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-floppy-disk mr-2"></i>Guardar ajustes</button>
                     </section>
                 </section>
             </main>
@@ -231,7 +418,8 @@
                 <form id="product-form" onsubmit="handleAddProduct(event)" class="px-6 sm:px-8 py-6 space-y-4 overflow-y-auto">
                     <div><label class="block text-sm font-medium text-fija-700 mb-1">Título del Producto</label><input type="text" id="prod-title" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
                     <div class="grid grid-cols-2 gap-3"><div><label class="block text-sm font-medium text-fija-700 mb-1">Precio (€)</label><input type="number" step="0.01" min="0.01" id="prod-price" required class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
-                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Precio anterior (€, opcional)</label><input type="number" step="0.01" min="0" id="prod-old" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Precio anterior (€, opcional)</label><input type="number" step="0.01" min="0" id="prod-old" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-fija-700 mb-1">Stock (unidades)</label><input type="number" min="0" step="1" id="prod-stock" value="25" class="w-full border border-fija-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-fija-900 outline-none"></div></div>
                     <div>
                         <label class="block text-sm font-medium text-fija-700 mb-1">Foto del producto</label>
                         <div class="flex gap-2">
@@ -367,11 +555,11 @@
             return { owner: s.owner || '', repo: s.repo || '', branch: s.branch || 'main', token: s.token || '' };
         }
         const CONFIG = loadConfig();
-        const COMMISSION_RATE = 0.047; // Comisión de FIJA por cada venta (4,7%)
 
         const state = {
             products: [], orders: [], profiles: [], approvedSellers: new Set(),
-            session: null, profile: null, _sha: { products: null, orders: null, profiles: null },
+            coupons: [], settings: {},
+            session: null, profile: null, _sha: { products: null, orders: null, profiles: null, coupons: null, settings: null },
             view: 'products', editingId: null, pendingVideo: null, videoBusy: false
         };
         try { state.session = JSON.parse(localStorage.getItem('fija_backend_session') || 'null'); } catch (e) {}
@@ -388,7 +576,15 @@
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES };
+        // Cupones por defecto (mismos que la tienda). active:false los desactiva.
+        const DEFAULT_COUPONS = {
+            'FIJA10': { type: 'pct', value: 10, label: '10% de descuento', active: true, createdAt: 1700000000000 },
+            'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra', active: true, createdAt: 1700000000000 },
+            'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria', active: true, createdAt: 1700000000000 },
+            'FIJA20': { type: 'pct', value: 20, label: '20% de descuento', active: true, createdAt: 1700000000000 }
+        };
+        const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'soporte@fija.demo' };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
 
@@ -397,6 +593,12 @@
         function isApprovedSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'approved'); }
         function isPendingSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'pending'); }
         function formatEuro(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' €'; }
+        // Comisión FIJA configurable (Ajustes). Por defecto 4,7%.
+        function commissionRate() {
+            const v = state.settings && state.settings.commissionRate;
+            return (typeof v === 'number' && v >= 0 && v <= 1) ? v : 0.047;
+        }
+        function fmtRate(r) { return (r * 100).toFixed(1).replace('.', ',') + '%'; }
         function escapeHtml(str) { return String(str == null ? '' : str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
         function uid() { return (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(16).slice(2)); }
         async function hashPassword(pw) { const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join(''); }
@@ -407,7 +609,7 @@
         }
         function ivaLabel(t) { return ({ general: 'General 21%', reducido: 'Reducido 10%', superreducido: 'Superreducido 4%', exento: 'Exento 0%' })[t] || '—'; }
         function itemGross(it) { return it.gross != null ? it.gross : (it.basePrice != null ? it.basePrice * it.quantity : it.price * it.quantity); }
-        function itemCommission(it) { return it.commission != null ? it.commission : +(itemGross(it) * COMMISSION_RATE).toFixed(2); }
+        function itemCommission(it) { return it.commission != null ? it.commission : +(itemGross(it) * commissionRate()).toFixed(2); }
         function itemNet(it) { return it.sellerNet != null ? it.sellerNet : +(itemGross(it) - itemCommission(it)).toFixed(2); }
         // Lo que el cliente paga por la línea (con descuento FIJA aplicado)
         function itemPaid(it) { return it.paid != null ? it.paid : (it.price * it.quantity); }
@@ -492,12 +694,16 @@
 
         async function loadAll() {
             try {
-                const [products, orders, profiles] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles')]);
+                const [products, orders, profiles, coupons, settings] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('coupons'), readDataFile('settings')]);
                 state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || [];
-                state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha };
+                state.coupons = (coupons.data && typeof coupons.data === 'object' && !Array.isArray(coupons.data)) ? coupons.data : (Array.isArray(coupons.data) ? {} : clone(DEFAULT_COUPONS));
+                state.settings = (settings.data && typeof settings.data === 'object' && !Array.isArray(settings.data)) ? Object.assign(clone(DEFAULT_SETTINGS), settings.data) : clone(DEFAULT_SETTINGS);
+                state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha, coupons: coupons.sha, settings: settings.sha };
                 state.approvedSellers = new Set(state.profiles.filter(p => p.role === 'seller' && p.verificationStatus === 'approved').map(p => p.userId));
                 if (state.session) state.profile = state.profiles.find(p => p.userId === state.session.userId) || null;
-                if (state.profile) { if (isAdmin()) renderAdmin(); else if (isApprovedSeller()) renderSeller(); else if (isPendingSeller()) renderSeller(); else renderSeller(); }
+                // Refleja la comisión configurada en las etiquetas estáticas "4,7%"
+                document.querySelectorAll('[data-comm-label]').forEach(el => { el.innerHTML = '<span data-comm-rate>' + fmtRate(commissionRate()) + '</span>'; });
+                if (state.profile) { if (isAdmin()) renderAdmin(); else renderSeller(); }
             } catch (e) { console.error('loadAll', e); showToast('Error al cargar datos', true); }
         }
 
@@ -551,7 +757,7 @@
                 }
                 const pwHash = await hashPassword(pw);
                 const newSeller = { userId: uid(), companyName, username, email, cif, address, ivaType,
-                    role: 'seller', verificationStatus: 'pending', commissionRate: COMMISSION_RATE, createdAt: Date.now(), pwHash };
+                    role: 'seller', verificationStatus: 'pending', commissionRate: commissionRate(), createdAt: Date.now(), pwHash };
                 await mutateCollection('profiles', arr => arr.push(newSeller));
                 closeModal('register-modal'); document.getElementById('register-form').reset();
                 showToast('Solicitud enviada. Espera la verificación del admin.');
@@ -577,36 +783,48 @@
             let items = '';
             if (isAdmin()) {
                 items += navItem('panel', 'Panel Admin', 'fa-shield-halved');
-                items += navItem('pending', 'Solicitudes', 'fa-clock');
-                items += navItem('sellers', 'Vendedores', 'fa-store');
-            }
-            if (isAdmin() || isApprovedSeller()) {
+                items += navItem('reports', 'Informes', 'fa-chart-line');
+                items += navItem('orders', 'Pedidos', 'fa-cart-shopping');
                 items += navItem('products', 'Productos', 'fa-box');
+                items += navItem('sellers', 'Vendedores', 'fa-store');
+                items += navItem('pending', 'Solicitudes', 'fa-clock');
+                items += navItem('customers', 'Clientes', 'fa-users');
+                items += navItem('reviews', 'Reseñas', 'fa-star');
+                items += navItem('coupons', 'Cupones', 'fa-ticket');
+                items += navItem('settings', 'Ajustes', 'fa-sliders');
+            } else if (isApprovedSeller() || isPendingSeller()) {
+                items += navItem('products', 'Mis Productos', 'fa-box');
+                items += navItem('stats', 'Estadísticas', 'fa-chart-simple');
+                items += navItem('inventory', 'Inventario', 'fa-warehouse');
+                items += navItem('myorders', 'Mis Pedidos', 'fa-receipt');
+                items += navItem('reviews', 'Mis Valoraciones', 'fa-star');
+                items += navItem('billing', 'Facturación', 'fa-file-invoice-dollar');
             }
-            if (isAdmin()) items += navItem('orders', 'Pedidos', 'fa-cart-shopping');
-            if (isApprovedSeller()) items += navItem('myorders', 'Mis Pedidos', 'fa-receipt');
             if (isPendingSeller()) items += `<div class="px-4 py-2 text-[11px] text-amber-600"><i class="fa-solid fa-clock mr-2"></i>Verificación pendiente</div>`;
             if (items === '') items = `<div class="px-4 py-2 text-xs text-fija-400">Sin secciones disponibles.</div>`;
             nav.innerHTML = items;
-            showSection(state.view && document.getElementById(state.view + '-section') ? state.view : (isAdmin() ? 'panel' : 'products'));
+            const known = id => (id in ADMIN_SECTIONS) || (id in SELLER_SECTIONS);
+            showSection(state.view && known(state.view) ? state.view : (isAdmin() ? 'panel' : 'products'));
         }
         function navItem(id, label, icon) {
             return `<button onclick="showSection('${id}')" id="nav-${id}" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium text-fija-600 hover:bg-fija-100 hover:text-fija-900 transition-colors flex items-center"><i class="fa-solid ${icon} mr-3 w-4"></i> ${label}</button>`;
         }
 
         // ===================== Views / sections =====================
-        const ADMIN_SECTIONS = { panel:'sec-panel', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders' };
+        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
+        const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
         function showSection(id) {
             state.view = id;
-            const map = { panel:'admin-view', pending:'admin-view', sellers:'admin-view', products: (isAdmin()?'admin-view':'seller-view'), orders:'admin-view', myorders:'seller-view' };
-            const target = map[id] || 'seller-view';
+            // Resuelve por rol: si la clave existe en ambos mapas (p.ej. 'reviews'), manda el rol
+            const isSellerSection = !isAdmin() && (id in SELLER_SECTIONS);
+            const target = isSellerSection ? 'seller-view' : 'admin-view';
             document.getElementById('seller-view').classList.toggle('hide', target !== 'seller-view');
             document.getElementById('admin-view').classList.toggle('hide', target !== 'admin-view');
-            // mostrar solo la sub-sección de admin seleccionada
-            Object.entries(ADMIN_SECTIONS).forEach(([k, secId]) => {
-                const el = document.getElementById(secId);
-                if (el) el.classList.toggle('hide', k !== id);
-            });
+            // mostrar solo la sub-sección seleccionada (admin o vendedor)
+            Object.values(ADMIN_SECTIONS).forEach(secId => { const el = document.getElementById(secId); if (el) el.classList.add('hide'); });
+            Object.values(SELLER_SECTIONS).forEach(secId => { const el = document.getElementById(secId); if (el) el.classList.add('hide'); });
+            const activeSec = isSellerSection ? SELLER_SECTIONS[id] : ADMIN_SECTIONS[id];
+            const secEl = document.getElementById(activeSec); if (secEl) secEl.classList.remove('hide');
             document.querySelectorAll('#side-nav button').forEach(b => b.classList.remove('bg-fija-900','text-white'));
             const active = document.getElementById('nav-' + id);
             if (active) active.className = 'w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-fija-900 text-white transition-colors flex items-center';
@@ -654,6 +872,11 @@
                         <td class="px-6 py-4">${statusBadge(o.status)}</td></tr>`;
                 }).join('');
             }
+            // Nuevos módulos de vendedor
+            if (document.getElementById('st-bars')) renderSellerStats();
+            if (document.getElementById('inv-table')) renderSellerInventory();
+            if (document.getElementById('rv-list')) renderSellerReviews();
+            if (document.getElementById('billing-table')) renderSellerBilling();
         }
 
         function renderAdmin() {
@@ -760,7 +983,392 @@
                     <td class="px-6 py-4"><button onclick="openOrderDetail('${o.id}')" class="text-fija-900 hover:underline text-sm font-medium"><i class="fa-solid fa-eye mr-1"></i> Ver</button></td></tr>`;
                 }).join('');
             }
+            // Nuevos módulos de admin
+            if (document.getElementById('rp-bars')) renderAdminReports();
+            if (document.getElementById('cu-table')) renderAdminCustomers();
+            if (document.getElementById('rw-list')) renderAdminReviews();
+            if (document.getElementById('cp-table')) renderAdminCoupons();
+            if (document.getElementById('set-commission')) renderAdminSettings();
         }
+
+        // ===================== NUEVOS MÓDULOS: informes, clientes, reseñas, cupones, ajustes =====================
+        const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        function monthKey(ts) { const d = new Date(ts || Date.now()); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+        function monthLabel(key) { const p = key.split('-'); return MONTHS[+p[1] - 1] + ' ' + p[0]; }
+        function stars(n) { const f = Math.max(0, Math.min(5, Math.round(n || 0))); return '<span class="text-fija-gold">' + '★'.repeat(f) + '</span><span class="text-fija-300">' + '★'.repeat(5 - f) + '</span>'; }
+        function orderPaidTotal(o) { return o.total != null ? o.total : (o.items || []).reduce((s, it) => s + itemPaid(it), 0); }
+        function liveOrders() { return state.orders.filter(o => o.status !== 'cancelled'); }
+        function downloadCSV(filename, rows) {
+            const csv = rows.map(r => r.map(c => { const s = String(c == null ? '' : c); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(';')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+        }
+        // Colecciones que se guardan como OBJETO (no array)
+        // Espejo en localStorage (misma clave que lee la tienda) y en Supabase (si está configurado)
+        async function sbMirror(name, data) {
+            try {
+                const cfg = JSON.parse(localStorage.getItem('fija_config') || '{}');
+                if (!cfg.supabaseUrl || !cfg.supabaseKey) return;
+                await fetch(cfg.supabaseUrl.replace(/\/+$/, '') + '/rest/v1/fija_data', {
+                    method: 'POST',
+                    headers: { 'apikey': cfg.supabaseKey, 'Authorization': 'Bearer ' + cfg.supabaseKey, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+                    body: JSON.stringify({ name, content: data, updated_at: new Date().toISOString() })
+                });
+            } catch (e) { console.warn('sbMirror falló (' + name + ')', e); }
+        }
+        async function mutateCoupons(mutator) {
+            const cur = await readDataFile('coupons');
+            const obj = (cur.data && typeof cur.data === 'object' && !Array.isArray(cur.data)) ? cur.data : clone(DEFAULT_COUPONS);
+            mutator(obj);
+            await writeDataFile('coupons', obj, cur.sha);
+            localStorage.setItem('fija_coupons', JSON.stringify(obj));
+            await sbMirror('coupons', obj);
+            state.coupons = obj;
+        }
+        async function mutateSettings(mutator) {
+            const cur = await readDataFile('settings');
+            const obj = (cur.data && typeof cur.data === 'object' && !Array.isArray(cur.data)) ? Object.assign(clone(DEFAULT_SETTINGS), cur.data) : clone(DEFAULT_SETTINGS);
+            mutator(obj);
+            await writeDataFile('settings', obj, cur.sha);
+            localStorage.setItem('fija_settings', JSON.stringify(obj));
+            await sbMirror('settings', obj);
+            state.settings = obj;
+            document.querySelectorAll('[data-comm-label]').forEach(el => { el.innerHTML = '<span data-comm-rate>' + fmtRate(commissionRate()) + '</span>'; });
+        }
+
+        // ---------- ADMIN: Informes ----------
+        function renderAdminReports() {
+            const orders = liveOrders();
+            const byMonth = {};
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); byMonth[monthKey(d.getTime())] = 0; }
+            orders.forEach(o => { const k = monthKey(o.createdAt); if (k in byMonth) byMonth[k] += orderPaidTotal(o); });
+            const entries = Object.entries(byMonth);
+            const max = Math.max(1, ...entries.map(e => e[1]));
+            document.getElementById('rp-bars').innerHTML = entries.map(([k, v]) => {
+                const h = Math.max(2, Math.round(v / max * 100));
+                return `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${monthLabel(k)}: ${formatEuro(v)}"><div class="w-full bg-fija-900 rounded-t-md hover:bg-fija-700 transition-colors" style="height:${h}%"></div></div>`;
+            }).join('');
+            document.getElementById('rp-bars-labels').innerHTML = entries.map(([k]) => `<div class="flex-1 text-center">${monthLabel(k)}</div>`).join('');
+            // Top productos
+            const prodMap = {};
+            orders.forEach(o => (o.items || []).forEach(it => {
+                const k = it.productId || it.title || '—';
+                if (!prodMap[k]) prodMap[k] = { title: it.title || k, units: 0, gross: 0 };
+                prodMap[k].units += (it.quantity || 0); prodMap[k].gross += itemGross(it);
+            }));
+            const top = Object.values(prodMap).sort((a, b) => b.units - a.units).slice(0, 10);
+            document.getElementById('rp-top-products').innerHTML = top.length ? top.map(r => `<tr>
+                <td class="px-6 py-3 font-medium">${escapeHtml(r.title)}</td>
+                <td class="px-6 py-3 text-right">${r.units}</td>
+                <td class="px-6 py-3 text-right">${formatEuro(r.gross)}</td></tr>`).join('') : `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin ventas todavía.</td></tr>`;
+            // Categorías
+            const catMap = {};
+            orders.forEach(o => (o.items || []).forEach(it => {
+                const p = state.products.find(x => x.id === it.productId);
+                const cat = (p && p.category) || 'Sin categoría';
+                if (!catMap[cat]) catMap[cat] = { units: 0, gross: 0 };
+                catMap[cat].units += (it.quantity || 0); catMap[cat].gross += itemGross(it);
+            }));
+            const cats = Object.entries(catMap).sort((a, b) => b[1].gross - a[1].gross);
+            document.getElementById('rp-categories').innerHTML = cats.length ? cats.map(([c, r]) => `<tr>
+                <td class="px-6 py-3 font-medium">${escapeHtml(c)}</td>
+                <td class="px-6 py-3 text-right">${r.units}</td>
+                <td class="px-6 py-3 text-right">${formatEuro(r.gross)}</td></tr>`).join('') : `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin datos.</td></tr>`;
+        }
+        window.exportReportsCSV = () => {
+            const orders = liveOrders();
+            const byMonth = {};
+            orders.forEach(o => { const k = monthKey(o.createdAt); if (!byMonth[k]) byMonth[k] = { paid: 0, gross: 0, commission: 0, discount: 0, net: 0, n: 0 };
+                byMonth[k].paid += orderPaidTotal(o); byMonth[k].gross += (o.items || []).reduce((s, it) => s + itemGross(it), 0);
+                byMonth[k].commission += (o.items || []).reduce((s, it) => s + itemCommission(it), 0);
+                byMonth[k].discount += (o.items || []).reduce((s, it) => s + itemDiscount(it), 0);
+                byMonth[k].net += (o.items || []).reduce((s, it) => s + itemNet(it), 0); byMonth[k].n++; });
+            const rows = [['Mes', 'Pedidos', 'Cobrado', 'Bruto', 'Comision', 'Descuentos', 'Neto']];
+            Object.entries(byMonth).sort().forEach(([k, r]) => rows.push([monthLabel(k), r.n, r.paid.toFixed(2), r.gross.toFixed(2), r.commission.toFixed(2), r.discount.toFixed(2), r.net.toFixed(2)]));
+            downloadCSV('fija_informe_ventas.csv', rows);
+            showToast('Informe exportado');
+        };
+
+        // ---------- ADMIN: Clientes ----------
+        function renderAdminCustomers() {
+            const q = ((document.getElementById('cu-search') || {}).value || '').trim().toLowerCase();
+            const role = (document.getElementById('cu-role') || {}).value || 'all';
+            const spend = {}, ordersBy = {}, lastBuy = {};
+            liveOrders().forEach(o => {
+                const k = o.buyerUid || o.buyerEmail || '';
+                if (!k) return;
+                ordersBy[k] = (ordersBy[k] || 0) + 1;
+                spend[k] = (spend[k] || 0) + orderPaidTotal(o);
+                lastBuy[k] = Math.max(lastBuy[k] || 0, o.createdAt || 0);
+            });
+            const buyers = Object.keys(ordersBy).length;
+            const totalSpend = Object.values(spend).reduce((s, v) => s + v, 0);
+            document.getElementById('cu-total').textContent = state.profiles.filter(p => p.role !== 'seller').length;
+            document.getElementById('cu-buyers').textContent = buyers;
+            document.getElementById('cu-new').textContent = state.profiles.filter(p => (p.createdAt || 0) > Date.now() - 30 * 86400000).length;
+            document.getElementById('cu-avg').textContent = formatEuro(buyers ? totalSpend / buyers : 0);
+            const list = state.profiles.filter(p => {
+                if (role !== 'all' && p.role !== role) return false;
+                if (!q) return true;
+                return ((p.username || '') + ' ' + (p.email || '') + ' ' + (p.companyName || '')).toLowerCase().includes(q);
+            });
+            if (!list.length) { document.getElementById('cu-table').innerHTML = `<tr><td colspan="7" class="px-6 py-8 text-center text-fija-400">Sin usuarios.</td></tr>`; return; }
+            document.getElementById('cu-table').innerHTML = list.map(p => {
+                const k = p.userId || p.email;
+                const roleBadge = { user: ['Cliente', 'bg-gray-100 text-gray-600'], seller: ['Vendedor', 'bg-blue-100 text-blue-700'], admin: ['Admin', 'bg-fija-900 text-white'] }[p.role] || ['—', 'bg-gray-100 text-gray-600'];
+                return `<tr>
+                <td class="px-6 py-4"><p class="font-medium">${escapeHtml(p.username || p.companyName || '—')}</p><p class="text-xs text-fija-500">${escapeHtml(p.email || '')}</p></td>
+                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${roleBadge[1]}">${roleBadge[0]}</span></td>
+                <td class="px-6 py-4">${ordersBy[k] || 0}</td>
+                <td class="px-6 py-4 font-medium">${formatEuro(spend[k] || 0)}</td>
+                <td class="px-6 py-4 text-fija-600 text-sm">${lastBuy[k] ? new Date(lastBuy[k]).toLocaleDateString('es-ES') : '—'}</td>
+                <td class="px-6 py-4 text-fija-600 text-sm">${p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-ES') : '—'}</td>
+                <td class="px-6 py-4"><button onclick="viewCustomerOrders('${escapeHtml(k)}')" class="text-fija-900 hover:underline text-sm font-medium"><i class="fa-solid fa-eye mr-1"></i>Ver</button></td></tr>`;
+            }).join('');
+        }
+        window.viewCustomerOrders = (key) => {
+            const orders = state.orders.filter(o => (o.buyerUid || o.buyerEmail) === key).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (!orders.length) { showToast('Este usuario no tiene pedidos'); return; }
+            document.getElementById('cu-table').innerHTML = orders.map(o => `<tr>
+                <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</td>
+                <td class="px-6 py-4 text-sm">${new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES')}</td>
+                <td class="px-6 py-4 font-medium">${formatEuro(orderPaidTotal(o))}</td>
+                <td class="px-6 py-4">${statusBadge(o.status)}</td>
+                <td class="px-6 py-4 text-xs text-fija-500">${(o.items || []).map(it => escapeHtml(it.title || '')).join(', ').slice(0, 80)}</td>
+                <td class="px-6 py-4"></td><td class="px-6 py-4"><button onclick="renderAdminCustomers()" class="text-fija-900 hover:underline text-sm"><i class="fa-solid fa-arrow-left mr-1"></i>Volver</button></td></tr>`).join('');
+        };
+
+        // ---------- ADMIN: Reseñas ----------
+        function allReviews() {
+            const out = [];
+            state.products.forEach(p => (Array.isArray(p.reviews) ? p.reviews : []).forEach(r => out.push({ product: p, review: r })));
+            return out.sort((a, b) => (b.review.createdAt || 0) - (a.review.createdAt || 0));
+        }
+        function renderAdminReviews() {
+            const list = allReviews();
+            const visible = list.filter(x => !x.review.hidden);
+            const avg = visible.length ? visible.reduce((s, x) => s + (x.review.rating || 0), 0) / visible.length : 0;
+            document.getElementById('rw-total').textContent = list.length;
+            document.getElementById('rw-avg').innerHTML = list.length ? stars(avg) + ` <span class="text-lg">${avg.toFixed(1)}</span>` : '—';
+            document.getElementById('rw-hidden').textContent = list.length - visible.length;
+            document.getElementById('rw-list').innerHTML = list.length ? list.map(({ product: p, review: r }) => `<div class="px-6 py-4 flex flex-wrap items-start gap-4 ${r.hidden ? 'opacity-50' : ''}">
+                <div class="flex-1 min-w-[220px]">
+                    <p class="text-sm font-medium">${escapeHtml(p.title)} <span class="text-fija-400 font-normal">· ${escapeHtml(r.username || 'anónimo')}</span></p>
+                    <p class="text-xs">${stars(r.rating)} <span class="text-fija-400 ml-1">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('es-ES') : ''}</span></p>
+                    <p class="text-sm text-fija-600 mt-1">${escapeHtml(r.text || '')}</p>
+                </div>
+                <div class="flex gap-2 shrink-0">
+                    <button onclick="toggleReviewVisibility('${p.id}','${r.userId}')" class="text-sm border border-fija-300 rounded-lg px-3 py-1.5 hover:bg-fija-50">${r.hidden ? 'Mostrar' : 'Ocultar'}</button>
+                    <button onclick="deleteReview('${p.id}','${r.userId}')" class="text-sm border border-red-300 text-red-600 rounded-lg px-3 py-1.5 hover:bg-red-50">Eliminar</button>
+                </div></div>`).join('') : `<div class="px-6 py-8 text-center text-fija-400">Sin reseñas todavía.</div>`;
+        }
+        window.toggleReviewVisibility = async (productId, userId) => {
+            try { await mutateCollection('products', arr => { const p = arr.find(x => x.id === productId); if (p && Array.isArray(p.reviews)) { const r = p.reviews.find(x => x.userId === userId); if (r) r.hidden = !r.hidden; } });
+                await loadAll(); showToast('Visibilidad actualizada');
+            } catch (e) { console.error(e); showToast('Error al actualizar', true); }
+        };
+        window.deleteReview = async (productId, userId) => {
+            if (!confirm('¿Eliminar esta reseña permanentemente?')) return;
+            try { await mutateCollection('products', arr => { const p = arr.find(x => x.id === productId); if (p && Array.isArray(p.reviews)) p.reviews = p.reviews.filter(x => x.userId !== userId); });
+                await loadAll(); showToast('Reseña eliminada');
+            } catch (e) { console.error(e); showToast('Error al eliminar', true); }
+        };
+
+        // ---------- ADMIN: Cupones ----------
+        function couponUses() {
+            const uses = {};
+            state.profiles.forEach(p => (Array.isArray(p.usedCoupons) ? p.usedCoupons : []).forEach(u => { uses[u.code] = (uses[u.code] || 0) + 1; }));
+            return uses;
+        }
+        function renderAdminCoupons() {
+            const uses = couponUses();
+            const rows = Object.entries(state.coupons || {}).map(([code, c]) => ({ code, ...c }));
+            document.getElementById('cp-table').innerHTML = rows.length ? rows.map(c => `<tr>
+                <td class="px-6 py-4 font-mono font-bold">${escapeHtml(c.code)}</td>
+                <td class="px-6 py-4">${escapeHtml(c.label || '—')}</td>
+                <td class="px-6 py-4">${c.type === 'pct' ? 'Porcentaje' : 'Envío/recogida'}</td>
+                <td class="px-6 py-4">${c.type === 'pct' ? c.value + '%' : '—'}</td>
+                <td class="px-6 py-4">${c.active === false ? '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">Inactivo</span>' : '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">Activo</span>'} <span class="text-xs text-fija-400 ml-1">${uses[c.code] || 0} usos</span></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="toggleCoupon('${escapeHtml(c.code)}')" class="text-fija-900 hover:underline text-sm mr-3">${c.active === false ? 'Activar' : 'Desactivar'}</button>
+                    <button onclick="deleteCoupon('${escapeHtml(c.code)}')" class="text-red-500 hover:underline text-sm">Eliminar</button>
+                </td></tr>`).join('') : `<tr><td colspan="6" class="px-6 py-8 text-center text-fija-400">Sin cupones.</td></tr>`;
+        }
+        window.createCoupon = async (e) => {
+            e.preventDefault();
+            const code = (document.getElementById('cp-code').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const type = document.getElementById('cp-type').value;
+            const value = Math.max(0, parseFloat(document.getElementById('cp-value').value) || 0);
+            const label = (document.getElementById('cp-label').value || '').trim();
+            if (!code || !label) { showToast('Código y etiqueta son obligatorios', true); return; }
+            if (type === 'pct' && (value <= 0 || value > 90)) { showToast('El porcentaje debe estar entre 1 y 90', true); return; }
+            try {
+                await mutateCoupons(obj => { obj[code] = { type, value: type === 'pct' ? value : 0, label, active: true, createdAt: Date.now() }; });
+                document.getElementById('coupon-form').reset();
+                document.getElementById('cp-value').value = 10;
+                await loadAll(); showToast('Cupón ' + code + ' creado');
+            } catch (err) { console.error(err); showToast('Error al crear el cupón', true); }
+        };
+        window.toggleCoupon = async (code) => {
+            try {
+                await mutateCoupons(obj => { if (obj[code]) obj[code].active = obj[code].active === false; });
+                await loadAll(); showToast('Cupón actualizado');
+            } catch (e) { console.error(e); showToast('Error al actualizar', true); }
+        };
+        window.deleteCoupon = async (code) => {
+            if (!confirm('¿Eliminar el cupón ' + code + '?')) return;
+            try {
+                await mutateCoupons(obj => { delete obj[code]; });
+                await loadAll(); showToast('Cupón eliminado');
+            } catch (e) { console.error(e); showToast('Error al eliminar', true); }
+        };
+
+        // ---------- ADMIN: Ajustes ----------
+        function renderAdminSettings() {
+            document.getElementById('set-commission').value = Math.round(commissionRate() * 1000) / 10;
+            document.getElementById('set-freeship').value = state.settings.freeShipThreshold || 0;
+            document.getElementById('set-storename').value = state.settings.storeName || 'FIJA';
+            document.getElementById('set-support').value = state.settings.supportEmail || '';
+            document.getElementById('set-maintenance').checked = !!state.settings.maintenance;
+        }
+        window.savePlatformSettings = async () => {
+            const commission = Math.max(0, Math.min(50, parseFloat(document.getElementById('set-commission').value) || 0)) / 100;
+            const freeShip = Math.max(0, parseFloat(document.getElementById('set-freeship').value) || 0);
+            const storeName = (document.getElementById('set-storename').value || '').trim() || 'FIJA';
+            const supportEmail = (document.getElementById('set-support').value || '').trim();
+            const maintenance = document.getElementById('set-maintenance').checked;
+            try {
+                await mutateSettings(obj => { obj.commissionRate = commission; obj.freeShipThreshold = freeShip; obj.storeName = storeName; obj.supportEmail = supportEmail; obj.maintenance = maintenance; });
+                await loadAll(); showToast('Ajustes guardados');
+            } catch (e) { console.error(e); showToast('Error al guardar los ajustes', true); }
+        };
+
+        // ---------- VENDEDOR: Estadísticas ----------
+        function myItems() {
+            const me = state.profile ? state.profile.userId : null;
+            const out = [];
+            liveOrders().forEach(o => (o.items || []).filter(it => it.sellerId === me).forEach(it => out.push({ order: o, it })));
+            return out;
+        }
+        function renderSellerStats() {
+            const items = myItems();
+            const gross = items.reduce((s, x) => s + itemGross(x.it), 0);
+            const units = items.reduce((s, x) => s + (x.it.quantity || 0), 0);
+            const myProducts = state.products.filter(p => p.sellerId === state.profile.userId);
+            const d30 = Date.now() - 30 * 86400000;
+            const g30 = items.filter(x => (x.order.createdAt || 0) > d30).reduce((s, x) => s + itemGross(x.it), 0);
+            document.getElementById('st-30d').textContent = formatEuro(g30);
+            document.getElementById('st-units').textContent = units;
+            document.getElementById('st-avg').textContent = formatEuro(units ? gross / units : 0);
+            const allRv = myProducts.flatMap(p => (Array.isArray(p.reviews) ? p.reviews : []).filter(r => !r.hidden));
+            document.getElementById('st-rating').innerHTML = allRv.length ? stars(allRv.reduce((s, r) => s + (r.rating || 0), 0) / allRv.length) + ` <span class="text-lg">${(allRv.reduce((s, r) => s + (r.rating || 0), 0) / allRv.length).toFixed(1)}</span>` : '—';
+            // barras 14 días
+            const days = [];
+            for (let i = 13; i >= 0; i--) { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i); days.push(d.getTime()); }
+            const byDay = days.map(ts => items.filter(x => { const t = x.order.createdAt || 0; return t >= ts && t < ts + 86400000; }).reduce((s, x) => s + itemGross(x.it), 0));
+            const max = Math.max(1, ...byDay);
+            document.getElementById('st-bars').innerHTML = byDay.map((v, i) => {
+                const h = Math.max(2, Math.round(v / max * 100));
+                return `<div class="flex-1 flex flex-col items-center justify-end h-full" title="${new Date(days[i]).toLocaleDateString('es-ES')}: ${formatEuro(v)}"><div class="w-full bg-fija-900 rounded-t hover:bg-fija-700 transition-colors" style="height:${h}%"></div></div>`;
+            }).join('');
+            document.getElementById('st-bars-labels').innerHTML = days.map((ts, i) => `<div class="flex-1 text-center">${i % 2 === 0 ? new Date(ts).getDate() : ''}</div>`).join('');
+            // top productos
+            const pm = {};
+            items.forEach(x => { const k = x.it.productId; if (!pm[k]) pm[k] = { title: x.it.title || k, units: 0, gross: 0 }; pm[k].units += (x.it.quantity || 0); pm[k].gross += itemGross(x.it); });
+            const top = Object.values(pm).sort((a, b) => b.units - a.units).slice(0, 8);
+            document.getElementById('st-top-products').innerHTML = top.length ? top.map(r => `<tr><td class="px-6 py-3 font-medium">${escapeHtml(r.title)}</td><td class="px-6 py-3 text-right">${r.units}</td><td class="px-6 py-3 text-right">${formatEuro(r.gross)}</td></tr>`).join('') : `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin ventas todavía.</td></tr>`;
+            // más vistos
+            const views = myProducts.slice().sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 8);
+            document.getElementById('st-top-views').innerHTML = views.length ? views.map(p => `<tr><td class="px-6 py-3 font-medium">${escapeHtml(p.title)}</td><td class="px-6 py-3 text-right">${p.views || 0}</td></tr>`).join('') : `<tr><td colspan="2" class="px-6 py-8 text-center text-fija-400">Sin datos de visitas.</td></tr>`;
+        }
+
+        // ---------- VENDEDOR: Inventario ----------
+        function stockOf(p) { return p.stock == null ? 25 : p.stock; }
+        function renderSellerInventory() {
+            const mine = state.products.filter(p => p.sellerId === state.profile.userId);
+            const low = mine.filter(p => stockOf(p) > 0 && stockOf(p) <= 5);
+            const out = mine.filter(p => stockOf(p) === 0);
+            const alerts = [];
+            out.forEach(p => alerts.push(`<div class="bg-red-50 border border-red-200 text-red-800 rounded-xl px-5 py-3 text-sm flex items-center"><i class="fa-solid fa-circle-exclamation mr-3 text-red-500"></i><strong>${escapeHtml(p.title)}</strong>&nbsp;está agotado (0 unidades).</div>`));
+            low.forEach(p => alerts.push(`<div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-3 text-sm flex items-center"><i class="fa-solid fa-triangle-exclamation mr-3 text-amber-500"></i><strong>${escapeHtml(p.title)}</strong>&nbsp;tiene solo ${stockOf(p)} unidad(es).</div>`));
+            document.getElementById('inv-alerts').innerHTML = alerts.join('');
+            document.getElementById('inv-table').innerHTML = mine.length ? mine.map(p => {
+                const s = stockOf(p);
+                const badge = s === 0 ? '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">Agotado</span>' : (s <= 5 ? '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">Stock bajo</span>' : '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">OK</span>');
+                return `<tr>
+                <td class="px-6 py-4 font-medium">${escapeHtml(p.title)}</td>
+                <td class="px-6 py-4 text-lg font-bold">${s}</td>
+                <td class="px-6 py-4">${badge}</td>
+                <td class="px-6 py-4"><div class="flex items-center gap-2">
+                    <button onclick="adjustStock('${p.id}', -1)" class="w-8 h-8 rounded-lg border border-fija-300 hover:bg-fija-50 font-bold">−</button>
+                    <input type="number" min="0" id="inv-input-${p.id}" value="${s}" class="w-20 border border-fija-300 rounded-lg px-2 py-1.5 text-sm text-center">
+                    <button onclick="adjustStock('${p.id}', 1)" class="w-8 h-8 rounded-lg border border-fija-300 hover:bg-fija-50 font-bold">+</button>
+                    <button onclick="setStock('${p.id}')" class="text-sm text-fija-900 hover:underline font-medium ml-1">Guardar</button>
+                </div></td></tr>`;
+            }).join('') : `<tr><td colspan="4" class="px-6 py-8 text-center text-fija-400">Sin productos.</td></tr>`;
+        }
+        window.adjustStock = (id, delta) => {
+            const p = state.products.find(x => x.id === id); if (!p) return;
+            const next = Math.max(0, stockOf(p) + delta);
+            const input = document.getElementById('inv-input-' + id); if (input) input.value = next;
+        };
+        window.setStock = async (id) => {
+            const input = document.getElementById('inv-input-' + id); if (!input) return;
+            const value = Math.max(0, parseInt(input.value, 10) || 0);
+            try { await mutateCollection('products', arr => { const p = arr.find(x => x.id === id); if (p) p.stock = value; });
+                await loadAll(); showToast('Stock actualizado');
+            } catch (e) { console.error(e); showToast('Error al guardar el stock', true); }
+        };
+
+        // ---------- VENDEDOR: Mis valoraciones ----------
+        function renderSellerReviews() {
+            const mine = state.products.filter(p => p.sellerId === state.profile.userId);
+            const list = [];
+            mine.forEach(p => (Array.isArray(p.reviews) ? p.reviews : []).forEach(r => list.push({ p, r })));
+            list.sort((a, b) => (b.r.createdAt || 0) - (a.r.createdAt || 0));
+            const visible = list.filter(x => !x.r.hidden);
+            const avg = visible.length ? visible.reduce((s, x) => s + (x.r.rating || 0), 0) / visible.length : 0;
+            document.getElementById('rv-avg').innerHTML = visible.length ? stars(avg) + ` <span class="text-lg">${avg.toFixed(1)}</span>` : '—';
+            document.getElementById('rv-count').textContent = visible.length;
+            document.getElementById('rv-products').textContent = new Set(list.map(x => x.p.id)).size;
+            document.getElementById('rv-list').innerHTML = list.length ? list.map(({ p, r }) => `<div class="px-6 py-4 ${r.hidden ? 'opacity-50' : ''}">
+                <p class="text-sm font-medium">${escapeHtml(p.title)} <span class="text-fija-400 font-normal">· ${escapeHtml(r.username || 'anónimo')}</span></p>
+                <p class="text-xs">${stars(r.rating)} <span class="text-fija-400 ml-1">${r.createdAt ? new Date(r.createdAt).toLocaleDateString('es-ES') : ''}${r.hidden ? ' · oculta' : ''}</span></p>
+                <p class="text-sm text-fija-600 mt-1">${escapeHtml(r.text || '')}</p></div>`).join('') : `<div class="px-6 py-8 text-center text-fija-400">Sin opiniones todavía.</div>`;
+        }
+
+        // ---------- VENDEDOR: Facturación ----------
+        function renderSellerBilling() {
+            const items = myItems();
+            const byMonth = {};
+            items.forEach(x => {
+                const k = monthKey(x.order.createdAt);
+                if (!byMonth[k]) byMonth[k] = { n: 0, gross: 0, commission: 0, net: 0 };
+                byMonth[k].n++; byMonth[k].gross += itemGross(x.it); byMonth[k].commission += itemCommission(x.it); byMonth[k].net += itemNet(x.it);
+            });
+            const rows = Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
+            document.getElementById('billing-table').innerHTML = rows.length ? rows.map(([k, r]) => `<tr>
+                <td class="px-6 py-4 font-medium">${monthLabel(k)}</td>
+                <td class="px-6 py-4 text-right">${r.n}</td>
+                <td class="px-6 py-4 text-right">${formatEuro(r.gross)}</td>
+                <td class="px-6 py-4 text-right text-red-600">− ${formatEuro(r.commission)}</td>
+                <td class="px-6 py-4 text-right font-bold text-green-700">${formatEuro(r.net)}</td></tr>`).join('') : `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Sin movimientos todavía.</td></tr>`;
+        }
+        window.exportBillingCSV = () => {
+            const items = myItems();
+            const byMonth = {};
+            items.forEach(x => {
+                const k = monthKey(x.order.createdAt);
+                if (!byMonth[k]) byMonth[k] = { n: 0, gross: 0, commission: 0, net: 0 };
+                byMonth[k].n++; byMonth[k].gross += itemGross(x.it); byMonth[k].commission += itemCommission(x.it); byMonth[k].net += itemNet(x.it);
+            });
+            const rows = [['Mes', 'Pedidos', 'Bruto', 'Comision', 'Neto']];
+            Object.entries(byMonth).sort().forEach(([k, r]) => rows.push([monthLabel(k), r.n, r.gross.toFixed(2), r.commission.toFixed(2), r.net.toFixed(2)]));
+            downloadCSV('fija_facturacion.csv', rows);
+            showToast('Facturación exportada');
+        };
 
         // ===================== Compresión de medios (calidad 90%) =====================
         function fileToDataURL(file) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); }); }
@@ -871,6 +1479,7 @@
             if (!isApprovedSeller()) { showToast(isPendingSeller() ? 'Tu cuenta está pendiente de verificación' : 'Solo vendedores verificados pueden publicar', true); return; }
             state.editingId = null; state.pendingVideo = null;
             document.getElementById('product-form').reset();
+            document.getElementById('prod-stock').value = 25;
             document.getElementById('prod-image-preview').classList.add('hidden');
             setVideoUI();
             document.getElementById('product-modal-title').textContent = 'Nuevo Producto';
@@ -886,6 +1495,7 @@
             document.getElementById('prod-title').value = p.title || '';
             document.getElementById('prod-price').value = p.price ?? '';
             document.getElementById('prod-old').value = p.oldPrice ?? '';
+            document.getElementById('prod-stock').value = (p.stock == null ? 25 : p.stock);
             document.getElementById('prod-image').value = p.imageUrl || '';
             document.getElementById('prod-category').value = p.category || '';
             document.getElementById('prod-desc').value = p.description || '';
@@ -915,6 +1525,7 @@
                 title: document.getElementById('prod-title').value,
                 price,
                 oldPrice: old && old > price ? old : null,
+                stock: Math.max(0, parseInt(document.getElementById('prod-stock').value, 10) || 0),
                 category: document.getElementById('prod-category').value,
                 imageUrl: document.getElementById('prod-image').value,
                 description: document.getElementById('prod-desc').value,
@@ -964,7 +1575,7 @@
             if (!p || !box) return;
             const d = Math.max(0, Math.min(90, parseFloat(document.getElementById('disc-percent').value) || 0));
             const eff = d > 0 ? +(p.price * (1 - d / 100)).toFixed(2) : p.price;
-            const sellerNet = +(p.price * (1 - COMMISSION_RATE)).toFixed(2);
+            const sellerNet = +(p.price * (1 - commissionRate())).toFixed(2);
             box.innerHTML = `<div class="flex justify-between"><span class="text-fija-500">Cliente paga:</span> <strong>${formatEuro(eff)}</strong></div>
                 <div class="flex justify-between"><span class="text-fija-500">La empresa cobra (neto):</span> <strong class="text-green-700">${formatEuro(sellerNet)}</strong></div>
                 <div class="flex justify-between"><span class="text-fija-500">Coste para FIJA:</span> <strong class="text-red-600">${formatEuro(p.price - eff)}</strong></div>`;

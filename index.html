@@ -450,7 +450,7 @@
                             </div>
                             <button onclick="switchView('user-dashboard')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-user mr-3 text-gray-400 w-4"></i> Mi Cuenta</button>
                             <button type="button" onclick="openNotifications()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-bell mr-3 text-gray-400 w-4"></i> Notificaciones <span id="dd-notif-badge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center hide">0</span></button>
-                            <button type="button" onclick="openSyncSettings()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-database mr-3 text-gray-400 w-4"></i> Sincronización</button>
+                            <button type="button" id="dd-sync-btn" onclick="openSyncSettings()" class="hide hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-database mr-3 text-gray-400 w-4"></i> Sincronización</button>
                             <button type="button" onclick="requestRemoveWatermark()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-droplet mr-3 text-gray-400 w-4"></i> Quitar marca de agua</button>
                             <button type="button" onclick="openListsModal()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-list-check mr-3 text-gray-400 w-4"></i> Mis listas</button>
                             <button type="button" onclick="openPriceAlerts()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-bell-slash mr-3 text-gray-400 w-4"></i> Alertas de precio</button>
@@ -1291,7 +1291,11 @@
         }
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
-        const COMMISSION_RATE = 0.047; // Comisión de FIJA por cada venta (4,7%)
+        // Comisión FIJA por venta. Configurable desde el back-office (Ajustes → fija_settings).
+        const COMMISSION_RATE = (() => {
+            try { const s = JSON.parse(localStorage.getItem('fija_settings') || '{}'); if (typeof s.commissionRate === 'number' && s.commissionRate >= 0 && s.commissionRate <= 1) return s.commissionRate; } catch (e) {}
+            return 0.047;
+        })();
 
         const state = {
             products: [], orders: [], profiles: [], approvedSellers: new Set(),
@@ -3595,7 +3599,31 @@
                 renderStorefront();
                 if (state.currentView === 'cart') renderCart();
                 if (state.currentView === 'user-dashboard') renderUserDashboard();
+                // Hidrata cupones y ajustes desde la misma fuente que el back-office
+                hydrateCloudConfig();
             } catch (e) { console.error('loadAll', e); }
+        }
+        // Descarga cupones/ajustes (creados en el back-office) y los deja en localStorage
+        async function hydrateCloudConfig() {
+            try {
+                const [cp, st] = await Promise.all([readDataFile('coupons'), readDataFile('settings')]);
+                if (cp && cp.data && !Array.isArray(cp.data) && Object.keys(cp.data).length) {
+                    localStorage.setItem('fija_coupons', JSON.stringify(cp.data));
+                }
+                if (st && st.data && !Array.isArray(st.data) && Object.keys(st.data).length) {
+                    localStorage.setItem('fija_settings', JSON.stringify(st.data));
+                    if (st.data.maintenance) {
+                        let b = document.getElementById('fija-maint');
+                        if (!b) {
+                            b = document.createElement('div');
+                            b.id = 'fija-maint';
+                            b.setAttribute('style', 'position:fixed;top:0;left:0;right:0;z-index:45;background:#f59e0b;color:#fff;text-align:center;font-size:12px;padding:5px 12px;');
+                            document.body.appendChild(b);
+                        }
+                        b.textContent = 'Tienda en mantenimiento — volvemos pronto.';
+                    } else { const b = document.getElementById('fija-maint'); if (b) b.remove(); }
+                }
+            } catch (e) { console.warn('hydrateCloudConfig', e); }
         }
 
         // ===================== UI: Vistas y Modales =====================
@@ -4341,6 +4369,11 @@
                 const el = document.getElementById(id);
                 if (el) { el.classList.toggle('hide', !show); el.classList.toggle('hidden', !show); }
             });
+            // "Sincronización" (Supabase) SOLO para el administrador
+            const toggleSync = (show) => {
+                const el = document.getElementById('dd-sync-btn');
+                if (el) { el.classList.toggle('hide', !show); el.classList.toggle('hidden', !show); }
+            };
             if (state.session && state.profile) {
                 DOM.loginBtn.classList.add('hide'); DOM.userInfo.classList.remove('hide');
                 const displayName = state.profile.username || state.session.email || 'Usuario';
@@ -4351,6 +4384,8 @@
                 DOM.ddRole.className = `inline-block mt-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${isAdmin() ? 'bg-fija-900 text-white' : 'bg-gray-100 text-gray-600'}`;
                 // "Área Vendedores" solo para vendedores y admins (nunca para clientes)
                 toggleBackend(state.profile.role === 'seller' || state.profile.role === 'admin');
+                // "Sincronización" solo para el admin
+                toggleSync(isAdmin());
                 // Foto de perfil en el menú
                 const navImg = document.getElementById('nav-user-photo'), navIcon = document.getElementById('nav-user-icon');
                 if (navImg && navIcon) {
@@ -4360,6 +4395,7 @@
             } else {
                 DOM.loginBtn.classList.remove('hide'); DOM.userInfo.classList.add('hide');
                 toggleBackend(false);
+                toggleSync(false);
             }
         }
         function updateCartBadge() {
@@ -5153,7 +5189,23 @@
         }
 
         // ---------- 9. CÓDIGO DE DESCUENTO ----------
-        const PROMOS = { 'FIJA10': { type: 'pct', value: 10, label: '10% de descuento' }, 'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra' }, 'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria' }, 'FIJA20': { type: 'pct', value: 20, label: '20% de descuento' } };
+        const DEFAULT_PROMOS = { 'FIJA10': { type: 'pct', value: 10, label: '10% de descuento' }, 'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra' }, 'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria' }, 'FIJA20': { type: 'pct', value: 20, label: '20% de descuento' } };
+        // Cupones gestionables desde el back-office (fija_coupons en localStorage / data/coupons.json).
+        // active:false desactiva un código (incluso los de fábrica); el resto se añade al catálogo.
+        function loadPromos() {
+            let extra = {};
+            try { extra = JSON.parse(localStorage.getItem('fija_coupons') || '{}') || {}; } catch (e) {}
+            const merged = Object.assign({}, DEFAULT_PROMOS);
+            Object.keys(extra).forEach(code => {
+                const c = extra[code]; if (!c) return;
+                if (c.active === false) delete merged[code];
+                else merged[code] = { type: c.type, value: c.value, label: c.label };
+            });
+            return merged;
+        }
+        // Se lee en cada uso (no en carga) para reflejar los cupones creados en el back-office
+        function getPromos() { return loadPromos(); }
+        window.getPromos = getPromos;
         // Cupones ya usados por el usuario (un solo uso por cuenta, se guarda en su perfil)
         window.getUsedCoupons = () => (state.profile && Array.isArray(state.profile.usedCoupons)) ? state.profile.usedCoupons : [];
         window.isCouponUsed = (code) => getUsedCoupons().some(c => c && c.code === String(code || '').trim().toUpperCase());
@@ -5170,7 +5222,7 @@
             const input = document.getElementById('promo-input'); const msg = document.getElementById('promo-msg');
             const code = ((input || {}).value || '').trim().toUpperCase();
             if (!code) return;
-            const promo = PROMOS[code];
+            const promo = getPromos()[code];
             if (!promo) { if (msg) { msg.textContent = 'Código no válido. Prueba FIJA10 o BIENVENIDA.'; msg.className = 'text-xs mt-2 text-red-500'; msg.classList.remove('hidden'); } state.promo = null; renderCart(); return; }
             if (isCouponUsed(code)) { if (msg) { msg.textContent = 'El cupón ' + code + ' ya se ha utilizado (un solo uso).'; msg.className = 'text-xs mt-2 text-red-500'; msg.classList.remove('hidden'); } showToast('El cupón ' + code + ' ya se ha usado', true); return; }
             state.promo = { code, ...promo };
@@ -5249,6 +5301,8 @@ create policy "lectura publica" on fija_data for select using (true);
 -- Escritura publica (demo). En produccion, restringe con auth/RLS adecuados.
 create policy "escritura publica" on fija_data for all using (true) with check (true);`;
         window.openSyncSettings = () => {
+            // Solo el administrador puede ver y usar la sincronización
+            if (!isAdmin()) { showToast('Solo el administrador puede acceder a la sincronización', true); return; }
             const cfg = { }; try { cfg = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
             const prov = cloudProvider();
             const provLabel = { supabase: 'Supabase', github: 'GitHub (repo cpdd-1314/FIJA)', local: 'Local (este navegador)' }[prov] || prov;
@@ -5618,7 +5672,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const el = document.getElementById('promos-strip'); if (!el) return;
             const sec = document.getElementById('promos-section');
             if (sec) sec.classList.remove('hide');
-            el.innerHTML = Object.entries(PROMOS).map(([code, pr]) => `
+            el.innerHTML = Object.entries(getPromos()).map(([code, pr]) => `
                 <div class="border border-dashed border-fija-gold bg-fija-50/40 rounded-xl p-4 flex items-center gap-3">
                     <i class="fa-solid fa-ticket text-fija-gold text-xl"></i>
                     <div class="flex-1 min-w-0"><p class="font-mono font-black text-fija-900">${code}</p><p class="text-[11px] text-gray-500 truncate">${pr.label}</p></div>
@@ -6260,7 +6314,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         window.applyBestPromo = () => {
             const sub = cartSubtotal(); if (sub <= 0) { showToast('Tu cesta está vacía', true); return; }
             let best = null;
-            Object.entries(PROMOS).forEach(([code, pr]) => { if (pr.type !== 'pct' || isCouponUsed(code)) return; const d = sub * pr.value / 100; if (!best || d > best.d) best = { code, d, ...pr }; });
+            Object.entries(getPromos()).forEach(([code, pr]) => { if (pr.type !== 'pct' || isCouponUsed(code)) return; const d = sub * pr.value / 100; if (!best || d > best.d) best = { code, d, ...pr }; });
             if (!best) { showToast('Ya has usado todos los cupones disponibles', true); return; }
             state.promo = { code: best.code, type: 'pct', value: best.value, label: best.label };
             const inp = document.getElementById('promo-input'); if (inp) inp.value = best.code;
@@ -7638,15 +7692,15 @@ const FIJA_THEMES = {
                 ${rows.map(r => `<tr class="border-t"><td class="p-2 text-gray-500 font-medium">${r[0]}</td>${items.map(p => `<td class="p-2">${r[1](p)}</td>`).join('')}</tr>`).join('')}</table></div>`); };
 
         // ---------- 67. CUPONES Y CESTA AVANZADA ----------
-        window.availableCoupons = () => Object.entries(PROMOS).map(e => ({ code: e[0], ...e[1] }));
-        window.applyCoupon = (code) => { const c = String(code || '').trim().toUpperCase(); const promo = PROMOS[c];
+        window.availableCoupons = () => Object.entries(getPromos()).map(e => ({ code: e[0], ...e[1] }));
+        window.applyCoupon = (code) => { const c = String(code || '').trim().toUpperCase(); const promo = getPromos()[c];
             if (!promo) { showToast('Ese código no existe', true); return false; }
             if (state.promo && state.promo.code === c) { showToast('Ese código ya está aplicado'); return false; }
             if (isCouponUsed(c)) { showToast('El cupón ' + c + ' ya se ha usado (un solo uso)', true); return false; }
             state.promo = { code: c, ...promo }; renderCart(); showToast('Cupón ' + c + ' aplicado'); return true; };
         window.removeCoupon = () => { state.promo = null; renderCart(); showToast('Cupón retirado'); };
         window.copyCoupon = (code) => { copyText(code); showToast('Código ' + code + ' copiado'); };
-        window.bestPromoFor = () => Object.entries(PROMOS).filter(e => e[1].type === 'pct').sort((a, b) => b[1].value - a[1].value)[0];
+        window.bestPromoFor = () => Object.entries(getPromos()).filter(e => e[1].type === 'pct').sort((a, b) => b[1].value - a[1].value)[0];
         window.cartCountUnits = () => sumBy(state.cart, i => i.quantity || 1);
         window.cartTotalRaw = () => sumBy(state.cart, i => effectivePrice(i.product) * (i.quantity || 1));
         window.cartSavings = () => sumBy(state.cart, i => (Number(i.product.oldPrice) || effectivePrice(i.product)) * (i.quantity || 1)) - cartTotalRaw();
