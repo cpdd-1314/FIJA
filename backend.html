@@ -38,7 +38,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-fija-900 text-fija-gold text-3xl font-extrabold mb-4">F</div>
+                <img src="logo.png" alt="FIJA" class="h-14 w-auto mb-4">
                 <h1 class="text-3xl font-extrabold tracking-tight">FIJA <span class="text-fija-gold">Back-Office</span></h1>
                 <p class="text-fija-500 text-sm mt-2">Acceso para administradores y vendedores</p>
             </div>
@@ -65,7 +65,7 @@
         <header class="bg-fija-900 text-white sticky top-0 z-30 shadow-md">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-lg gold-gradient text-fija-900 flex items-center justify-center font-extrabold text-xl">F</div>
+                    <img src="logo-white.png" alt="FIJA" class="h-8 w-auto">
                     <div>
                         <p class="font-bold leading-none">FIJA Back-Office</p>
                         <p id="role-badge" class="text-[11px] text-fija-gold leading-none mt-0.5">—</p>
@@ -145,6 +145,10 @@
                             <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ticket medio</p><p class="text-3xl font-bold" id="st-avg">0,00 €</p></div>
                             <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Nota media</p><p class="text-3xl font-bold text-fija-gold" id="st-rating">—</p></div>
                         </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-4 shadow-sm flex items-center justify-between mb-8">
+                            <span class="text-sm text-fija-500"><i class="fa-solid fa-ticket text-fija-gold mr-2"></i>Mis promociones activas</span>
+                            <span class="text-2xl font-bold text-fija-900" id="st-promos">0</span>
+                        </div>
                         <div class="bg-white rounded-xl border border-fija-200 p-6 mb-8">
                             <h2 class="font-semibold mb-4"><i class="fa-solid fa-chart-simple text-fija-gold mr-2"></i>Ventas brutas · últimos 14 días</h2>
                             <div id="st-bars" class="flex items-end gap-1.5 h-40"></div>
@@ -208,6 +212,28 @@
                             </table></div>
                         </div>
                     </section>
+
+                    <!-- ===== PROMOCIONES (VENDEDOR) ===== -->
+                    <section id="sec-s-promos" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Mis Promociones</h1><p class="text-fija-500 text-sm">Crea cupones de descuento para tus productos. Se aplican en la tienda al instante.</p></div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 shadow-sm mb-6">
+                            <h2 class="font-semibold mb-4"><i class="fa-solid fa-plus text-fija-gold mr-2"></i>Nuevo cupón</h2>
+                            <form id="seller-coupon-form" onsubmit="createSellerCoupon(event)" class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Código</label><input id="scp-code" required placeholder="VERANO10" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm uppercase focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Etiqueta</label><input id="scp-label" required placeholder="10% en tu tienda" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Tipo</label><select id="scp-type" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-fija-900 outline-none"><option value="pct">Porcentaje</option><option value="ship">Envío/recogida</option></select></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Valor (%)</label><input id="scp-value" type="number" min="1" max="90" value="10" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-fija-900 outline-none"></div>
+                                <div><button type="submit" class="w-full bg-fija-900 hover:bg-fija-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-ticket mr-1"></i>Crear</button></div>
+                            </form>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis cupones</div>
+                            <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[720px]">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Código</th><th class="px-6 py-3 font-medium">Etiqueta</th><th class="px-6 py-3 font-medium">Valor</th><th class="px-6 py-3 font-medium">Estado</th><th class="px-6 py-3 font-medium">Acciones</th></tr></thead>
+                                <tbody id="scp-table" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
+                    </section>
                 </section>
 
                 <!-- ADMIN -->
@@ -235,6 +261,16 @@
                                 <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Vendedor</th><th class="px-6 py-3 font-medium">Ventas brutas</th><th class="px-6 py-3 font-medium">Comisión FIJA</th><th class="px-6 py-3 font-medium">Descuentos FIJA</th><th class="px-6 py-3 font-medium">Neto vendedor</th></tr></thead>
                                 <tbody id="admin-commission-table" class="divide-y divide-fija-100"></tbody>
                             </table></div>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Ticket medio</p><p class="text-3xl font-bold text-fija-900" id="admin-ticket">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Clientes únicos</p><p class="text-3xl font-bold text-fija-900" id="admin-clients">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Ingresos (6 meses)</p><p class="text-3xl font-bold text-green-600" id="admin-rev6">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Cupones activos</p><p class="text-3xl font-bold text-fija-gold" id="admin-coupons">0</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
+                            <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center justify-between"><h2 class="font-semibold"><i class="fa-solid fa-clock-rotate-left text-fija-gold mr-2"></i>Actividad reciente</h2><span class="text-xs text-fija-400">Últimos pedidos</span></div>
+                            <div id="admin-activity" class="divide-y divide-fija-100 max-h-80 overflow-y-auto"></div>
                         </div>
                     </section>
 
@@ -299,6 +335,7 @@
                             <div><h1 class="text-2xl font-bold">Informes</h1><p class="text-fija-500 text-sm">Evolución de ventas y rendimiento del catálogo.</p></div>
                             <button onclick="exportReportsCSV()" class="bg-fija-900 hover:bg-fija-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar resumen</button>
                         </div>
+                        <div id="rp-kpis" class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"></div>
                         <div class="bg-white rounded-xl border border-fija-200 p-6 mb-8">
                             <h2 class="font-semibold mb-4"><i class="fa-solid fa-chart-line text-fija-gold mr-2"></i>Ventas por mes (últimos 6 meses)</h2>
                             <div id="rp-bars" class="flex items-end gap-3 h-48"></div>
@@ -337,6 +374,7 @@
                                 <div class="flex gap-2">
                                     <input type="text" id="cu-search" oninput="renderAdminCustomers()" placeholder="Buscar por nombre o correo…" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm w-64">
                                     <select id="cu-role" onchange="renderAdminCustomers()" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm"><option value="all">Todos los roles</option><option value="user">Clientes</option><option value="seller">Vendedores</option><option value="admin">Admins</option></select>
+                                    <button onclick="exportCustomersCSV()" class="bg-fija-900 hover:bg-fija-800 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"><i class="fa-solid fa-file-csv mr-1.5"></i>Exportar</button>
                                 </div>
                             </div>
                             <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[900px]">
@@ -552,7 +590,16 @@
         function loadConfig() {
             let s = {};
             try { s = JSON.parse(localStorage.getItem('fija_backend_config') || '{}'); } catch (e) {}
-            return { owner: s.owner || '', repo: s.repo || '', branch: s.branch || 'main', token: s.token || '' };
+            let sc = {};
+            try { sc = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
+            // Hereda las credenciales de Supabase de la tienda (fija_config) y, si no
+            // están, usa las del proyecto por defecto, para que cupones/ajustes creados
+            // aquí se espejen en la tienda vía Supabase (misma fuente que lee la tienda).
+            return {
+                owner: s.owner || '', repo: s.repo || '', branch: s.branch || 'main', token: s.token || '',
+                supabaseUrl: s.supabaseUrl || sc.supabaseUrl || 'https://qacogtfreowsptgiozie.supabase.co',
+                supabaseKey: s.supabaseKey || sc.supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhY29ndGZyZW93c3B0Z2lvemllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NTIwMjQsImV4cCI6MjEwODMyODAyNH0.cgif_jqhCJ6F9LUHFml1eHtX2ZCsJ8urAu-ztT27GCs'
+            };
         }
         const CONFIG = loadConfig();
 
@@ -795,6 +842,7 @@
             } else if (isApprovedSeller() || isPendingSeller()) {
                 items += navItem('products', 'Mis Productos', 'fa-box');
                 items += navItem('stats', 'Estadísticas', 'fa-chart-simple');
+                items += navItem('promos', 'Promociones', 'fa-ticket');
                 items += navItem('inventory', 'Inventario', 'fa-warehouse');
                 items += navItem('myorders', 'Mis Pedidos', 'fa-receipt');
                 items += navItem('reviews', 'Mis Valoraciones', 'fa-star');
@@ -812,7 +860,7 @@
 
         // ===================== Views / sections =====================
         const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
-        const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
+        const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', promos:'sec-s-promos', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
         function showSection(id) {
             state.view = id;
             // Resuelve por rol: si la clave existe en ambos mapas (p.ej. 'reviews'), manda el rol
@@ -872,11 +920,16 @@
                         <td class="px-6 py-4">${statusBadge(o.status)}</td></tr>`;
                 }).join('');
             }
+            // Promociones activas del vendedor (para la tarjeta de Estadísticas)
+            const myUid = state.profile && state.profile.userId;
+            const myPromos = Object.values(state.coupons || {}).filter(c => c && c.sellerId === myUid && c.active !== false).length;
+            const spEl = document.getElementById('st-promos'); if (spEl) spEl.textContent = myPromos;
             // Nuevos módulos de vendedor
             if (document.getElementById('st-bars')) renderSellerStats();
             if (document.getElementById('inv-table')) renderSellerInventory();
             if (document.getElementById('rv-list')) renderSellerReviews();
             if (document.getElementById('billing-table')) renderSellerBilling();
+            if (document.getElementById('scp-table')) renderSellerPromos();
         }
 
         function renderAdmin() {
@@ -959,6 +1012,27 @@
                     <td class="px-6 py-4 text-red-600">${r.discount > 0 ? '− ' + formatEuro(r.discount) : '—'}</td>
                     <td class="px-6 py-4 text-green-700">${formatEuro(r.net)}</td></tr>`).join('');
             }
+            // KPIs adicionales del panel
+            const nOrders = state.orders.filter(o => o.status !== 'cancelled').length;
+            document.getElementById('admin-ticket').textContent = formatEuro(nOrders ? paid / nOrders : 0);
+            const buyersSet = new Set(state.orders.filter(o => o.status !== 'cancelled').map(o => (o.buyerUid || o.buyerEmail || '').toLowerCase()).filter(Boolean));
+            document.getElementById('admin-clients').textContent = buyersSet.size;
+            let rev6 = 0; const _now = new Date(); const _from = new Date(_now.getFullYear(), _now.getMonth() - 5, 1).getTime();
+            state.orders.filter(o => o.status !== 'cancelled' && (o.createdAt || 0) >= _from).forEach(o => { rev6 += (o.total != null ? o.total : o.items.reduce((s, it) => s + itemPaid(it), 0)); });
+            document.getElementById('admin-rev6').textContent = formatEuro(rev6);
+            const activeCoupons = Object.values(state.coupons || {}).filter(c => c && c.active !== false).length;
+            document.getElementById('admin-coupons').textContent = activeCoupons;
+            const recent = state.orders.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
+            document.getElementById('admin-activity').innerHTML = recent.length ? recent.map(o => {
+                const its = o.items || [];
+                const amt = o.total != null ? o.total : its.reduce((s, it) => s + itemPaid(it), 0);
+                const titles = its.map(it => it.title).slice(0, 2).join(', ');
+                return `<div class="px-6 py-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0"><p class="text-sm font-medium truncate">${escapeHtml(o.buyerName || o.buyerEmail || 'Cliente')}</p><p class="text-xs text-fija-500 truncate">${escapeHtml(titles)}${its.length > 2 ? '…' : ''}</p></div>
+                    <div class="text-right shrink-0"><p class="text-sm font-semibold">${formatEuro(amt)}</p><p class="text-xs text-fija-500">${o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-ES') : ''}</p></div>
+                    <div class="shrink-0">${statusBadge(o.status)}</div>
+                </div>`;
+            }).join('') : `<div class="px-6 py-8 text-center text-fija-400">Sin actividad.</div>`;
             // orders table
             if (state.orders.length === 0) {
                 document.getElementById('admin-orders-table').innerHTML = `<tr><td colspan="9" class="px-6 py-8 text-center text-fija-400">Sin pedidos.</td></tr>`;
@@ -1008,11 +1082,12 @@
         // Espejo en localStorage (misma clave que lee la tienda) y en Supabase (si está configurado)
         async function sbMirror(name, data) {
             try {
-                const cfg = JSON.parse(localStorage.getItem('fija_config') || '{}');
-                if (!cfg.supabaseUrl || !cfg.supabaseKey) return;
-                await fetch(cfg.supabaseUrl.replace(/\/+$/, '') + '/rest/v1/fija_data', {
+                const url = (CONFIG && CONFIG.supabaseUrl) || (JSON.parse(localStorage.getItem('fija_config') || '{}').supabaseUrl);
+                const key = (CONFIG && CONFIG.supabaseKey) || (JSON.parse(localStorage.getItem('fija_config') || '{}').supabaseKey);
+                if (!url || !key) return;
+                await fetch(url.replace(/\/+$/, '') + '/rest/v1/fija_data', {
                     method: 'POST',
-                    headers: { 'apikey': cfg.supabaseKey, 'Authorization': 'Bearer ' + cfg.supabaseKey, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+                    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
                     body: JSON.stringify({ name, content: data, updated_at: new Date().toISOString() })
                 });
             } catch (e) { console.warn('sbMirror falló (' + name + ')', e); }
@@ -1040,10 +1115,10 @@
         // ---------- ADMIN: Informes ----------
         function renderAdminReports() {
             const orders = liveOrders();
-            const byMonth = {};
+            const byMonth = {}; const byMonthOrders = {};
             const now = new Date();
-            for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); byMonth[monthKey(d.getTime())] = 0; }
-            orders.forEach(o => { const k = monthKey(o.createdAt); if (k in byMonth) byMonth[k] += orderPaidTotal(o); });
+            for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); byMonth[monthKey(d.getTime())] = 0; byMonthOrders[monthKey(d.getTime())] = 0; }
+            orders.forEach(o => { const k = monthKey(o.createdAt); if (k in byMonth) { byMonth[k] += orderPaidTotal(o); byMonthOrders[k] += 1; } });
             const entries = Object.entries(byMonth);
             const max = Math.max(1, ...entries.map(e => e[1]));
             document.getElementById('rp-bars').innerHTML = entries.map(([k, v]) => {
@@ -1076,6 +1151,16 @@
                 <td class="px-6 py-3 font-medium">${escapeHtml(c)}</td>
                 <td class="px-6 py-3 text-right">${r.units}</td>
                 <td class="px-6 py-3 text-right">${formatEuro(r.gross)}</td></tr>`).join('') : `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin datos.</td></tr>`;
+            // KPIs del informe
+            const rev6 = entries.reduce((s, e) => s + e[1], 0);
+            const ord6 = Object.values(byMonthOrders).reduce((s, v) => s + v, 0);
+            const ticket6 = ord6 ? rev6 / ord6 : 0;
+            const best = entries.reduce((a, b) => b[1] > a[1] ? b : a, entries[0] || ['—', 0]);
+            document.getElementById('rp-kpis').innerHTML = `
+                <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ingresos (6 meses)</p><p class="text-3xl font-bold text-green-600">${formatEuro(rev6)}</p></div>
+                <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Pedidos (6 meses)</p><p class="text-3xl font-bold text-fija-900">${ord6}</p></div>
+                <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Ticket medio (6m)</p><p class="text-3xl font-bold text-fija-900">${formatEuro(ticket6)}</p></div>
+                <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Mejor mes</p><p class="text-3xl font-bold text-fija-gold">${monthLabel(best[0])}</p></div>`;
         }
         window.exportReportsCSV = () => {
             const orders = liveOrders();
@@ -1176,6 +1261,13 @@
             } catch (e) { console.error(e); showToast('Error al eliminar', true); }
         };
 
+        window.exportCustomersCSV = () => {
+            const ordersBy = {}, spend = {};
+            liveOrders().forEach(o => { const k = o.buyerUid || o.buyerEmail; if (!k) return; ordersBy[k] = (ordersBy[k] || 0) + 1; spend[k] = (spend[k] || 0) + orderPaidTotal(o); });
+            const rows = [['Usuario', 'Email', 'Rol', 'Empresa', 'Pedidos', 'Gasto total', 'Alta']];
+            state.profiles.forEach(p => { const k = p.userId || p.email; rows.push([p.username || '', p.email || '', p.role || '', p.companyName || '', ordersBy[k] || 0, (spend[k] || 0).toFixed(2), p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-ES') : '']); });
+            downloadCSV('fija_clientes.csv', rows); showToast('Clientes exportados');
+        };
         // ---------- ADMIN: Cupones ----------
         function couponUses() {
             const uses = {};
@@ -1223,6 +1315,46 @@
                 await mutateCoupons(obj => { delete obj[code]; });
                 await loadAll(); showToast('Cupón eliminado');
             } catch (e) { console.error(e); showToast('Error al eliminar', true); }
+        };
+
+        // ---------- VENDEDOR: Promociones (sus propios cupones) ----------
+        function renderSellerPromos() {
+            const myUid = state.profile && state.profile.userId;
+            const rows = Object.entries(state.coupons || {}).filter(([, c]) => c && c.sellerId === myUid).map(([code, c]) => ({ code, ...c }));
+            document.getElementById('scp-table').innerHTML = rows.length ? rows.map(c => `<tr>
+                <td class="px-6 py-4 font-mono font-bold">${escapeHtml(c.code)}</td>
+                <td class="px-6 py-4">${escapeHtml(c.label || '—')}</td>
+                <td class="px-6 py-4">${c.type === 'pct' ? c.value + '%' : 'Envío/recogida'}</td>
+                <td class="px-6 py-4">${c.active === false ? '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-medium">Inactivo</span>' : '<span class="inline-block text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 font-medium">Activo</span>'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="toggleSellerCoupon('${escapeHtml(c.code)}')" class="text-fija-900 hover:underline text-sm mr-3">${c.active === false ? 'Activar' : 'Desactivar'}</button>
+                    <button onclick="deleteSellerCoupon('${escapeHtml(c.code)}')" class="text-red-500 hover:underline text-sm">Eliminar</button>
+                </td></tr>`).join('') : `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Aún no has creado cupones.</td></tr>`;
+        }
+        window.createSellerCoupon = async (e) => {
+            e.preventDefault();
+            const myUid = state.profile && state.profile.userId;
+            const code = (document.getElementById('scp-code').value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const type = document.getElementById('scp-type').value;
+            const value = Math.max(0, parseFloat(document.getElementById('scp-value').value) || 0);
+            const label = (document.getElementById('scp-label').value || '').trim();
+            if (!code || !label) { showToast('Código y etiqueta son obligatorios', true); return; }
+            if (type === 'pct' && (value <= 0 || value > 90)) { showToast('El porcentaje debe estar entre 1 y 90', true); return; }
+            try {
+                await mutateCoupons(obj => { obj[code] = { type, value: type === 'pct' ? value : 0, label, active: true, sellerId: myUid, createdAt: Date.now() }; });
+                document.getElementById('seller-coupon-form').reset();
+                document.getElementById('scp-value').value = 10;
+                await loadAll(); showToast('Cupón ' + code + ' creado');
+            } catch (err) { console.error(err); showToast('Error al crear el cupón', true); }
+        };
+        window.toggleSellerCoupon = async (code) => {
+            try { await mutateCoupons(obj => { if (obj[code]) obj[code].active = obj[code].active === false; }); await loadAll(); showToast('Cupón actualizado'); }
+            catch (e) { console.error(e); showToast('Error al actualizar', true); }
+        };
+        window.deleteSellerCoupon = async (code) => {
+            if (!confirm('¿Eliminar el cupón ' + code + '?')) return;
+            try { await mutateCoupons(obj => { delete obj[code]; }); await loadAll(); showToast('Cupón eliminado'); }
+            catch (e) { console.error(e); showToast('Error al eliminar', true); }
         };
 
         // ---------- ADMIN: Ajustes ----------
