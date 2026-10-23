@@ -592,6 +592,9 @@
             try { s = JSON.parse(localStorage.getItem('fija_backend_config') || '{}'); } catch (e) {}
             let sc = {};
             try { sc = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
+            // Migración única: si se había guardado la BD Supabase antigua, apuntamos a la nueva.
+            const _OLD_SB = 'https://qacogtfreowsptgiozie.supabase.co';
+            if (sc.supabaseUrl === _OLD_SB) { sc.supabaseUrl = undefined; sc.supabaseKey = undefined; }
             // Hereda las credenciales de Supabase de la tienda (fija_config) y, si no
             // están, usa las del proyecto por defecto, para que cupones/ajustes creados
             // aquí se espejen en la tienda vía Supabase (misma fuente que lee la tienda).

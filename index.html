@@ -1286,6 +1286,9 @@
         function loadConfig() {
             let stored = {};
             try { stored = JSON.parse(localStorage.getItem('fija_config') || '{}'); } catch (e) {}
+            // Migración única: si se había guardado la BD Supabase antigua, apuntamos a la nueva.
+            const _OLD_SB = 'https://qacogtfreowsptgiozie.supabase.co';
+            if (stored.supabaseUrl === _OLD_SB) { stored.supabaseUrl = undefined; stored.supabaseKey = undefined; }
             const cloudToken = _ct1 + _ct2 + _ct3;
             return {
                 owner: stored.owner || 'cpdd-1314',
