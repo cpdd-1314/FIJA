@@ -387,11 +387,13 @@
             color: rgba(110, 110, 110, .25);
         }
         .dark .fija-wm-inner { color: rgba(255, 255, 255, .25); }
+        #fija-wm.wm-off { display: none; }
     </style>
 </head>
 <body class="antialiased flex flex-col min-h-screen">
     <!-- Marca de agua global (no bloquea la interaccion: pointer-events:none) -->
     <div id="fija-wm" aria-hidden="true"><div class="fija-wm-inner"></div></div>
+    <script>try { if (localStorage.getItem('fija_watermark') === 'off') document.getElementById('fija-wm').classList.add('wm-off'); } catch (e) {}</script>
 
     <!-- BARRA DE CONFIANZA -->
     <div class="bg-fija-900 text-white text-[11px] border-b border-white/5 safe-top">
@@ -449,6 +451,7 @@
                             <button onclick="switchView('user-dashboard')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-user mr-3 text-gray-400 w-4"></i> Mi Cuenta</button>
                             <button type="button" onclick="openNotifications()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-bell mr-3 text-gray-400 w-4"></i> Notificaciones <span id="dd-notif-badge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center hide">0</span></button>
                             <button type="button" onclick="openSyncSettings()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-database mr-3 text-gray-400 w-4"></i> Sincronización</button>
+                            <button type="button" onclick="requestRemoveWatermark()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-droplet mr-3 text-gray-400 w-4"></i> Quitar marca de agua</button>
                             <button type="button" onclick="openListsModal()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-list-check mr-3 text-gray-400 w-4"></i> Mis listas</button>
                             <button type="button" onclick="openPriceAlerts()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-bell-slash mr-3 text-gray-400 w-4"></i> Alertas de precio</button>
                             <button type="button" onclick="openSearchHistoryModal()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-clock-rotate-left mr-3 text-gray-400 w-4"></i> Historial búsqueda</button>
@@ -497,6 +500,7 @@
                 <button type="button" onclick="openHelp()" class="hover:text-fija-gold transition-colors py-2 px-2">Ayuda</button>
                 <button type="button" onclick="openStoresDirectory()" class="hover:text-fija-gold transition-colors py-2 px-2">Tiendas</button>
                 <button type="button" onclick="toggleTheme()" title="Modo oscuro" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-moon"></i></button>
+                <button type="button" data-wm-btn onclick="requestRemoveWatermark()" title="Quitar marca de agua" class="hover:text-fija-gold transition-colors py-2 px-2"><i class="fa-solid fa-droplet"></i></button>
             </div>
         </div>
         <!-- MEGAMENÚ / BARRA DE CATEGORÍAS (estilo Amazon) -->
@@ -520,6 +524,7 @@
                         <button type="button" onclick="openHelp()" class="hover:text-fija-gold transition-colors py-2">Ayuda</button>
                         <button type="button" onclick="openStoresDirectory()" class="hover:text-fija-gold transition-colors py-2">Tiendas</button>
                         <button type="button" onclick="toggleTheme()" id="theme-btn" title="Modo oscuro" class="hover:text-fija-gold transition-colors py-2"><i class="fa-solid fa-moon"></i></button>
+                        <button type="button" data-wm-btn onclick="requestRemoveWatermark()" title="Quitar marca de agua" class="hover:text-fija-gold transition-colors py-2"><i class="fa-solid fa-droplet"></i></button>
                     </div>
                 </div>
             </div>
@@ -1203,6 +1208,25 @@
                 <button type="button" onclick="closeModal('generic-modal')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="generic-modal-body" class="p-6"></div>
+        </div>
+    </div>
+
+    <!-- ===================== MODAL MARCA DE AGUA "PROYECTO" ===================== -->
+    <div id="wm-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center hide hidden opacity-0 transition-opacity duration-300 px-4" onclick="if(event.target===this)closeModal('wm-modal')">
+        <div id="wm-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform scale-95 transition-transform duration-300">
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 rounded-full bg-fija-50 flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-droplet text-2xl text-fija-900"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-fija-900 tracking-[.2em] mb-3">PROYECTO</h2>
+                <p class="text-sm text-gray-700 mb-2">Esta web (<strong>FIJA</strong>) es un <strong>proyecto</strong>: una tienda de demostración, no un comercio real.</p>
+                <p class="text-xs text-gray-500 mb-1">La marca de agua «PROYECTO» a 45° cubre toda la pantalla para indicarlo.</p>
+                <p class="text-xs text-gray-500">Si pulsas <strong>Aceptar</strong>, la marca de agua se desactivará en este dispositivo.</p>
+            </div>
+            <div class="flex border-t border-gray-100">
+                <button type="button" onclick="closeModal('wm-modal')" class="flex-1 py-3.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancelar</button>
+                <button type="button" onclick="confirmRemoveWatermark()" class="flex-1 py-3.5 text-sm font-bold text-white bg-fija-900 hover:bg-fija-800 transition-colors">Aceptar</button>
+            </div>
         </div>
     </div>
 
@@ -5405,6 +5429,35 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             openFullPage(title, null, null, html, ['Tienda', title]);
         }
         window.showGenericModal = showGenericModal;
+        // ---------- 23b. MARCA DE AGUA "PROYECTO": aviso + desactivación ----------
+        window.watermarkEnabled = () => {
+            try { return localStorage.getItem('fija_watermark') !== 'off'; } catch (e) { return true; }
+        };
+        window.applyWatermarkState = () => {
+            const wm = document.getElementById('fija-wm');
+            const on = watermarkEnabled();
+            if (wm) wm.classList.toggle('wm-off', !on);
+            document.querySelectorAll('[data-wm-btn]').forEach(b => {
+                const i = b.querySelector('i');
+                if (i) { i.classList.toggle('fa-droplet', on); i.classList.toggle('fa-droplet-slash', !on); }
+                b.title = on ? 'Quitar marca de agua' : 'Reactivar marca de agua';
+            });
+        };
+        // Clic en el botón: si la marca está activa, muestra el aviso "PROYECTO"; si ya está desactivada, la reactiva.
+        window.requestRemoveWatermark = () => {
+            if (watermarkEnabled()) { openModal('wm-modal'); return; }
+            try { localStorage.removeItem('fija_watermark'); } catch (e) {}
+            applyWatermarkState();
+            showToast('Marca de agua reactivada');
+        };
+        // El usuario pulsa "Aceptar" en el aviso: se desactiva la marca de agua.
+        window.confirmRemoveWatermark = () => {
+            try { localStorage.setItem('fija_watermark', 'off'); } catch (e) {}
+            applyWatermarkState();
+            closeModal('wm-modal');
+            showToast('Marca de agua desactivada');
+        };
+        applyWatermarkState();
         // ---------- 24. PESTAÑAS DE MI CUENTA ----------
         window.switchUserTab = (tab) => {
             document.querySelectorAll('#ud-tabs .ud-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
