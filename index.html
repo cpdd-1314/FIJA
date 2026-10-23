@@ -590,13 +590,13 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="hero-slide" data-slide="1">
+                        <div class="hero-slide cursor-pointer" data-slide="1" onclick="navigate('todaysDeals')">
                             <div class="grid md:grid-cols-2 gap-8 items-center px-8 md:px-14 py-12 md:py-16">
                                 <div>
                                     <span class="inline-block text-red-400 text-xs font-bold uppercase tracking-[0.25em] mb-3">Ofertas Relámpago</span>
                                     <h2 class="text-4xl md:text-5xl font-black leading-tight mb-4">Hasta <span class="text-red-400">-70%</span> hoy</h2>
                                     <p class="text-gray-300 mb-6 max-w-md">Las ofertas más fuertes del marketplace duran poco. Aprovecha el contador y llévate tu producto hoy mismo en Click &amp; Collect.</p>
-                                    <button onclick="navigate('todaysDeals')" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"><i class="fa-solid fa-bolt mr-2"></i>Ver ofertas</button>
+                                    <button onclick="event.stopPropagation(); navigate('todaysDeals')" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"><i class="fa-solid fa-bolt mr-2"></i>Ver ofertas</button>
                                 </div>
                                 <div class="hidden md:grid grid-cols-2 gap-4">
                                     <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10"><i class="fa-solid fa-percent text-red-400 text-xl mb-2"></i><p class="font-semibold">Descuentos</p><p class="text-xs text-gray-300">Hasta 70% off</p></div>
@@ -745,7 +745,7 @@
                 </div>
 
                 <!-- TICKER DE OFERTAS CON CUENTA ATRÁS -->
-                <section id="deals-ticker" class="mb-8 bg-gradient-to-r from-red-600 to-fija-900 rounded-2xl px-6 py-4 text-white flex flex-wrap items-center gap-4">
+                <section id="deals-ticker" class="mb-8 bg-gradient-to-r from-red-600 to-fija-900 rounded-2xl px-6 py-4 text-white flex flex-wrap items-center gap-4 cursor-pointer" onclick="navigate('todaysDeals')">
                     <div class="flex items-center gap-3">
                         <i class="fa-solid fa-bolt text-fija-gold text-2xl"></i>
                         <div><p class="font-bold leading-tight">Ofertas Relámpago</p><p class="text-xs text-white/70">Termina en</p></div>
@@ -757,7 +757,7 @@
                         <span class="font-black">:</span>
                         <span class="bg-white/15 rounded-lg px-3 py-2 text-center min-w-[54px]"><span class="block text-xl font-black" id="cd-s">00</span><span class="text-[9px] uppercase tracking-wider text-white/60">s</span></span>
                     </div>
-                    <button onclick="navigate('todaysDeals')" class="bg-white text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-100 transition-colors">Ver ofertas</button>
+                    <button onclick="event.stopPropagation(); navigate('todaysDeals')" class="bg-white text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-100 transition-colors">Ver ofertas</button>
                 </section>
 
                 <!-- CARRUSEL: DESTACADOS -->
@@ -787,9 +787,10 @@
                 <!-- CARRUSEL: OFERTAS -->
                 <section class="mb-10" id="deals-section">
                     <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-2xl font-bold text-fija-900">Ofertas del día</h2>
+                        <h2 class="text-2xl font-bold text-fija-900 cursor-pointer hover:text-fija-gold transition-colors" onclick="navigate('deals')">Ofertas del día</h2>
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-red-600 font-semibold">Hasta -40%</span>
+                            <button type="button" onclick="navigate('deals')" class="hidden sm:inline-flex items-center gap-1 text-sm font-semibold text-fija-900 hover:text-fija-gold transition-colors"><i class="fa-solid fa-tags mr-1"></i>Ver todas las ofertas</button>
                             <button onclick="scrollCarousel('carousel-deals',-1)" class="w-9 h-9 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"><i class="fa-solid fa-chevron-left text-sm"></i></button>
                             <button onclick="scrollCarousel('carousel-deals',1)" class="w-9 h-9 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100 transition-colors"><i class="fa-solid fa-chevron-right text-sm"></i></button>
                         </div>
