@@ -60,7 +60,8 @@
     "sellerId": "demo-seller",
     "sellerName": "Audio Lux SL",
     "verified": true,
-    "createdAt": 1700000400000
+    "createdAt": 1700000400000,
+    "views": 1
   },
   {
     "id": "demo-006",
