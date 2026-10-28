@@ -1013,7 +1013,7 @@
     <!-- ===================== FOOTER (estilo Amazon) ===================== -->
     <footer class="bg-fija-900 text-white mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 mb-10">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 mb-10">
                 <div class="col-span-2 lg:col-span-2">
                     <img src="logo-white.png" alt="FIJA" class="h-10 w-auto mb-1">
                     <p class="text-sm text-white/60 mt-4 leading-relaxed max-w-xs">El marketplace Click &amp; Collect que conecta compradores con vendedores verificados. Sin intermediarios innecesarios.</p>
@@ -1060,7 +1060,8 @@
                         <li><a href="backend.html" class="hover:text-white">Mis pedidos</a></li>
                         <li><button type="button" onclick="openStoresDirectory()" class="hover:text-white">Directorio de tiendas</button></li>
                         <li><button type="button" onclick="openTrustBadge()" class="hover:text-white">Insignias de confianza</button></li>
-                        <li><span>Comisión FIJA: 4,7%</span></li>
+                        <li><button type="button" onclick="openInfoModal('comision')" class="hover:text-white">Comisión FIJA: 4,7%</button></li>
+                        <li><button type="button" onclick="openInfoModal('ranking')" class="hover:text-white">Ranking de vendedores</button></li>
                     </ul>
                 </div>
                 <div>
@@ -1071,6 +1072,23 @@
                         <li><button type="button" onclick="openHelp('devoluciones')" class="hover:text-white">Devoluciones</button></li>
                         <li><button type="button" onclick="openContactForm()" class="hover:text-white">Contactar</button></li>
                         <li><button type="button" onclick="openWhatsAppHelp()" class="hover:text-white">WhatsApp soporte</button></li>
+                        <li><button type="button" onclick="openInfoModal('apoyo')" class="hover:text-white">Apoyo y centro de ayuda</button></li>
+                        <li><button type="button" onclick="openAccessibility()" class="hover:text-white">Accesibilidad</button></li>
+                        <li><button type="button" onclick="openShortcutsHelp()" class="hover:text-white">Atajos de teclado</button></li>
+                        <li><button type="button" onclick="openInfoModal('sobre')" class="hover:text-white">Sobre FIJA</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm mb-4 text-fija-gold">Información legal</h4>
+                    <ul class="space-y-2.5 text-sm text-white/60">
+                        <li><button type="button" onclick="openInfoModal('terminos')" class="hover:text-white">Términos</button></li>
+                        <li><button type="button" onclick="openInfoModal('privacidad')" class="hover:text-white">Privacidad</button></li>
+                        <li><button type="button" onclick="openInfoModal('cookies')" class="hover:text-white">Cookies</button></li>
+                        <li><button type="button" onclick="openInfoModal('comision')" class="hover:text-white">Comisión FIJA</button></li>
+                        <li><button type="button" onclick="openInfoModal('logros')" class="hover:text-white">Logros</button></li>
+                        <li><button type="button" onclick="openInfoModal('ranking')" class="hover:text-white">Ranking</button></li>
+                        <li><button type="button" onclick="openInfoModal('novedades')" class="hover:text-white">Novedades</button></li>
+                        <li><button type="button" onclick="openInfoModal('opiniones')" class="hover:text-white">Opinión</button></li>
                     </ul>
                 </div>
             </div>
@@ -1087,10 +1105,13 @@
             </div>
             <div class="border-t border-white/10 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/40">
                 <p>© 2026 FIJA Marketplace · Comisión del 4,7% gestionada por la plataforma</p>
-                <div class="flex gap-4">
-                    <button type="button" onclick="openLegal('privacidad')" class="hover:text-white">Privacidad</button>
-                    <button type="button" onclick="openLegal('terminos')" class="hover:text-white">Términos</button>
-                    <button type="button" onclick="openLegal('cookies')" class="hover:text-white">Cookies</button>
+                <div class="flex flex-wrap gap-4">
+                    <button type="button" onclick="openInfoModal('terminos')" class="hover:text-white">Términos</button>
+                    <button type="button" onclick="openInfoModal('privacidad')" class="hover:text-white">Privacidad</button>
+                    <button type="button" onclick="openInfoModal('cookies')" class="hover:text-white">Cookies</button>
+                    <button type="button" onclick="openInfoModal('accesibilidad')" class="hover:text-white">Accesibilidad</button>
+                    <button type="button" onclick="openInfoModal('atajos')" class="hover:text-white">Atajos</button>
+                    <button type="button" onclick="openInfoModal('sobre')" class="hover:text-white">Sobre FIJA</button>
                 </div>
             </div>
         </div>
@@ -5451,10 +5472,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             <button type="button" onclick="sendContactForm()" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar mensaje</button>`);
         window.sendContactForm = () => { closeModal('generic-modal'); showToast('Mensaje enviado. Te responderemos en 24 h.'); };
         window.openWhatsAppHelp = () => window.open('https://wa.me/34900100200?text=Hola%20FIJA,%20necesito%20ayuda', '_blank');
-        window.openLegal = (which) => {
-            const t = { privacidad: 'Privacidad', terminos: 'Términos y condiciones', cookies: 'Cookies' }[which] || 'Legal';
-            showGenericModal(t, '<p class="text-sm text-gray-600 leading-relaxed">Este es un proyecto demo. Los datos se guardan en tu navegador y, si configuras un token de GitHub, en un repositorio público. No se.shared datos con terceros. Sustituye este texto por el aviso legal real de tu empresa antes de publicar en producción.</p>');
-        };
+        window.openLegal = (which) => { openInfoModal(which || 'terminos'); };
         window.openGiftModal = () => showGenericModal('Regala FIJA', '<p class="text-sm text-gray-600 mb-3">Envía un código de regalo a un amigo.</p><div class="flex gap-2"><input type="text" id="gift-code" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase" placeholder="FIJA-REGALO"><button type="button" onclick="closeModal(\'generic-modal\'); showToast(\'Código de regalo copiado\')" class="bg-fija-900 text-white text-sm px-4 py-2 rounded-lg">Generar</button></div>');
 
         // ---------- 14. DIRECTORIO DE TIENDAS ----------
@@ -6214,7 +6232,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         }
         window.openShortcutsHelp = () => showGenericModal('Atajos de teclado', `
             <div class="space-y-2 text-sm">
-                ${[['/','Buscar en el catálogo'],['c','Ir a la cesta'],['m','Abrir comparador'],['l','Mis listas'],['a','Alertas de precio'],['h','Centro de ayuda'],['Esc','Cerrar ventanas']]
+                ${[['/','Buscar en el catálogo'],['c','Ir a la cesta'],['m','Abrir comparador'],['l','Mis listas'],['a','Alertas de precio'],['n','Novedades'],['h','Centro de ayuda'],['Esc','Cerrar ventanas']]
                 .map(([k, d]) => `<div class="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2"><span class="text-gray-700">${d}</span><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">${k}</kbd></div>`).join('')}
             </div>`);
 
@@ -7311,13 +7329,7 @@ const FIJA_THEMES = {
             .map(([i, t, d], n) => `<li class="flex gap-3"><span class="w-6 h-6 rounded-full bg-fija-900 text-white text-xs font-bold flex items-center justify-center shrink-0">${n + 1}</span>
                 <div><p class="font-semibold text-fija-900 flex items-center gap-2"><i class="fa-solid ${i} text-fija-gold"></i>${t}</p><p class="text-sm text-gray-500">${d}</p></div></li>`).join('')}</ol>
             <a href="backend.html" class="f-btn f-btn-gold w-full mt-5">Ir al Área Vendedores <i class="fa-solid fa-arrow-right ml-1"></i></a>`);
-        window.openCommissionInfo = () => showGenericModal('Comisión FIJA', `
-            <div class="text-center mb-5"><p class="text-5xl font-black text-fija-900">4,7%</p><p class="text-xs text-gray-500 uppercase tracking-wider">por venta</p></div>
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between border border-gray-200 rounded-lg px-3 py-2"><span>Vender por 100 €</span><strong class="text-green-600">Recibes 95,30 €</strong></div>
-                <div class="flex justify-between border border-gray-200 rounded-lg px-3 py-2"><span>Coste para FIJA</span><strong>4,70 €</strong></div></div>
-            <div class="bg-fija-50 rounded-xl p-3 mt-4 text-xs text-gray-600"><i class="fa-solid fa-circle-check text-green-600 mr-1"></i>
-                <strong>Importante:</strong> cuando FIJA aplica un descuento, el coste lo asume la plataforma. El vendedor cobra siempre el 100% de su precio marcado.</div>`);
+        window.openCommissionInfo = () => openInfoModal('comision');
         window.openTerms = () => showGenericModal('Términos y condiciones', `
             <div class="space-y-3 text-sm text-gray-600 max-h-96 overflow-y-auto pr-1">
                 <p><strong>1. NatureFIJA</strong> es un marketplace de venta entre particulares y empresas con entrega Click &amp; Collect.</p>
@@ -7334,10 +7346,7 @@ const FIJA_THEMES = {
                 <p><strong>Qué NO guardamos:</strong> datos de tarjetas ni contraseñas en texto plano.</p>
                 <p><strong>Tus derechos:</strong> puedes exportar o eliminar tus datos en cualquier momento desde Mi Cuenta.</p></div>
             <button type="button" onclick="exportMyData(); closeModal('generic-modal')" class="f-btn f-btn-outline w-full mt-4">Descargar mis datos</button>`);
-        window.openCookiePolicy = () => showGenericModal('Cookies y privacidad', `
-            <p class="text-sm text-gray-600 mb-3">FIJA usa almacenamiento local (<code>localStorage</code>) para recordar tu sesión, carrito, favoritos y preferencias de tema. No usamos cookies publicitarias de terceros.</p>
-            <div class="bg-fija-50 rounded-xl p-3 text-xs text-gray-600"><i class="fa-solid fa-shield-halved text-green-600 mr-1"></i>Puedes borrar todos tus datos con el botón inferior.</div>
-            <button type="button" onclick="clearAllLocalData()" class="f-btn f-btn-danger w-full mt-4">Borrar todos mis datos locales</button>`);
+        window.openCookiePolicy = () => openInfoModal('cookies');
         window.clearAllLocalData = () => {
             if (!confirm('Esto borrará tu sesión, carrito, listas y preferencias de este navegador. ¿Continuar?')) return;
             Object.keys(localStorage).filter(k => k.startsWith('fija_')).forEach(k => localStorage.removeItem(k));
@@ -7405,14 +7414,7 @@ const FIJA_THEMES = {
                 ${Object.entries(keys).map(([k, v]) => `<tr class="border-b border-gray-100"><td class="py-2 w-20"><kbd class="bg-gray-100 rounded px-2 py-1 font-mono text-xs">${k}</kbd></td><td class="py-2 text-gray-600">${v}</td></tr>`).join('')}
             </tbody></table>`);
         };
-        window.openAppInfo = () => showGenericModal('Sobre FIJA', `
-            <div class="text-center mb-4"><span class="text-3xl font-black gold-gradient inline-block">FIJA</span>
-                <p class="text-xs text-gray-400 mt-1">Marketplace Click &amp; Collect</p></div>
-            <div class="grid grid-cols-3 gap-3 text-center mb-4">
-                <div class="f-card p-2"><p class="font-black text-fija-900">${state.products.length}</p><p class="text-[10px] text-gray-500">Productos</p></div>
-                <div class="f-card p-2"><p class="font-black text-fija-900">${unique(state.products.map(p => p.sellerId)).length}</p><p class="text-[10px] text-gray-500">Tiendas</p></div>
-                <div class="f-card p-2"><p class="font-black text-fija-900">4,7%</p><p class="text-[10px] text-gray-500">Comisión</p></div></div>
-            <p class="text-xs text-gray-500 text-center">Demostración técnica · Pago simulado</p>`);
+        window.openAppInfo = () => openInfoModal('sobre');
         window.openQuickAdd = () => showGenericModal('Añadir rápido por referencia', `
             <p class="text-sm text-gray-500 mb-3">Escribe la referencia (SKU) de un producto y lo añadimos a la cesta.</p>
             <div class="flex gap-2 mb-3"><input id="qa-sku" class="f-input" placeholder="FIJA-000123">
@@ -9528,6 +9530,313 @@ window.__GEN_COUNT__ = 536;
 // ===== LOTE 9 — 100 FUNCIONES NUEVAS =====
 Object.assign(LISTING_DEFS, {"bestElectrónica":{"key":"Electrónica","title":"Lo mejor de Electrónica","subtitle":"Los productos mejor valorados de Electrónica","icon":"fa-microchip","kind":"category","sort":"rating"},"bestModa":{"key":"Moda","title":"Lo mejor de Moda","subtitle":"Los productos mejor valorados de Moda","icon":"fa-shirt","kind":"category","sort":"rating"},"bestDeportes":{"key":"Deportes","title":"Lo mejor de Deportes","subtitle":"Los productos mejor valorados de Deportes","icon":"fa-futbol","kind":"category","sort":"rating"},"bestHogar":{"key":"Hogar","title":"Lo mejor de Hogar","subtitle":"Los productos mejor valorados de Hogar","icon":"fa-couch","kind":"category","sort":"rating"},"bestBelleza":{"key":"Belleza","title":"Lo mejor de Belleza","subtitle":"Los productos mejor valorados de Belleza","icon":"fa-spa","kind":"category","sort":"rating"},"bestJuguetes":{"key":"Juguetes","title":"Lo mejor de Juguetes","subtitle":"Los productos mejor valorados de Juguetes","icon":"fa-puzzle-piece","kind":"category","sort":"rating"},"bestLibros":{"key":"Libros","title":"Lo mejor de Libros","subtitle":"Los productos mejor valorados de Libros","icon":"fa-book","kind":"category","sort":"rating"},"bestCocina":{"key":"Cocina","title":"Lo mejor de Cocina","subtitle":"Los productos mejor valorados de Cocina","icon":"fa-utensils","kind":"category","sort":"rating"},"bestJardín":{"key":"Jardín","title":"Lo mejor de Jardín","subtitle":"Los productos mejor valorados de Jardín","icon":"fa-leaf","kind":"category","sort":"rating"},"bestBebés":{"key":"Bebés","title":"Lo mejor de Bebés","subtitle":"Los productos mejor valorados de Bebés","icon":"fa-baby","kind":"category","sort":"rating"},"bestAutomóvil":{"key":"Automóvil","title":"Lo mejor de Automóvil","subtitle":"Los productos mejor valorados de Automóvil","icon":"fa-car","kind":"category","sort":"rating"},"bestMascotas":{"key":"Mascotas","title":"Lo mejor de Mascotas","subtitle":"Los productos mejor valorados de Mascotas","icon":"fa-paw","kind":"category","sort":"rating"},"bestSalud":{"key":"Salud","title":"Lo mejor de Salud","subtitle":"Los productos mejor valorados de Salud","icon":"fa-heart-pulse","kind":"category","sort":"rating"},"bestOficina":{"key":"Oficina","title":"Lo mejor de Oficina","subtitle":"Los productos mejor valorados de Oficina","icon":"fa-briefcase","kind":"category","sort":"rating"},"topRatedAll":{"key":"topRatedAll","title":"Mejor valorados","subtitle":"Los productos con mejores reseñas","icon":"fa-star","kind":"rated","sort":"rating"},"bigDiscounts":{"key":"bigDiscounts","title":"Grandes descuentos","subtitle":"Descuentos de 15% o más","icon":"fa-percent","kind":"deal","min":15},"megaSavings":{"key":"megaSavings","title":"Ahorro mega","subtitle":"Ofertas de 10% o más","icon":"fa-tags","kind":"deal","min":10},"under30":{"key":"under30","title":"Menos de 30 €","subtitle":"Buenas compras por poco","icon":"fa-coins","kind":"under","max":30},"under40":{"key":"under40","title":"Menos de 40 €","subtitle":"Calidad accesible","icon":"fa-coins","kind":"under","max":40},"giftCentral":{"key":"giftCentral","title":"Centro de regalos","subtitle":"Para todas las ocasiones","icon":"fa-gift","kind":"gift"},"topSellers":{"key":"topSellers","title":"Más vendidos","subtitle":"Los favoritos de los compradores","icon":"fa-fire","kind":"bestseller","sort":"bestseller"},"trendingNow":{"key":"trendingNow","title":"Tendencias","subtitle":"Lo que está de moda ahora","icon":"fa-chart-line","kind":"trending"},"newestAll":{"key":"newestAll","title":"Recién llegados","subtitle":"Lo último en la tienda","icon":"fa-sparkles","kind":"new"},"staffPicks":{"key":"staffPicks","title":"Selección del equipo","subtitle":"Elegidos por FIJA","icon":"fa-medal","kind":"rated","sort":"rating"},"byNovaTech":{"key":"NovaTech","title":"Marca NovaTech","subtitle":"Todos los productos NovaTech","icon":"fa-tag","kind":"brand"},"byFIJA":{"key":"FIJA","title":"Marca FIJA","subtitle":"Todos los productos FIJA","icon":"fa-tag","kind":"brand"},"byCasaLuz":{"key":"CasaLuz","title":"Marca CasaLuz","subtitle":"Todos los productos CasaLuz","icon":"fa-tag","kind":"brand"},"bySportPro":{"key":"SportPro","title":"Marca SportPro","subtitle":"Todos los productos SportPro","icon":"fa-tag","kind":"brand"},"byBioVida":{"key":"BioVida","title":"Marca BioVida","subtitle":"Todos los productos BioVida","icon":"fa-tag","kind":"brand"},"byVeraModa":{"key":"VeraModa","title":"Marca VeraModa","subtitle":"Todos los productos VeraModa","icon":"fa-tag","kind":"brand"},"byLumen":{"key":"Lumen","title":"Marca Lumen","subtitle":"Todos los productos Lumen","icon":"fa-tag","kind":"brand"},"byPetCare":{"key":"PetCare","title":"Marca PetCare","subtitle":"Todos los productos PetCare","icon":"fa-tag","kind":"brand"}});
 Object.assign(INFO_PAGES, {"nxClickCollectGuide":{"title":"Guía Click & Collect","html":"<p>FIJA es un marketplace de recogida en tienda. Compra online y recoge tu pedido en el punto del vendedor mostrando tu código QR.</p><p>No hacemos envíos a domicilio: tu producto te espera en el punto de recogida.</p>"},"nxHowPickupWorks":{"title":"Cómo funciona la recogida","html":"<p>1. Eliges tus productos. 2. Pagas de forma segura. 3. Recibes un QR de recogida. 4. Lo muestras en el punto del vendedor y retiras tu compra.</p>"},"nxPickupPointsMap":{"title":"Puntos de recogida","html":"<p>Encuentra el punto de recogida más cercano en el mapa de la pasarela de pago al confirmar tu pedido.</p>"},"nxQrGuide":{"title":"Tu código QR de recogida","html":"<p>Cada pedido genera un código QR único. Muéstralo en el punto de recogida para validar tu compra al instante.</p>"},"nxPaymentSecurity":{"title":"Seguridad de pago","html":"<p>Todos los pagos están cifrados. FIJA nunca comparte tus datos de tarjeta con los vendedores.</p>"},"nxCommissionInfo":{"title":"Comisión FIJA 4,7%","html":"<p>FIJA absorbe una comisión del 4,7% sobre cada venta. Los descuentos de casa los cubre FIJA, no el vendedor.</p>"},"nxSellGuide":{"title":"Cómo vender en FIJA","html":"<p>Regístrate como vendedor, verifica tu identidad y publica tus productos. Tus clientes los recogen en tu punto.</p>"},"nxSellerVerification":{"title":"Verificación de vendedor","html":"<p>Para vender necesitas una cuenta verificada: documenta tu identidad y tu punto de recogida.</p>"},"nxReturnsStep":{"title":"Cómo devolver","html":"<p>Tienes 30 días para devolver. El reembolso se procesa al verificar la recogida del producto devuelto.</p>"},"nxRefundPolicy":{"title":"Política de reembolso","html":"<p>El reembolso se emite en 24-48h tras aceptar la devolución. Depende de tu método de pago.</p>"},"nxOrderTracking":{"title":"Seguimiento de pedido","html":"<p>Consulta el estado de tus pedidos en Mi Cuenta y el QR de recogida asociado a cada uno.</p>"},"nxAccountHelp":{"title":"Ayuda con tu cuenta","html":"<p>Gestiona tu perfil, contraseña y seguridad desde Mi Cuenta. Registro obligatorio para comprar.</p>"},"nxPrivacyPolicy":{"title":"Política de privacidad","html":"<p>Tus datos se usan solo para procesar tu compra y la recogida. Puedes exportarlos o eliminarlos.</p>"},"nxCookiePolicy":{"title":"Política de cookies","html":"<p>Usamos cookies para mejorar tu experiencia y recordar tu carrito entre sesiones.</p>"},"nxTermsUse":{"title":"Términos de uso","html":"<p>Condiciones de uso del marketplace FIJA. Al comprar aceptas recoger en el punto del vendedor.</p>"},"nxAccessibilityInfo":{"title":"Accesibilidad","html":"<p>Ofrecemos modo alto contraste, texto grande y navegación por teclado para una experiencia inclusiva.</p>"},"nxSustainability":{"title":"Sostenibilidad","html":"<p>Al recoger en tienda reducimos envíos y emisiones. Compra local, recoge cerca.</p>"},"nxGiftCardsInfo":{"title":"Tarjetas regalo","html":"<p>Regala FIJA con tarjetas regalo digitales. El saldo se aplica en el pago de recogida.</p>"},"nxLoyaltyProgram":{"title":"Programa de puntos","html":"<p>Gana puntos en cada recogida y canjéalos por descuentos en tus próximas compras.</p>"},"nxReferralProgram":{"title":"Programa de referidos","html":"<p>Invita a amigos a FIJA y ambos reciben un cupón de bienvenida para su primera recogida.</p>"},"nxWarrantyInfo":{"title":"Garantía","html":"<p>Los productos incluyen garantía legal de 2 años. Consulta la ficha de cada artículo.</p>"},"nxAuthenticityInfo":{"title":"Autenticidad","html":"<p>Verificamos los vendedores y marcas para garantizar productos originales en FIJA.</p>"},"nxShippingPolicy":{"title":"Sobre el envío","html":"<p>FIJA es exclusivamente Click & Collect: no realizamos envíos a domicilio. Recoges en el punto.</p>"},"nxContactInfo":{"title":"Contacto","html":"<p>Escríbenos a soporte@fija.com o usa el chat en vivo desde Mi Cuenta.</p>"},"nxAboutFija":{"title":"Sobre FIJA","html":"<p>FIJA es un marketplace de recogida en tienda con identidad propia, pensado para compra local.</p>"},"nxCareersInfo":{"title":"Empleo","html":"<p>Únete al equipo que construye el futuro del comercio de recogida. Mira nuestras ofertas.</p>"},"nxPressInfo":{"title":"Prensa","html":"<p>Notas de prensa, logos y recursos para medios sobre FIJA.</p>"},"nxSitemapInfo":{"title":"Mapa del sitio","html":"<p>Explora todas las categorías, marcas y secciones de ayuda de FIJA en un vistazo.</p>"},"nxSellerFeesInfo":{"title":"Comisiones de vendedor","html":"<p>Comisión única del 4,7%. Sin costes ocultos: publicar y vender es transparente.</p>"},"nxDataRequestInfo":{"title":"Tus datos","html":"<p>Solicita la exportación o eliminación de tus datos personales en cualquier momento.</p>"}});
+
+Object.assign(INFO_PAGES, {
+  "terminos": {
+    title: "Términos y condiciones",
+    icon: "fa-file-contract",
+    subtitle: "Condiciones de uso del marketplace FIJA",
+    html: `
+      <p>Estos Términos regulan el uso de FIJA (en adelante, «la Plataforma»), un marketplace de modelo <strong>Click &amp; Collect</strong> que conecta a compradores con vendedores verificados. Al registrarte o realizar una compra aceptas lo aquí descrito.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">1. Objeto y ámbito</h2>
+      <p>FIJA pone a tu disposición una vitrina digital donde vendedores independientes publican productos y los compradores los adquieren para recogerlos en el punto de recogida indicado por cada vendedor. FIJA no es el propietario de los productos salvo que se indique expresamente «Vendido por FIJA».</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">2. Registro y cuenta</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Debes ser mayor de edad o contar con autorización de un tutor.</li>
+        <li>Los datos de la cuenta deben ser veraces; tú eres responsable de su confidencialidad.</li>
+        <li>El registro es gratuito y necesario para comprar o vender.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">3. Compras, precios y disponibilidad</h2>
+      <p>Los precios se muestran en euros (IVA incluido salvo indicación contraria). La disponibilidad es orientativa y se confirma al pagar. FIJA puede mostrar un descuento «Oferta FIJA» que asume la propia plataforma, sin que ello reduzca lo que cobra el vendedor.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">4. Click &amp; Collect</h2>
+      <p>FIJA no realiza envíos a domicilio. Tras el pago recibirás un <strong>código QR de recogida</strong> que deberás mostrar en el punto del vendedor para retirar tu compra dentro de su horario.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">5. Pagos y seguridad</h2>
+      <p>Las transacciones se procesan de forma cifrada. FIJA nunca comparte tus datos de tarjeta con los vendedores. El cargo se libera al vendedor tras confirmarse la recogida.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">6. Devoluciones y reembolsos</h2>
+      <p>Dispones de 30 días para devolver un producto en buen estado. El reembolso se emite en 24-48 h tras verificar la recogida del artículo devuelto, según tu método de pago.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">7. Propiedad intelectual</h2>
+      <p>La marca FIJA, su logotipo y el contenido de la Plataforma son propiedad de sus respectivos titulares. Queda prohibida su reproducción sin autorización.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">8. Responsabilidad</h2>
+      <p>FIJA actúa como intermediario y no garantiza la descripción, calidad o aptitud de los productos de terceros, sin perjuicio de los derechos legales de los compradores.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">9. Modificaciones</h2>
+      <p>Podemos actualizar estos Términos; la versión vigente siempre estará publicada aquí. El uso continuado implica su aceptación.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">10. Ley aplicable</h2>
+      <p>Estos Términos se rigen por la legislación española. Para cualquier conflicto, las partes se someten a los juzgados del domicilio del consumidor.</p>
+      <p class="text-xs text-gray-400 mt-4">Última actualización: enero de 2026. Documento de demostración: sustitúyelo por el aviso legal real de tu empresa antes de producción.</p>
+    `
+  },
+  "privacidad": {
+    title: "Política de Privacidad",
+    icon: "fa-user-shield",
+    subtitle: "Cómo protegemos y tratamos tus datos (RGPD)",
+    html: `
+      <p>En FIJA nos tomamos en serio tu privacidad. Esta política explica qué datos recogemos, para qué y qué derechos tienes conforme al Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Responsable del tratamiento</h2>
+      <p>FIJA Marketplace (responsable), con domicilio a efectos de contacto en soporte@fija.com. Puedes escribirnos para cualquier cuestión sobre tus datos.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Qué datos recogemos?</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Datos de registro:</strong> nombre, correo, contraseña (cifrada) y, en su caso, perfil de vendedor.</li>
+        <li><strong>Datos de compra:</strong> productos, importes, punto de recogida e historial de pedidos.</li>
+        <li><strong>Datos técnicos:</strong> cookies, dispositivo y comportamiento de navegación para mejorar la experiencia.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Finalidad y base legal</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Tratamiento</th><th class="text-left p-2 border">Base legal</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">Gestionar tu cuenta y pedidos</td><td class="p-2 border">Ejecución de contrato</td></tr>
+          <tr><td class="p-2 border">Recogida Click &amp; Collect</td><td class="p-2 border">Ejecución de contrato</td></tr>
+          <tr><td class="p-2 border">Boletín y ofertas</td><td class="p-2 border">Consentimiento (revocable)</td></tr>
+          <tr><td class="p-2 border">Analítica y mejora</td><td class="p-2 border">Interés legítimo</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Conservación</h2>
+      <p>Conservamos tus datos mientras tengas la cuenta activa y, tras su cierre, durante los plazos legalmente exigibles (p. ej. fiscalía).</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Tus derechos</h2>
+      <p>Puedes en cualquier momento <strong>acceder, rectificar, suprimir, oponerte, limitar y portar</strong> tus datos, así como retirar el consentimiento. Use «Mis datos» en tu cuenta o escríbenos a soporte@fija.com.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Menores</h2>
+      <p>La Plataforma no está dirigida a menores de 16 años sin autorización; no recogemos conscientemente sus datos.</p>
+    `
+  },
+  "cookies": {
+    title: "Política de Cookies",
+    icon: "fa-cookie-bite",
+    subtitle: "Tipos de cookies y cómo gestionarlas",
+    html: `
+      <p>Las cookies son pequeños archivos que guardamos en tu navegador para recordar tus preferencias y entender cómo usas FIJA. Abajo explicamos cada tipo y cómo controlarlos.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Tipos de cookies</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Categoría</th><th class="text-left p-2 border">Finalidad</th><th class="text-left p-2 border">Puedes rechazarlas</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">Necesarias</td><td class="p-2 border">Sesión, cesta y seguridad</td><td class="p-2 border">No (imprescindibles)</td></tr>
+          <tr><td class="p-2 border">Preferencias</td><td class="p-2 border">Tema, idioma y densidad</td><td class="p-2 border">Sí</td></tr>
+          <tr><td class="p-2 border">Analíticas</td><td class="p-2 border">Medir uso y mejorar</td><td class="p-2 border">Sí</td></tr>
+          <tr><td class="p-2 border">Marketing</td><td class="p-2 border">Ofertas y recordatorios</td><td class="p-2 border">Sí</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Cómo las usamos?</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Recordar tu cesta entre sesiones.</li>
+        <li>Mantener tu sesión iniciada de forma segura.</li>
+        <li>Mostrarte ofertas acordes a tus intereses (solo si aceptas marketing).</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Gestionar tus cookies</h2>
+      <p>Puedes aceptar, rechazar o configurar las cookies desde el banner inicial y en cualquier momento en Ajustes → Privacidad. También puedes borrarlas desde tu navegador.</p>
+      <p class="text-xs text-gray-400 mt-4">Algunas cookies de terceros (p. ej. redes sociales) se rigen por sus propias políticas.</p>
+    `
+  },
+  "comision": {
+    title: "Comisión FIJA",
+    icon: "fa-percentage",
+    subtitle: "Cómo funciona la comisión del 4,7% para vendedores",
+    html: `
+      <p>Vender en FIJA es transparente: aplicamos una única <strong>comisión del 4,7%</strong> sobre el precio de venta. Sin costes de alta, sin mensualidades ni costes ocultos.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Quién paga la comisión?</h2>
+      <p>La asume el <strong>vendedor</strong>, no el comprador. El comprador paga el precio público; FIJA retiene el 4,7% y abona el resto al vendedor tras la recogida.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Ejemplo de cálculo</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Concepto</th><th class="text-right p-2 border">Importe</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">Precio de venta</td><td class="p-2 border text-right">100,00 €</td></tr>
+          <tr><td class="p-2 border">Comisión FIJA (4,7%)</td><td class="p-2 border text-right">−4,70 €</td></tr>
+          <tr><td class="p-2 border font-bold">A cobrar por el vendedor</td><td class="p-2 border text-right font-bold">95,30 €</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Los descuentos los cubre FIJA</h2>
+      <p>Si aparece una «Oferta FIJA» o un cupón promocional, <strong>el vendedor siempre cobra su precio marcado</strong>. La diferencia la asume la plataforma, no tu margen.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Facturación</h2>
+      <p>Recibirás un desglose de comisiones en cada pago y podrás descargar tus facturas desde el Área de Vendedores → Facturas. El IVA aplicable se gestiona según tu configuración fiscal.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Por qué solo un 4,7%?</h2>
+      <p>Al ser un modelo de recogida en tienda (sin logística de envíos), mantenemos los costes bajos y te los devolvemos en comisión competitiva.</p>
+      <p class="mt-3"><button class="f-btn f-btn-primary" onclick="closeModal('generic-modal'); location.href='backend.html'">Abrir tienda gratis</button></p>
+    `
+  },
+  "logros": {
+    title: "Logros FIJA",
+    icon: "fa-trophy",
+    subtitle: "Insignias, niveles y puntos de la comunidad",
+    html: `
+      <p>En FIJA cada acción suma: gana <strong>insignias</strong>, sube de <strong>nivel</strong> y acumula <strong>puntos</strong> canjeables por ventajas. Cuantas más compras y valoraciones realices, más reconocimiento obtienes.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Insignias que puedes conseguir</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Insignia</th><th class="text-left p-2 border">Cómo conseguirla</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">🛍️ Primera compra</td><td class="p-2 border">Realiza tu primer pedido</td></tr>
+          <tr><td class="p-2 border">⭐ Cliente habitual</td><td class="p-2 border">Completa 5 compras</td></tr>
+          <tr><td class="p-2 border">👑 VIP FIJA</td><td class="p-2 border">Completa 10 compras</td></tr>
+          <tr><td class="p-2 border">❤️ Explorador</td><td class="p-2 border">Guarda 5 favoritos</td></tr>
+          <tr><td class="p-2 border">🔔 Hunter de precios</td><td class="p-2 border">Crea 3 alertas de precio</td></tr>
+          <tr><td class="p-2 border">📋 Organizador</td><td class="p-2 border">Crea 2 listas de compra</td></tr>
+          <tr><td class="p-2 border">🎲 Girador de la suerte</td><td class="p-2 border">Gira la ruleta de premios</td></tr>
+          <tr><td class="p-2 border">📷 Fotógrafo</td><td class="p-2 border">Publica una foto en una valoración</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Niveles</h2>
+      <p>Tus puntos determinan tu nivel (Bronce, Plata, Oro, Platino). Cada euro gastado suma 1 punto y cada compra 2 puntos extra. Los niveles superiores desbloquean descuentos y acceso anticipado a novedades.</p>
+      <p class="mt-3"><button class="f-btn f-btn-primary" onclick="if(window.openAchievements){closeModal('generic-modal');openAchievements();}">Ver mis logros</button></p>
+    `
+  },
+  "ranking": {
+    title: "Ranking de FIJA",
+    icon: "fa-ranking-star",
+    subtitle: "Clasificación de compradores y vendedores",
+    html: `
+      <p>El Ranking premia la actividad y la calidad. Hay dos clasificaciones: la de <strong>compradores</strong> (por puntos y nivel) y la de <strong>vendedores</strong> (por ventas y reputación).</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Ranking de compradores</h2>
+      <p>Se ordena por puntos acumulados. Los tres primeros aparecen destacados y acceden a ventajas exclusivas: envíos prioritarios de recogida, cupones y comunidad VIP.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Ranking de vendedores</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Factor</th><th class="text-left p-2 border">Peso</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">Unidades vendidas</td><td class="p-2 border">Alto</td></tr>
+          <tr><td class="p-2 border">Valoraciones positivas</td><td class="p-2 border">Alto</td></tr>
+          <tr><td class="p-2 border">Tiempo medio de recogida</td><td class="p-2 border">Medio</td></tr>
+          <tr><td class="p-2 border">Incidencias resueltas</td><td class="p-2 border">Medio</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Cómo subir?</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Compra con frecuencia y deja valoraciones útiles para subir de nivel.</li>
+        <li>Como vendedor: mantén stock, responde rápido y cumple tus recogidas.</li>
+      </ul>
+      <p class="mt-3"><button class="f-btn f-btn-outline" onclick="if(window.openSellerLeaderboard){closeModal('generic-modal');openSellerLeaderboard();}">Ver ranking de vendedores</button></p>
+    `
+  },
+  "novedades": {
+    title: "Novedades de FIJA",
+    icon: "fa-sparkles",
+    subtitle: "Lo último en la plataforma y el catálogo",
+    html: `
+      <p>Aquí encontrarás las <strong>actualizaciones de la plataforma</strong> y las novedades del catálogo: nuevas categorías, marcas y eventos de compra.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Últimas novedades de la plataforma</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Recogida con QR:</strong> ya puedes retirar tu pedido mostrando solo el código en el punto del vendedor.</li>
+        <li><strong>Analíticas de producto:</strong> nuevos datos de clics y tiempo de visualización para vendedores.</li>
+        <li><strong>Rueda de la suerte:</strong> giros diarios con cupones para la comunidad.</li>
+        <li><strong>Comparador:</strong> compara hasta varios productos en una sola vista.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Llegadas al catálogo</h2>
+      <p>Explora lo recién publicado por los vendedores en <a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');navigate('newArrivals')">Novedades del catálogo</a>.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Próximamente</h2>
+      <p>Nuevas marcas verificadas, programa de fidelidad extendido y eventos de temporada. Activa tus <a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');openNotificationSettings()">notificaciones</a> para no perderte nada.</p>
+    `
+  },
+  "opiniones": {
+    title: "Opinión de la comunidad",
+    icon: "fa-comments",
+    subtitle: "Valoraciones y reseñas que ayudan a decidir",
+    html: `
+      <p>Las <strong>opiniones</strong> son el corazón de FIJA: compradores reales que comparten su experiencia para que otros elijan mejor. Tu voz importa.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">¿Por qué son importantes?</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Ayudan a otros compradores a decidir con confianza.</li>
+        <li>Los vendedores mejoran gracias a tus sugerencias.</li>
+        <li>Sumas puntos y desbloqueas insignias al escribirlas.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Cómo escribir una buena opinión</h2>
+      <p>Sé concreto: comenta calidad, tamaño, plazo de recogida y si el producto coincide con la descripción. Puedes añadir una foto desde la ficha del producto.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Normas de las reseñas</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Sé respetuoso y veraz; sin lenguaje ofensivo.</li>
+        <li>No incluyas datos personales propios o ajenos.</li>
+        <li>Las reseñas se publican tras la recogida del pedido.</li>
+      </ul>
+      <p class="mt-3"><a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');navigate('customerReviews')">Leer opiniones de la comunidad</a></p>
+    `
+  },
+  "atajos": {
+    title: "Atajos de teclado",
+    icon: "fa-keyboard",
+    subtitle: "Navega más rápido por FIJA",
+    html: `
+      <p>Usa el teclado para moverte por la tienda sin soltar el ratón. Estos atajos funcionan en pantallas de escritorio.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Atajos disponibles</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Tecla</th><th class="text-left p-2 border">Acción</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">/</kbd></td><td class="p-2 border">Buscar en el catálogo</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">c</kbd></td><td class="p-2 border">Ir a la cesta</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">m</kbd></td><td class="p-2 border">Abrir comparador</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">l</kbd></td><td class="p-2 border">Mis listas</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">a</kbd></td><td class="p-2 border">Alertas de precio</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">n</kbd></td><td class="p-2 border">Novedades</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">h</kbd></td><td class="p-2 border">Centro de ayuda</td></tr>
+          <tr><td class="p-2 border"><kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">Esc</kbd></td><td class="p-2 border">Cerrar ventanas</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Consejos</h2>
+      <p class="text-xs text-gray-400 mt-1">Pulsa <kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">/</kbd> en cualquier momento para buscar al instante, y <kbd class="bg-gray-100 rounded px-2 py-0.5 font-mono text-xs">Esc</kbd> para cerrar cualquier ventana.</p>
+    `
+  },
+  "accesibilidad": {
+    title: "Accesibilidad",
+    icon: "fa-universal-access",
+    subtitle: "Una experiencia para todos",
+    html: `
+      <p>Creemos en un comercio inclusivo. FIJA incorpora ajustes de accesibilidad y sigue las pautas <strong>WCAG 2.1</strong> tanto como es posible en una demo.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Funciones disponibles</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><strong>Modo alto contraste:</strong> activa un tema de mayor contraste desde Ajustes.</li>
+        <li><strong>Texto grande:</strong> aumenta el tamaño de letra global con un clic.</li>
+        <li><strong>Navegación por teclado:</strong> todos los menús y botones son alcanzables sin ratón.</li>
+        <li><strong>Modo oscuro:</strong> reduce la fatiga visual en ambientes nocturnos.</li>
+        <li><strong>Vista compacta:</strong> más contenido en menos scroll.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Compromiso</h2>
+      <p>Revisamos periódicamente el contraste, el foco visible y la semántica ARIA. Si encuentras un obstáculo, cuéntanoslo desde <a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');openHelp()">Apoyo</a> y lo mejoraremos.</p>
+      <p class="mt-3"><button class="f-btn f-btn-outline" onclick="if(window.openAccessibility){closeModal('generic-modal');openAccessibility();}">Abrir ajustes de accesibilidad</button></p>
+    `
+  },
+  "apoyo": {
+    title: "Apoyo y Centro de ayuda",
+    icon: "fa-headset",
+    subtitle: "Estamos para ayudarte",
+    html: `
+      <p>¿Tienes una duda o un problema? Nuestro equipo de <strong>Apoyo</strong> te acompaña en cada paso: compra, recogida, pagos y devoluciones.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Canales de contacto</h2>
+      <table class="w-full text-sm border-collapse mt-2">
+        <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Canal</th><th class="text-left p-2 border">Detalle</th></tr></thead>
+        <tbody>
+          <tr><td class="p-2 border">Chat en vivo</td><td class="p-2 border">Desde Mi Cuenta · respuesta inmediata</td></tr>
+          <tr><td class="p-2 border">Correo</td><td class="p-2 border">soporte@fija.com</td></tr>
+          <tr><td class="p-2 border">WhatsApp</td><td class="p-2 border">+34 900 100 200</td></tr>
+          <tr><td class="p-2 border">Teléfono</td><td class="p-2 border">900 100 200 · l-v 9-21 h</td></tr>
+        </tbody>
+      </table>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Temas frecuentes</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li><a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');openHelp('envio')">Recogida y entrega</a></li>
+        <li><a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');openHelp('pagos')">Métodos de pago</a></li>
+        <li><a class="text-fija-900 underline font-medium" onclick="closeModal('generic-modal');openHelp('devoluciones')">Devoluciones</a></li>
+      </ul>
+      <p class="mt-3"><button class="f-btn f-btn-primary" onclick="if(window.openContactForm){closeModal('generic-modal');openContactForm();}">Contactar con soporte</button></p>
+    `
+  },
+  "sobre": {
+    title: "Sobre FIJA",
+    icon: "fa-store",
+    subtitle: "El marketplace de recogida en tienda",
+    html: `
+      <p><span class="text-2xl font-black gold-gradient">FIJA</span> es un marketplace de modelo <strong>Click &amp; Collect</strong> con identidad propia: compras online y recoges tu pedido en el punto del vendedor, sin envíos a domicilio.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Nuestra misión</h2>
+      <p>Conectar compradores con vendedores verificados de su entorno, reduciendo envíos y emisiones gracias a la recogida local. Compra cerca, recoge cerca.</p>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">Qué nos diferencia</h2>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Comisión transparente del 4,7% para vendedores.</li>
+        <li>Recogida con QR en el punto del vendedor.</li>
+        <li>Descuentos de casa que asume FIJA, no el vendedor.</li>
+        <li>Foco en comercio local y sostenible.</li>
+      </ul>
+      <h2 class="text-lg font-bold text-fija-900 mt-4">En una frase</h2>
+      <div class="grid grid-cols-3 gap-3 my-3 text-center">
+        <div class="f-card p-3"><p class="text-base font-black text-fija-900">Click &amp; Collect</p><p class="text-[10px] text-gray-500">Modelo</p></div>
+        <div class="f-card p-3"><p class="text-base font-black text-fija-900">Recogida local</p><p class="text-[10px] text-gray-500">Sostenible</p></div>
+        <div class="f-card p-3"><p class="text-base font-black text-fija-900">4,7%</p><p class="text-[10px] text-gray-500">Comisión</p></div>
+      </div>
+      <p class="text-xs text-gray-400">Proyecto demostrativo · pago simulado. Sustituye este texto por la información real de tu empresa antes de publicar.</p>
+    `
+  }
+});
+
 Object.assign(SHELLER_PAGES, {"nxSellerFinance":{"title":"Finanzas","subtitle":"Resumen de ingresos y comisiones","section":"payouts","icon":"fa-store"},"nxSellerGrowth":{"title":"Crecimiento","subtitle":"Ideas para vender más","section":"insights","icon":"fa-store"},"nxSellerCatalog":{"title":"Catálogo","subtitle":"Gestiona tus productos","section":"products","icon":"fa-store"},"nxSellerSeoCenter":{"title":"SEO de productos","subtitle":"Mejora tu visibilidad","section":"seo","icon":"fa-store"},"nxSellerAdsCenter":{"title":"Publicidad","subtitle":"Destaca tus productos","section":"ads","icon":"fa-store"},"nxSellerPickupHub":{"title":"Punto de recogida","subtitle":"Horarios y disponibilidad","section":"shipping","icon":"fa-store"},"nxSellerReviewsHub":{"title":"Reseñas","subtitle":"Opiniones de tus clientes","section":"reviews","icon":"fa-store"},"nxSellerMessagesHub":{"title":"Mensajes","subtitle":"Consultas de compradores","section":"messages","icon":"fa-store"},"nxSellerReportsHub":{"title":"Informes","subtitle":"Ventas y conversión","section":"reports","icon":"fa-store"},"nxSellerToolsHub":{"title":"Herramientas","subtitle":"Gestión avanzada","section":"tools","icon":"fa-store"},"nxSellerDataHub":{"title":"Datos","subtitle":"Exporta y analiza","section":"export","icon":"fa-store"},"nxSellerTeamHub":{"title":"Equipo","subtitle":"Permisos y miembros","section":"team","icon":"fa-store"},"nxSellerPromoHub":{"title":"Promociones","subtitle":"Campañas activas","section":"promotions","icon":"fa-store"},"nxSellerInventoryHub":{"title":"Inventario","subtitle":"Unidades y stock","section":"inventory","icon":"fa-store"},"nxSellerOrdersHub":{"title":"Pedidos","subtitle":"Gestiona ventas","section":"orders","icon":"fa-store"},"nxSellerQualityHub":{"title":"Calidad","subtitle":"Rendimiento de la tienda","section":"quality","icon":"fa-store"},"nxSellerSettingsHub":{"title":"Ajustes","subtitle":"Datos de la tienda","section":"settings","icon":"fa-store"},"nxSellerTrainingHub":{"title":"Formación","subtitle":"Aprende a vender","section":"training","icon":"fa-store"},"nxSellerSupportHub":{"title":"Soporte","subtitle":"Ayuda prioritaria","section":"feedback","icon":"fa-store"},"nxSellerGoalsHub":{"title":"Objetivos","subtitle":"Metas de venta","section":"goals","icon":"fa-store"}});
 // ===== WRAPPERS LISTING (LOTE9) =====
 window.nxBestElectrnica = () => navigate("bestElectrónica");
