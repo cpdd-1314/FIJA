@@ -1,0 +1,17 @@
+[
+  {
+    "id": "0473c7e7-e0d0-437f-b5d3-63e3a15fa053",
+    "type": "product",
+    "targetId": "demo-001",
+    "targetTitle": "demo",
+    "sellerId": "demo-seller",
+    "sellerName": "Audio Lux SL",
+    "reporterId": null,
+    "reporterEmail": null,
+    "reporterName": "anónimo",
+    "reason": "Información engañosa",
+    "detail": "",
+    "status": "open",
+    "createdAt": 1793381799601
+  }
+]
