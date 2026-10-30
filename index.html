@@ -212,6 +212,9 @@
             box-shadow: var(--f-shadow); transition: box-shadow .2s, border-color .2s, transform .2s; }
         .f-card-hover:hover { box-shadow: var(--f-shadow-md); border-color: #d6d0bd; transform: translateY(-2px); }
         .f-card-flat { box-shadow:none; }
+        /* Nada dentro de una tarjeta puede salirse de ella (botones con nowrap en móvil) */
+        .f-card { overflow: hidden; }
+        .f-card button, .f-card .f-btn { max-width: 100%; }
         .f-divider { height:1px; background: var(--f-line); border:0; }
 
         /* --- Campos --- */
@@ -399,11 +402,11 @@
             position: absolute; top: 50%; left: 50%;
             width: 220vmax; height: 220vmax;
             transform: translate(-50%, -50%) rotate(-45deg);
-            background-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27300%27%20height=%27120%27%3E%3Ctext%20x=%278%27%20y=%2772%27%20font-family=%27Arial,Helvetica,sans-serif%27%20font-size=%2734%27%20font-weight=%27800%27%20letter-spacing=%278%27%20fill=%27currentColor%27%3EPROYECTO%3C/text%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27300%27%20height=%27120%27%3E%3Ctext%20x=%278%27%20y=%2772%27%20font-family=%27Arial,Helvetica,sans-serif%27%20font-size=%2734%27%20font-weight=%27800%27%20letter-spacing=%278%27%20fill=%27%23111111%27%3EPROYECTO%3C/text%3E%3C/svg%3E");
             background-repeat: repeat; background-size: 300px 120px;
-            color: rgba(110, 110, 110, .25);
+            opacity: .5; /* 50% de transparencia */
         }
-        .dark .fija-wm-inner { color: rgba(255, 255, 255, .25); }
+        .dark .fija-wm-inner { filter: invert(1); opacity: .5; }
         #fija-wm.wm-off { display: none; }
 
         /* ===== MENÚ DE USUARIO: nunca sobresale de la pantalla =====
@@ -1119,9 +1122,9 @@
                     <p class="font-bold text-sm mb-1">SUSCRÍBETE Y NO TE PIERDAS NADA</p>
                     <p class="text-xs text-white/50">Ofertas relámpago, novedades y descuentos exclusivos en tu correo.</p>
                 </div>
-                <div class="flex w-full lg:w-auto gap-2 max-w-md w-full">
-                    <input type="email" id="newsletter-email" placeholder="tu@correo.com" class="flex-1 bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-fija-gold">
-                    <button type="button" onclick="subscribeNewsletter()" class="bg-fija-gold hover:bg-yellow-600 text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm transition-colors shrink-0">Suscribirme</button>
+                <div class="flex flex-wrap w-full lg:w-auto gap-2 max-w-md min-w-0">
+                    <input type="email" id="newsletter-email" placeholder="tu@correo.com" class="flex-1 min-w-0 w-full sm:w-auto bg-white/10 border border-white/15 rounded-lg px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-fija-gold">
+                    <button type="button" onclick="subscribeNewsletter()" class="bg-fija-gold hover:bg-yellow-600 text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm transition-colors shrink-0 ml-auto">Suscribirme</button>
                 </div>
             </div>
             <div class="border-t border-white/10 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/40">
@@ -4899,13 +4902,13 @@
                         ${crossPrice != null ? `<span class="f-price-old text-xs mr-1.5">${formatEuro(crossPrice)}</span>` : ''}
                         <span class="f-price text-lg">${formatEuro(finalPrice)}</span>
                         ${adminDisc > 0 ? '<div class="text-[10px] text-fija-gold font-semibold mt-0.5"><i class="fa-solid fa-tag mr-1"></i>Oferta FIJA</div>' : ''}
-                        ${selMode ? '' : `<div class="mt-2.5 flex items-center gap-1.5">
+                        ${selMode ? '' : `<div class="mt-2.5 flex flex-wrap items-center gap-1.5">
                             <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden shrink-0">
-                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', -1)" aria-label="Menos" class="w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-minus"></i></button>
-                                <input type="number" min="1" max="99" value="1" id="qty-${p.id}" onclick="event.stopPropagation()" onchange="clampCardQty('${p.id}')" aria-label="Cantidad" class="w-9 text-center text-xs border-0 outline-none py-1.5">
-                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', 1)" aria-label="Más" class="w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-plus"></i></button>
+                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', -1)" aria-label="Menos" class="w-6 sm:w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-minus"></i></button>
+                                <input type="number" min="1" max="99" value="1" id="qty-${p.id}" onclick="event.stopPropagation()" onchange="clampCardQty('${p.id}')" aria-label="Cantidad" class="w-8 sm:w-9 text-center text-xs border-0 outline-none py-1.5">
+                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', 1)" aria-label="Más" class="w-6 sm:w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-plus"></i></button>
                             </div>
-                            <button onclick="event.stopPropagation(); addToCart('${p.id}', false, cardQty('${p.id}'))" class="f-btn f-btn-gold flex-1"><i class="fa-solid fa-cart-plus"></i> Añadir</button>
+                            <button onclick="event.stopPropagation(); addToCart('${p.id}', false, cardQty('${p.id}'))" class="f-btn f-btn-gold" style="flex:1 1 6.5rem;min-width:0;padding:.55rem .6rem"><i class="fa-solid fa-cart-plus"></i> Añadir</button>
                         </div>`}
                     </div>
                 </div>
