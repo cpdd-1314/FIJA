@@ -1041,7 +1041,7 @@
             if (items === '') items = `<div class="px-4 py-2 text-xs text-fija-400">Sin secciones disponibles.</div>`;
             nav.innerHTML = items;
             const known = id => (id in ADMIN_SECTIONS) || (id in SELLER_SECTIONS);
-            if (isSupportAgent()) { items = navItem('tickets', 'Soporte & Tickets', 'fa-headset'); nav.innerHTML = items; showSection('tickets'); return; }
+            if (isSupportAgent() && !isAdmin()) { items = navItem('tickets', 'Soporte & Tickets', 'fa-headset'); nav.innerHTML = items; showSection('tickets'); return; }
             showSection(state.view && known(state.view) ? state.view : (isAdmin() ? 'panel' : 'products'));
         }
         function navItem(id, label, icon) {
