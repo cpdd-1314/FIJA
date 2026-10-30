@@ -7500,6 +7500,10 @@ const FIJA_THEMES = {
                     <p class="font-semibold text-fija-900">${t}</p><p class="text-gray-500">${d}</p></div>`).join('')}</div>`);
         window.openOnboarding = () => {
             if (localStorage.getItem('fija_onboarded')) return;
+            // Marca la bienvenida como vista EN EL MOMENTO en que se muestra, no solo al
+            // pulsar "Empezar a explorar". Así nunca reaparece al navegar (volver del
+            // back-office, recargar, usar el botón atrás del móvil, etc.).
+            try { localStorage.setItem('fija_onboarded', '1'); state.onboarded = true; } catch (e) {}
             showGenericModal('Bienvenido a FIJA', `
                 <div class="text-center mb-5"><img src="logo.png" alt="FIJA" class="h-12 md:h-14 mx-auto"></div>
                 <div class="mb-5 rounded-xl overflow-hidden border border-gray-100 bg-black">
