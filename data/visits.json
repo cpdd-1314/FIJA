@@ -14,5 +14,21 @@
     "role": "anon",
     "path": "/index.html",
     "ref": ""
+  },
+  {
+    "id": "v1793381796314_9ssyla",
+    "ts": 1793381796314,
+    "ip": "124.223.160.103",
+    "country": "China",
+    "countryCode": "CN",
+    "city": "Shanghai",
+    "region": "Shanghai",
+    "device": "Escritorio",
+    "os": "Linux",
+    "browser": "Chrome",
+    "uid": "anon",
+    "role": "anon",
+    "path": "/test_index.html",
+    "ref": ""
   }
 ]
