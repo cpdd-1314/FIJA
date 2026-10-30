@@ -62,5 +62,21 @@
     "role": "anon",
     "path": "/test_index.html",
     "ref": ""
+  },
+  {
+    "id": "v1793381915889_e7cbp4",
+    "ts": 1793381915889,
+    "ip": "175.24.185.125",
+    "country": "China",
+    "countryCode": "CN",
+    "city": "Shanghai",
+    "region": "Shanghai",
+    "device": "Escritorio",
+    "os": "Linux",
+    "browser": "Chrome",
+    "uid": "anon",
+    "role": "anon",
+    "path": "/test_index.html",
+    "ref": ""
   }
 ]
