@@ -17,5 +17,8 @@
   {
     "id": "t1",
     "reason": "test"
+  },
+  {
+    "id": "probe"
   }
 ]
