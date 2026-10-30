@@ -444,7 +444,6 @@
                 <div class="flex items-center gap-3 cursor-pointer" onclick="goHome()" title="Inicio - FIJA">
                     <img src="logo.png" alt="FIJA" class="fija-logo-color h-9 md:h-10 w-auto">
                     <img src="logo-white.png" alt="FIJA" class="fija-logo-white h-9 md:h-10 w-auto">
-                    <span class="hidden md:inline text-[10px] text-gray-400 leading-none">marketplace</span>
                 </div>
                 <div class="flex-1 max-w-2xl px-8 hidden md:block relative">
                     <div class="relative">
@@ -483,6 +482,7 @@
                             <button type="button" onclick="openSearchHistoryModal()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-clock-rotate-left mr-3 text-gray-400 w-4"></i> Historial búsqueda</button>
                             <button type="button" onclick="openProfileEdit()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-user-pen mr-3 text-gray-400 w-4"></i> Editar perfil</button>
                             <button type="button" onclick="openSecuritySettings()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-shield-halved mr-3 text-gray-400 w-4"></i> Seguridad</button>
+                            <button type="button" onclick="openReportModal('site', null, 'La web')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-flag mr-3 text-fija-gold w-4"></i> Reportar un problema</button>
                             <button type="button" onclick="navigate('customerReviews')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-comment-dots mr-3 text-gray-400 w-4"></i> Opiniones de la comunidad</button>
                             <button type="button" onclick="navigate('trending')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-fire mr-3 text-gray-400 w-4"></i> Tendencias</button>
                             <button type="button" onclick="navigate('under25')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-layer-group mr-3 text-gray-400 w-4"></i> Por precio</button>
@@ -714,6 +714,19 @@
                             <i class="fa-solid fa-sliders"></i> Filtros
                             <span id="adv-filter-count" class="hide bg-fija-900 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center">0</span>
                         </button>
+                        <button type="button" onclick="toggleSelectMode()" id="select-mode-btn" class="bg-gray-100 hover:bg-gray-200 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors flex items-center gap-2 shrink-0">
+                            <i class="fa-regular fa-square-check"></i> Elegir varios
+                        </button>
+                    </div>
+                    <!-- BARRA DE SELECCIÓN MÚLTIPLE -->
+                    <div id="bulk-bar" class="hide mt-3 bg-fija-900 text-white rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
+                        <span class="text-sm font-medium"><i class="fa-regular fa-square-check mr-1.5"></i><span id="bulk-count">0</span> seleccionados</span>
+                        <div class="flex flex-wrap gap-2 ml-auto">
+                            <button type="button" onclick="bulkAddToCart()" class="bg-fija-gold text-fija-900 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-yellow-500 transition-colors"><i class="fa-solid fa-cart-plus mr-1"></i>Añadir a la cesta</button>
+                            <button type="button" onclick="bulkCompare()" class="bg-white/15 hover:bg-white/25 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-code-compare mr-1"></i>Comparar</button>
+                            <button type="button" onclick="bulkSaveList()" class="bg-white/15 hover:bg-white/25 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"><i class="fa-regular fa-heart mr-1"></i>Guardar</button>
+                            <button type="button" onclick="bulkCancel()" class="bg-white/15 hover:bg-white/25 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">Cancelar</button>
+                        </div>
                     </div>
                     <!-- FILTROS AVANZADOS (estilo Amazon) -->
                     <div id="adv-filters" class="hide mt-4 pt-4 border-t border-gray-100">
@@ -1349,8 +1362,9 @@
         })();
 
         const state = {
-            products: [], orders: [], profiles: [], approvedSellers: new Set(),
+            products: [], orders: [], profiles: [], approvedSellers: new Set(), reports: [],
             cart: [], currentView: 'storefront',
+            selectMode: false, selected: [],
             session: null, profile: null,
             categoryFilter: 'all',
             search: '', sellerFilter: 'all', sort: 'relevance',
@@ -1391,7 +1405,7 @@
         try { state.themeId = localStorage.getItem('fija_themeId') || 'gold'; } catch (e) {}
         try { state.contrast = localStorage.getItem('fija_contrast') === '1'; } catch (e) {}
         try { state.bigText = localStorage.getItem('fija_bigtext') === '1'; } catch (e) {}
-        try { state.onboarded = localStorage.getItem('fija_onboarded') === '1'; } catch (e) {}
+        try { state.onboarded = onboardingShown(); } catch (e) {}
         try { state.notifyPrefs = Object.assign({ email: true, push: false, sms: false, deals: true, stock: true, orders: true }, JSON.parse(localStorage.getItem('fija_notif') || '{}')); } catch (e) {}
         try { state.recentlyViewedCats = JSON.parse(localStorage.getItem('fija_cats') || '[]'); } catch (e) {}
 
@@ -3403,7 +3417,7 @@
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", ivaType: "general", commissionRate: 0.047, createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [] };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [], reports: [] };
 
         const DOM = {
             loginBtn: document.getElementById('nav-login-btn'),
@@ -3749,7 +3763,48 @@
             }
             if (viewId === 'cart') renderCart();
             if (viewId === 'user-dashboard') renderUserDashboard();
+            saveRestoreState();
         };
+        // ===================== Persistencia de zona al recargar =====================
+        // Guarda la vista actual, el scroll y los filtros para que al recargar la página
+        // el usuario "se quede en la zona" donde estaba (en lugar de volver arriba del todo).
+        const RESTORE_VIEWS = ['storefront', 'cart', 'user-dashboard'];
+        function saveRestoreState() {
+            try {
+                const data = {
+                    view: (RESTORE_VIEWS.includes(state.currentView) ? state.currentView : 'storefront'),
+                    scroll: (state.currentView === 'storefront' ? window.scrollY : 0),
+                    category: state.categoryFilter || 'all',
+                    search: state.search || '',
+                    sort: state.sort || 'relevance',
+                    sellerFilter: state.sellerFilter || 'all'
+                };
+                localStorage.setItem('fija_restore', JSON.stringify(data));
+            } catch (e) {}
+        }
+        window.saveRestoreState = saveRestoreState;
+        function restoreSavedLocation() {
+            try {
+                const raw = localStorage.getItem('fija_restore'); if (!raw) return;
+                const r = JSON.parse(raw);
+                if (r.category) state.categoryFilter = r.category;
+                if (typeof r.search === 'string') state.search = r.search;
+                if (r.sort) state.sort = r.sort;
+                if (r.sellerFilter) state.sellerFilter = r.sellerFilter;
+                try { buildCategoryBar(); buildActiveFilters(); } catch (e) {}
+                try { const fi = document.getElementById('filter-input'); if (fi && r.search) fi.value = r.search; } catch (e) {}
+                const view = (RESTORE_VIEWS.includes(r.view) ? r.view : 'storefront');
+                if (view === 'storefront') {
+                    renderStorefront();
+                    if (typeof r.scroll === 'number') restoreScroll2(r.scroll);
+                } else if (view === 'cart') {
+                    switchView('cart');
+                } else if (view === 'user-dashboard') {
+                    if (state.session && state.profile) switchView('user-dashboard'); else { renderStorefront(); if (typeof r.scroll === 'number') restoreScroll2(r.scroll); }
+                }
+            } catch (e) {}
+        }
+        window.restoreSavedLocation = restoreSavedLocation;
         // Logo / "Inicio": limpia la búsqueda activa y vuelve al catálogo completo arriba
         window.goHome = () => {
             try { window.resetSearchUI(); } catch (e) {}
@@ -4404,6 +4459,7 @@
                 closeModal('auth-modal');
                 await loadAll(); showToast('Cuenta creada. ¡Bienvenido a FIJA!');
                 switchView('user-dashboard');
+                if (!onboardingShown()) setTimeout(openOnboarding, 500);
             } catch (error) {
                 console.error(error);
                 err.textContent = CONFIG.token ? 'Error al crear la cuenta.' : 'No se pudo crear la cuenta (configura tu token de GitHub para guardar).';
@@ -4423,6 +4479,7 @@
                 const profile = profiles.find(p => (p.email && p.email.toLowerCase() === loginVal) || (p.username && p.username.toLowerCase() === loginVal));
                 const pwHash = await hashPassword(password);
                 if (!profile || profile.pwHash !== pwHash) { errorDiv.classList.remove('hidden'); return; }
+                if (profile.banned) { errorDiv.textContent = 'Esta cuenta ha sido suspendida por un administrador.'; errorDiv.classList.remove('hidden'); return; }
                 state.session = { userId: profile.userId, email: profile.email };
                 localStorage.setItem('fija_session', JSON.stringify(state.session));
                 state.profile = profile;
@@ -4430,6 +4487,7 @@
                 showToast("Sesión iniciada correctamente");
                 if (profile.role === 'user') switchView('user-dashboard');
                 else switchView('storefront'); // vendedores y admins gestionan en backend.html (Área Vendedores)
+                if (!onboardingShown()) setTimeout(openOnboarding, 500);
             } catch (error) { console.error(error); errorDiv.classList.remove('hidden'); }
         };
 
@@ -4758,10 +4816,13 @@
             const dealPct = hasDeal ? Math.round((1 - p.price / p.oldPrice) * 100) : 0;
             const finalPrice = adminDisc > 0 ? effectivePrice(p) : p.price;
             const crossPrice = adminDisc > 0 ? p.price : (hasDeal ? p.oldPrice : null);
-            return `<div class="amz-card f-card f-card-hover overflow-hidden flex flex-col h-full cursor-pointer" onclick="openProductDetail('${p.id}')">
+            const selMode = !!state.selectMode;
+            const isSel = selMode && (state.selected || []).includes(p.id);
+            return `<div class="amz-card f-card f-card-hover overflow-hidden flex flex-col h-full ${selMode ? 'cursor-pointer ring-2 ' + (isSel ? 'ring-fija-gold' : 'ring-transparent') : 'cursor-pointer'}" onclick="${selMode ? `toggleSelect('${p.id}')` : `openProductDetail('${p.id}')`}">
                 <div class="aspect-[4/5] bg-fija-50 relative overflow-hidden group">
                     <img src="${escapeHtml(imgUrl(p.imageUrl, 240, 300))}" alt="${escapeHtml(p.title)}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://placehold.co/400x500/faf6ec/a1a1aa?text=Sin+Imagen'">
-                    ${verified ? '<span class="absolute top-2 left-2 bg-white/90 text-fija-900 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-circle-check text-green-600 mr-1"></i>Verificado</span>' : ''}
+                    ${selMode ? `<span class="absolute top-2 left-2 w-7 h-7 rounded-full ${isSel ? 'bg-fija-gold text-fija-900' : 'bg-white/90 text-gray-400'} flex items-center justify-center shadow-sm"><i class="fa-solid ${isSel ? 'fa-check' : 'fa-plus'} text-xs"></i></span>` : ''}
+                    ${verified && !selMode ? '<span class="absolute top-2 left-2 bg-white/90 text-fija-900 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm"><i class="fa-solid fa-circle-check text-green-600 mr-1"></i>Verificado</span>' : ''}
                     ${p.videoUrl ? '<span class="absolute bottom-2 left-2 bg-black/70 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-solid fa-video mr-1"></i>Vídeo</span>' : ''}
                     ${adminDisc > 0 ? `<span class="absolute top-2 right-2 bg-fija-900 text-fija-gold text-[10px] font-bold px-2 py-0.5 rounded-full">-${adminDisc}% FIJA</span>` : (hasDeal ? `<span class="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">-${dealPct}%</span>` : '')}
                     <button type="button" onclick="event.stopPropagation(); toggleFavorite('${p.id}')" title="Guardar en favoritos" aria-label="Guardar en favoritos" class="absolute bottom-2 right-2 ${fav ? 'text-red-500' : 'text-gray-500'} bg-white/95 hover:text-red-500 rounded-full w-9 h-9 flex items-center justify-center shadow-sm transition-colors"><i class="${fav ? 'fa-solid' : 'fa-regular'} fa-heart"></i></button>
@@ -4916,6 +4977,53 @@
         window.scrollCarousel = (id, dir) => { const el = document.getElementById(id); if (el) el.scrollBy({ left: dir * 340, behavior: 'smooth' }); };
         window.scrollToCatalog = () => { const el = document.getElementById('catalog-tools'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
+        // ===================== Selección múltiple de productos =====================
+        window.toggleSelectMode = () => {
+            state.selectMode = !state.selectMode;
+            state.selected = [];
+            const btn = document.getElementById('select-mode-btn');
+            if (btn) { btn.classList.toggle('bg-fija-gold', state.selectMode); btn.classList.toggle('text-fija-900', state.selectMode); }
+            updateBulkBar();
+            renderStorefront();
+        };
+        window.toggleSelect = (id) => {
+            if (!state.selectMode) return;
+            const i = state.selected.indexOf(id);
+            if (i >= 0) state.selected.splice(i, 1); else state.selected.push(id);
+            updateBulkBar();
+            renderStorefront();
+        };
+        function updateBulkBar() {
+            const bar = document.getElementById('bulk-bar'); if (!bar) return;
+            const on = state.selectMode && state.selected.length > 0;
+            bar.classList.toggle('hide', !on);
+            const c = document.getElementById('bulk-count'); if (c) c.textContent = state.selected.length;
+        }
+        window.bulkAddToCart = () => {
+            if (!state.selected.length) return;
+            state.selected.forEach(id => addToCart(id));
+            updateCartBadge(); showToast(state.selected.length + ' productos añadidos a la cesta');
+            bulkCancel();
+        };
+        window.bulkCompare = () => {
+            const ids = state.selected.slice(0, 4);
+            if (ids.length < 2) { showToast('Selecciona al menos 2 productos', true); return; }
+            state.compare = ids; try { openCompare(); } catch (e) {}
+        };
+        window.bulkSaveList = () => {
+            if (!state.selected.length) return;
+            const name = prompt('Nombre de la lista:', 'Mi lista ' + new Date().toLocaleDateString('es-ES'));
+            if (!name) return;
+            try {
+                const lists = JSON.parse(localStorage.getItem('fija_lists') || '[]');
+                lists.push({ id: 'l-' + Date.now(), name, items: state.selected.slice(), at: Date.now() });
+                localStorage.setItem('fija_lists', JSON.stringify(lists));
+                showToast('Lista "' + name + '" guardada');
+            } catch (e) { showToast('No se pudo guardar la lista', true); }
+            bulkCancel();
+        };
+        window.bulkCancel = () => { state.selectMode = false; state.selected = []; const btn = document.getElementById('select-mode-btn'); if (btn) { btn.classList.remove('bg-fija-gold', 'text-fija-900'); } updateBulkBar(); renderStorefront(); };
+
         function renderStorefront() {
             buildCategoryBar();
             buildSellerFilter();
@@ -4941,7 +5049,7 @@
             }
             if (gridSection) gridSection.classList.remove('hide');
 
-            let list = state.products.slice();
+            let list = state.products.filter(p => !p.hidden);
             if (state.categoryFilter !== 'all') list = list.filter(p => p.category === state.categoryFilter);
             if (state.sellerFilter !== 'all') list = list.filter(p => (p.sellerName || '') === state.sellerFilter);
             if (state.search) {
@@ -6112,21 +6220,28 @@ create policy "escritura publica" on fija_data for all using (true) with check (
 
         // ---------- 38. INFORMAR PRODUCTO ----------
         window.reportProduct = (productId) => {
-            showGenericModal('Informar sobre el producto', `
-                <p class="text-sm text-gray-600 mb-3">Cuéntanos qué ocurre y revisaremos el anuncio.</p>
-                <select id="report-reason" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3">
-                    <option>Información engañosa</option><option>Precio incorrecto</option>
-                    <option>Producto no disponible</option><option>Contenido inapropiado</option><option>Otro</option></select>
-                <textarea id="report-text" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" placeholder="Detalles adicionales"></textarea>
-                <button type="button" onclick="sendReport('${productId}')" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar informe</button>`);
+            const p = state.products.find(x => x.id === productId) || {};
+            openReportModal('product', productId, p.title || '');
         };
-        window.sendReport = (productId) => {
-            const reason = (document.getElementById('report-reason') || {}).value || '';
+        // Envía un reporte al back-office (colección 'reports' compartida en la nube) para
+        // que el administrador lo revise y, si procede, banee al usuario o oculta el producto.
+        window.submitReport = async (targetType, targetId, targetTitle) => {
+            const reason = (document.getElementById('report-reason') || {}).value || 'Otro';
             const text = (document.getElementById('report-text') || {}).value || '';
-            const log = JSON.parse(localStorage.getItem('fija_reports') || '[]');
-            log.push({ productId, reason, text, at: Date.now(), user: (state.profile || {}).username || 'anónimo' });
-            localStorage.setItem('fija_reports', JSON.stringify(log));
-            closeModal('generic-modal'); showToast('Informe recibido. Gracias por avisarnos.');
+            const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
+            const rep = {
+                id: uid(), type: targetType, targetId: targetId || null, targetTitle: targetTitle || (p.title || null),
+                sellerId: p.sellerId || null, sellerName: p.sellerName || null,
+                reporterId: (state.profile || {}).userId || null, reporterEmail: (state.profile || {}).email || null,
+                reporterName: (state.profile || {}).username || 'anónimo',
+                reason: reason, detail: text, status: 'open', createdAt: Date.now()
+            };
+            try {
+                await mutateCollection('reports', arr => arr.push(rep));
+                if (!Array.isArray(state.reports)) state.reports = [];
+                state.reports.push(rep);
+                closeModal('generic-modal'); showToast('Informe recibido. Gracias por avisarnos.');
+            } catch (e) { console.error(e); showToast('No se pudo enviar el informe', true); }
         };
 
         // ---------- 39. SEGUIMIENTO DE PEDIDO CON TIMELINE ----------
@@ -7498,16 +7613,26 @@ const FIJA_THEMES = {
                 ['v1.5', 'Marketplace', 'Registro de vendedores, comisión 4,7%, verificación por QR y mapa de recogida.']]
                 .map(([v, t, d]) => `<div class="border-l-2 border-fija-400 pl-3"><p class="text-xs font-mono text-fija-gold">${v}</p>
                     <p class="font-semibold text-fija-900">${t}</p><p class="text-gray-500">${d}</p></div>`).join('')}</div>`);
+        // La bienvenida se muestra UNA vez por cada usuario (identidad), no una sola vez
+        // para siempre. Así "cada vez que entra otro usuario" vuelve a saludar, pero nunca
+        // reaparece al navegar (volver del back-office, recargar, botón atrás del móvil…).
+        function currentOnboardKey() {
+            return (state.session && state.session.userId) ? String(state.session.userId) : 'guest';
+        }
+        function onboardingShown() {
+            try { return localStorage.getItem('fija_onboarded_user') === currentOnboardKey(); } catch (e) { return false; }
+        }
+        function markOnboarded() {
+            try { localStorage.setItem('fija_onboarded_user', currentOnboardKey()); state.onboarded = true; } catch (e) {}
+        }
         window.openOnboarding = () => {
-            if (localStorage.getItem('fija_onboarded')) return;
-            // Marca la bienvenida como vista EN EL MOMENTO en que se muestra, no solo al
-            // pulsar "Empezar a explorar". Así nunca reaparece al navegar (volver del
-            // back-office, recargar, usar el botón atrás del móvil, etc.).
-            try { localStorage.setItem('fija_onboarded', '1'); state.onboarded = true; } catch (e) {}
+            if (onboardingShown()) return;
+            // Marca la bienvenida como vista EN EL MOMENTO en que se muestra.
+            markOnboarded();
             showGenericModal('Bienvenido a FIJA', `
                 <div class="text-center mb-5"><img src="logo.png" alt="FIJA" class="h-12 md:h-14 mx-auto"></div>
                 <div class="mb-5 rounded-xl overflow-hidden border border-gray-100 bg-black">
-                    <video src="assets/bienvenida.mp4" autoplay muted loop playsinline controls preload="auto" oncanplay="this.play().catch(function(){});" class="w-full max-h-72 object-contain bg-black"></video>
+                    <video src="assets/bienvenida.mp4" autoplay muted playsinline controls preload="auto" oncanplay="this.play().catch(function(){});" class="w-full max-h-72 object-contain bg-black"></video>
                 </div>
                 <div class="space-y-2 text-sm">
                     ${[['fa-magnifying-glass', 'Busca con filtros', 'Precio, valoración, ofertas y vendedores verificados.'],
@@ -7518,16 +7643,17 @@ const FIJA_THEMES = {
                 <button type="button" onclick="finishOnboarding()" class="f-btn f-btn-gold w-full mt-5">Empezar a explorar</button>`);
         };
         window.finishOnboarding = () => {
-            try { localStorage.setItem('fija_onboarded', '1'); } catch (e) {}
+            markOnboarded();
             try {
                 // Pausa el video de la bienvenida y limpia el estado de página para que
-                // no quede "vivo" en #view-page ni reaparezca al navegar (volver del back-office, etc.).
+                // no quede "vivo" en #view-page ni reaparezca al navegar.
                 const vp = document.getElementById('view-page');
                 if (vp) { const v = vp.querySelector('video'); if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {} } }
                 state.currentPageDesc = null; state.pageStack = [];
             } catch (e) {}
-            ensureStorefront();
-            setTimeout(() => { try { scrollToCatalog(); } catch (e) {} }, 150);
+            // Vuelve a la vista que había antes de la bienvenida (o al escaparate por defecto).
+            try { if (typeof pageBack === 'function') pageBack(); } catch (e) {}
+            setTimeout(() => { try { if (state.currentView === 'storefront') scrollToCatalog(); } catch (e) {} }, 150);
         };
         window.openLegalMenu = () => showGenericModal('Legal y políticas', `
             <div class="space-y-2">
@@ -8012,13 +8138,16 @@ const FIJA_THEMES = {
             <div class="flex gap-3"><i class="fa-solid fa-box text-yellow-600 mt-1"></i><div><p class="font-semibold">Sin envíos</p><p class="text-gray-500">FIJA no ofrece envío: la recogida es siempre presencial.</p></div></div></div>`);
         window.openProductVideoInfo = () => { const p = state.products.find(x => x.id === window._pdId); if (!p) return;
             showGenericModal('Vídeo del producto', `<p class="text-sm text-gray-600">${p.videoUrl ? 'Este producto tiene vídeo comprimido al 90% paraAHORRAR espacio sin perder calidad.' : 'Este producto todavía no tiene vídeo.'}</p>`); };
-        window.flagProduct = (pid, reason) => { const p = state.products.find(x => x.id === (pid || window._pdId)); if (!p) return;
-            const log = JSON.parse(localStorage.getItem('fija_reports') || '[]');
-            log.push({ productId: p.id, reason: reason || 'Otro', at: Date.now(), user: (state.profile && state.profile.username) || 'anónimo' });
-            localStorage.setItem('fija_reports', JSON.stringify(log.slice(-50))); showToast('Reporte enviado. Gracias por avisar.'); };
-        window.openReportModal = () => showGenericModal('Informar del producto', `<div class="space-y-1">
-            ${['Información incorrecta', 'Precio raro', 'Producto no disponible', 'Otro'].map(r =>
-                `<button type="button" onclick="closeModal('generic-modal'); flagProduct(null, '${r}')" class="w-full text-left f-card f-card-hover px-4 py-3 text-sm">${r}</button>`).join('')}</div>`);
+        window.flagProduct = (pid, reason) => { const id = pid || window._pdId; const p = state.products.find(x => x.id === id) || {}; openReportModal('product', id, p.title || ''); };
+        window.openReportModal = (targetType, targetId, targetTitle) => {
+            const reasons = ['Información engañosa', 'Precio incorrecto', 'Producto no disponible', 'Contenido inapropiado', 'Spam o estafa', 'Otro'];
+            const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
+            showGenericModal('Reportar', `
+                <p class="text-sm text-gray-600 mb-3">${p && p.title ? 'Estás informando sobre <b>' + escapeHtml(p.title) + '</b>.' : 'Cuéntanos qué ocurre y lo revisaremos en el back-office.'}</p>
+                <select id="report-reason" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"><option value="">Motivo…</option>${reasons.map(r => `<option>${r}</option>`).join('')}</select>
+                <textarea id="report-text" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" placeholder="Detalles adicionales (opcional)"></textarea>
+                <button type="button" onclick="submitReport('${targetType}','${escapeHtml(targetId || '')}','${escapeHtml(targetTitle || '')}')" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar informe</button>`);
+        };
         window.openStockHistory = () => { const p = state.products.find(x => x.id === window._pdId); if (!p) return;
             const s = priceSeries(p);
             showGenericModal('Historial de precio', `<div class="space-y-1 text-sm">${s.slice().reverse().map(x =>
@@ -8163,7 +8292,7 @@ const FIJA_THEMES = {
             <p>FIJA Marketplace: plataforma de comercio electrónico con recogida Click & Collect.</p>
             <p>Los vendedores son empresas verificadas con CIF e IVA validados por la plataforma.</p>
             <p>Comisión aplicada: ${fmtPercent(COMMISSION_RATE * 100, 1)} por venta.</p></div>`);
-        window.openReportAbuse = () => openReportModal();
+        window.openReportAbuse = () => openReportModal('site', null, 'La web');
         window.toggleContrast = () => { state.contrast = !state.contrast; localStorage.setItem('fija_contrast', state.contrast ? '1' : '0');
             document.body.classList.toggle('fija-contrast', state.contrast); showToast('Alto contraste ' + (state.contrast ? 'activado' : 'desactivado')); };
         window.toggleBigText = () => { state.bigText = !state.bigText; localStorage.setItem('fija_bigtext', state.bigText ? '1' : '0');
@@ -8374,7 +8503,7 @@ const FIJA_THEMES = {
         initKeyboardShortcuts();
         renderMiniCart();
         watchPriceDrops();
-        loadAll().then(() => { if (!state.onboarded) setTimeout(() => { if (state.currentView === 'storefront' && !state.currentPageDesc) openOnboarding(); }, 900); });
+        loadAll().then(() => { try { restoreSavedLocation(); } catch (e) {} if (!state.onboarded) setTimeout(() => { if (state.currentView === 'storefront' && !state.currentPageDesc) openOnboarding(); }, 900); });
         // Analítica de entradas de clientes (IP, dispositivo, país). Fire-and-forget.
         try { logVisitorEntry(); } catch (e) {}
         // Botón "volver arriba" visible al hacer scroll
@@ -8382,6 +8511,8 @@ const FIJA_THEMES = {
             const b = document.getElementById('back-to-top');
             if (b) { b.classList.toggle('hide', window.scrollY < 400); b.classList.toggle('flex', window.scrollY >= 400); }
         });
+        // Guarda la zona actual antes de recargar para restaurarla al volver.
+        window.addEventListener('beforeunload', () => { try { saveRestoreState(); } catch (e) {} });
         // Re-sincronización en la nube: cada 5s la tienda re-pregunta a Supabase y refleja
         // al instante las ediciones del back-office (productos, pedidos, perfiles) y los
         // cupones/ajustes. Solo re-pinta el catálogo si algo cambió y el usuario no está

@@ -110,9 +110,23 @@
                     </div>
                     <section id="sec-s-products">
                     <div class="bg-white rounded-xl border border-fija-200 overflow-hidden mb-8">
-                        <div class="px-6 py-4 border-b border-fija-200 font-semibold">Mis Productos</div>
+                        <div class="px-6 py-4 border-b border-fija-200 flex flex-wrap items-center justify-between gap-3">
+                            <span class="font-semibold">Mis Productos</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="toggleSellerSelect()" id="sel-toggle-btn" class="bg-fija-100 hover:bg-fija-200 text-fija-900 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"><i class="fa-regular fa-square-check mr-1"></i>Elegir varios</button>
+                            </div>
+                        </div>
+                        <div id="seller-bulk-bar" class="hide px-6 py-3 bg-fija-900 text-white flex flex-wrap items-center gap-2">
+                            <span class="text-sm"><span id="sel-count">0</span> seleccionados</span>
+                            <div class="flex flex-wrap gap-2 ml-auto">
+                                <button onclick="bulkSetDiscount()" class="bg-fija-gold text-fija-900 text-xs font-semibold px-3 py-1.5 rounded-lg">% Descuento</button>
+                                <button onclick="bulkSetStock()" class="bg-white/15 hover:bg-white/25 text-xs font-semibold px-3 py-1.5 rounded-lg">Stock</button>
+                                <button onclick="bulkDeleteProducts()" class="bg-red-500 hover:bg-red-600 text-xs font-semibold px-3 py-1.5 rounded-lg">Eliminar</button>
+                                <button onclick="cancelSellerSelect()" class="bg-white/15 hover:bg-white/25 text-xs font-semibold px-3 py-1.5 rounded-lg">Cancelar</button>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[520px]">
-                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium">Precio</th><th class="px-6 py-3 font-medium">Acción</th></tr></thead>
+                            <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium w-10"><input type="checkbox" id="sel-all" onchange="toggleSellerSelectAll(this.checked)" class="hide accent-fija-900"></th><th class="px-6 py-3 font-medium">Producto</th><th class="px-6 py-3 font-medium">Precio</th><th class="px-6 py-3 font-medium">Acción</th></tr></thead>
                             <tbody id="seller-products" class="divide-y divide-fija-100"></tbody>
                         </table></div>
                     </div>
@@ -461,6 +475,24 @@
                         </div>
                     </section>
 
+                    <!-- ===== REPORTES DE USUARIOS ===== -->
+                    <section id="sec-userreports" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Reportes de usuarios</h1><p class="text-fija-500 text-sm">Avisos enviados desde la tienda. Revísalos para banear al usuario o retirar el producto.</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Abiertos</p><p class="text-3xl font-bold text-amber-600" id="ur-open">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Resueltos</p><p class="text-3xl font-bold text-green-600" id="ur-done">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Descartados</p><p class="text-3xl font-bold text-fija-900" id="ur-dismissed">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm"><p class="text-sm text-fija-500 mb-1">Total</p><p class="text-3xl font-bold text-fija-900" id="ur-total">0</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 flex flex-wrap items-center justify-between gap-3">
+                                <h2 class="font-semibold">Bandeja de reportes</h2>
+                                <select id="ur-filter" onchange="renderAdminUserReports()" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm"><option value="open">Solo abiertos</option><option value="all">Todos</option><option value="resolved">Resueltos</option><option value="dismissed">Descartados</option></select>
+                            </div>
+                            <div id="ur-list" class="divide-y divide-fija-100"></div>
+                        </div>
+                    </section>
+
                     <!-- ===== CUPONES ===== -->
                     <section id="sec-coupons" class="hide">
                         <div class="mb-6"><h1 class="text-2xl font-bold">Cupones</h1><p class="text-fija-500 text-sm">Códigos de descuento válidos en toda la tienda.</p></div>
@@ -670,10 +702,11 @@
         const CONFIG = loadConfig();
 
         const state = {
-            products: [], orders: [], profiles: [], approvedSellers: new Set(),
+            products: [], orders: [], profiles: [], approvedSellers: new Set(), reports: [],
             coupons: [], settings: {},
-            session: null, profile: null, _sha: { products: null, orders: null, profiles: null, coupons: null, settings: null },
-            view: 'products', editingId: null, pendingVideo: null, videoBusy: false
+            session: null, profile: null, _sha: { products: null, orders: null, profiles: null, coupons: null, settings: null, reports: null },
+            view: 'products', editingId: null, pendingVideo: null, videoBusy: false,
+            selMode: false, selectedProducts: []
         };
         try { state.session = JSON.parse(localStorage.getItem('fija_backend_session') || 'null'); } catch (e) {}
 
@@ -697,7 +730,7 @@
             'FIJA20': { type: 'pct', value: 20, label: '20% de descuento', active: true, createdAt: 1700000000000 }
         };
         const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'soporte@fija.demo' };
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [] };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
 
@@ -873,8 +906,8 @@
 
         async function loadAll() {
             try {
-                const [products, orders, profiles, coupons, settings] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('coupons'), readDataFile('settings')]);
-                state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || [];
+                const [products, orders, profiles, coupons, settings, reports, visits] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('coupons'), readDataFile('settings'), readDataFile('reports'), readDataFile('visits')]);
+                state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || []; state.reports = reports.data || []; state.visits = visits.data || [];
                 state.coupons = (coupons.data && typeof coupons.data === 'object' && !Array.isArray(coupons.data)) ? coupons.data : (Array.isArray(coupons.data) ? {} : clone(DEFAULT_COUPONS));
                 state.settings = (settings.data && typeof settings.data === 'object' && !Array.isArray(settings.data)) ? Object.assign(clone(DEFAULT_SETTINGS), settings.data) : clone(DEFAULT_SETTINGS);
                 state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha, coupons: coupons.sha, settings: settings.sha };
@@ -897,6 +930,7 @@
                 const profile = profiles.find(p => (p.email && p.email.toLowerCase() === v) || (p.username && p.username.toLowerCase() === v));
                 const pwHash = await hashPassword(pw);
                 if (!profile || profile.pwHash !== pwHash) { err.classList.remove('hidden-fade'); return; }
+                if (profile.banned) { err.textContent = 'Esta cuenta ha sido suspendida por un administrador.'; err.classList.remove('hidden-fade'); return; }
                 if (profile.role === 'user') { err.textContent = 'Esta cuenta es de cliente. Usa la tienda pública.'; err.classList.remove('hidden-fade'); return; }
                 state.session = { userId: profile.userId, email: profile.email };
                 localStorage.setItem('fija_backend_session', JSON.stringify(state.session));
@@ -969,6 +1003,7 @@
                 items += navItem('sellers', 'Vendedores', 'fa-store');
                 items += navItem('pending', 'Solicitudes', 'fa-clock');
                 items += navItem('customers', 'Clientes', 'fa-users');
+                items += navItem('userreports', 'Reportes', 'fa-flag');
                 items += navItem('reviews', 'Reseñas', 'fa-star');
                 items += navItem('coupons', 'Cupones', 'fa-ticket');
                 items += navItem('settings', 'Ajustes', 'fa-sliders');
@@ -992,7 +1027,7 @@
         }
 
         // ===================== Views / sections =====================
-        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', analytics:'sec-analytics', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
+        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', analytics:'sec-analytics', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', userreports:'sec-userreports', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
         const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', promos:'sec-s-promos', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
         function showSection(id) {
             state.view = id;
@@ -1014,6 +1049,59 @@
             if (isAdmin() && id === 'analytics') renderAdminAnalytics();
         }
 
+        // ---------- Selección múltiple de productos del vendedor ----------
+        window.toggleSellerSelect = () => {
+            state.selMode = !state.selMode;
+            state.selectedProducts = [];
+            const btn = document.getElementById('sel-toggle-btn');
+            if (btn) btn.classList.toggle('bg-fija-gold', state.selMode);
+            const all = document.getElementById('sel-all'); if (all) all.classList.toggle('hide', !state.selMode);
+            renderSeller(); if (isAdmin()) { /* admin no usa este modo */ }
+        };
+        window.toggleSellerSelectOne = (id) => {
+            state.selectedProducts = state.selectedProducts || [];
+            const i = state.selectedProducts.indexOf(id);
+            if (i >= 0) state.selectedProducts.splice(i, 1); else state.selectedProducts.push(id);
+            updateSellerSelBar();
+        };
+        window.toggleSellerSelectAll = (on) => {
+            const myProducts = state.products.filter(p => p.sellerId === state.profile.userId);
+            state.selectedProducts = on ? myProducts.map(p => p.id) : [];
+            renderSeller();
+        };
+        function updateSellerSelBar() {
+            const bar = document.getElementById('seller-bulk-bar'); if (!bar) return;
+            const n = (state.selectedProducts || []).length;
+            bar.classList.toggle('hide', !(state.selMode && n > 0));
+            const c = document.getElementById('sel-count'); if (c) c.textContent = n;
+        }
+        window.cancelSellerSelect = () => { state.selMode = false; state.selectedProducts = []; const btn = document.getElementById('sel-toggle-btn'); if (btn) btn.classList.remove('bg-fija-gold'); renderSeller(); };
+        window.bulkDeleteProducts = async () => {
+            const ids = state.selectedProducts || [];
+            if (!ids.length || !confirm('¿Eliminar ' + ids.length + ' productos?')) return;
+            await mutateCollection('products', arr => { ids.forEach(id => { const i = arr.findIndex(p => p.id === id); if (i >= 0) arr.splice(i, 1); }); });
+            state.products = (await readDataFile('products')).data || [];
+            state.selectedProducts = []; state.selMode = false; renderSeller(); showToast(ids.length + ' productos eliminados');
+        };
+        window.bulkSetDiscount = async () => {
+            const ids = state.selectedProducts || []; if (!ids.length) return;
+            const v = prompt('Descuento FIJA para la selección (%) — ojo: lo asume FIJA, tú cobras igual:', '10');
+            if (v == null) return;
+            const d = Math.max(0, Math.min(90, Number(v) || 0));
+            await mutateCollection('products', arr => { arr.forEach(p => { if (ids.includes(p.id)) p.discountPercent = d; }); });
+            state.products = (await readDataFile('products')).data || [];
+            cancelSellerSelect(); showToast('Descuento actualizado en ' + ids.length + ' productos');
+        };
+        window.bulkSetStock = async () => {
+            const ids = state.selectedProducts || []; if (!ids.length) return;
+            const v = prompt('Stock para la selección:', '10');
+            if (v == null) return;
+            const s = Math.max(0, Number(v) || 0);
+            await mutateCollection('products', arr => { arr.forEach(p => { if (ids.includes(p.id)) p.stock = s; }); });
+            state.products = (await readDataFile('products')).data || [];
+            cancelSellerSelect(); showToast('Stock actualizado en ' + ids.length + ' productos');
+        };
+
         function renderSeller() {
             document.getElementById('seller-pending-banner').classList.toggle('hide', !isPendingSeller());
             const myProducts = state.products.filter(p => p.sellerId === state.profile.userId);
@@ -1029,16 +1117,20 @@
             document.getElementById('stat-net').textContent = formatEuro(net);
             renderPickupLists();
             if (myProducts.length === 0) {
-                document.getElementById('seller-products').innerHTML = `<tr><td colspan="3" class="px-6 py-10 text-center text-fija-400">Aún no tienes productos. Pulsa "Nuevo Producto".</td></tr>`;
+                document.getElementById('seller-products').innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-fija-400">Aún no tienes productos. Pulsa "Nuevo Producto".</td></tr>`;
             } else {
+                const sel = state.selMode ? (state.selectedProducts || []) : [];
                 document.getElementById('seller-products').innerHTML = myProducts.map(p => {
                     const d = productDiscount(p);
+                    const checked = sel.includes(p.id);
                     return `<tr class="hover:bg-fija-50">
+                    <td class="px-6 py-4"><input type="checkbox" ${state.selMode ? '' : 'class="hide"'} ${checked ? 'checked' : ''} onchange="toggleSellerSelectOne('${p.id}')" class="accent-fija-900"></td>
                     <td class="px-6 py-4"><div class="flex items-center"><img src="${escapeHtml(p.imageUrl)}" class="w-10 h-10 rounded-lg object-cover mr-3 bg-fija-100" onerror="this.src='https://placehold.co/100x100/f4f4f5/a1a1aa?text=Img'"><div class="font-medium">${escapeHtml(p.title)}</div></div></td>
                     <td class="px-6 py-4"><span class="font-medium">${formatEuro(p.price)}</span>${d > 0 ? `<div class="text-xs text-fija-gold font-semibold mt-0.5"><i class="fa-solid fa-tag mr-1"></i>FIJA aplica -${d}% · tú cobras igual</div>` : ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap"><button onclick="editProduct('${p.id}')" class="text-fija-900 hover:underline text-sm font-medium mr-3"><i class="fa-solid fa-pen mr-1"></i>Editar</button><button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:underline text-sm">Eliminar</button></td></tr>`;
                 }).join('');
             }
+            updateSellerSelBar();
             if (myOrders.length === 0) {
                 document.getElementById('seller-orders').innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-fija-400">Sin pedidos todavía.</td></tr>`;
             } else {
@@ -1194,6 +1286,7 @@
             // Nuevos módulos de admin
             if (document.getElementById('rp-bars')) renderAdminReports();
             if (document.getElementById('cu-table')) renderAdminCustomers();
+            if (document.getElementById('ur-list')) renderAdminUserReports();
             if (document.getElementById('rw-list')) renderAdminReviews();
             if (document.getElementById('cp-table')) renderAdminCoupons();
             if (document.getElementById('set-commission')) renderAdminSettings();
@@ -1414,12 +1507,16 @@
                 const roleBadge = { user: ['Cliente', 'bg-gray-100 text-gray-600'], seller: ['Vendedor', 'bg-blue-100 text-blue-700'], admin: ['Admin', 'bg-fija-900 text-white'] }[p.role] || ['—', 'bg-gray-100 text-gray-600'];
                 return `<tr>
                 <td class="px-6 py-4"><p class="font-medium">${escapeHtml(p.username || p.companyName || '—')}</p><p class="text-xs text-fija-500">${escapeHtml(p.email || '')}</p></td>
-                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${roleBadge[1]}">${roleBadge[0]}</span></td>
+                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${p.banned ? 'bg-red-100 text-red-700' : roleBadge[1]}">${p.banned ? 'Baneado' : roleBadge[0]}</span></td>
                 <td class="px-6 py-4">${ordersBy[k] || 0}</td>
                 <td class="px-6 py-4 font-medium">${formatEuro(spend[k] || 0)}</td>
                 <td class="px-6 py-4 text-fija-600 text-sm">${lastBuy[k] ? new Date(lastBuy[k]).toLocaleDateString('es-ES') : '—'}</td>
                 <td class="px-6 py-4 text-fija-600 text-sm">${p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-ES') : '—'}</td>
-                <td class="px-6 py-4"><button onclick="viewCustomerOrders('${escapeHtml(k)}')" class="text-fija-900 hover:underline text-sm font-medium"><i class="fa-solid fa-eye mr-1"></i>Ver</button></td></tr>`;
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="viewCustomerDetail('${escapeHtml(k)}')" class="text-fija-900 hover:underline text-sm font-medium mr-2"><i class="fa-solid fa-eye mr-1"></i>Detalle</button>
+                    <button onclick="resetUserPassword('${escapeHtml(k)}')" class="text-fija-600 hover:underline text-sm font-medium mr-2" title="Restablecer contraseña"><i class="fa-solid fa-key mr-1"></i>Clave</button>
+                    ${p.banned ? `<button onclick="unbanUser('${escapeHtml(k)}')" class="text-green-700 hover:underline text-sm font-medium"><i class="fa-solid fa-user-check mr-1"></i>Desbanear</button>` : `<button onclick="banUser('${escapeHtml(k)}')" class="text-red-600 hover:underline text-sm font-medium"><i class="fa-solid fa-ban mr-1"></i>Banear</button>`}
+                </td></tr>`;
             }).join('');
         }
         window.viewCustomerOrders = (key) => {
@@ -1432,6 +1529,93 @@
                 <td class="px-6 py-4">${statusBadge(o.status)}</td>
                 <td class="px-6 py-4 text-xs text-fija-500">${(o.items || []).map(it => escapeHtml(it.title || '')).join(', ').slice(0, 80)}</td>
                 <td class="px-6 py-4"></td><td class="px-6 py-4"><button onclick="renderAdminCustomers()" class="text-fija-900 hover:underline text-sm"><i class="fa-solid fa-arrow-left mr-1"></i>Volver</button></td></tr>`).join('');
+        };
+        // ---------- ADMIN: Gestión de usuarios (ban / reset / detalle) ----------
+        function findProfileByKey(k) { return state.profiles.find(p => (p.userId || p.email) === k); }
+        window.banUser = async (k) => {
+            if (!confirm('¿Banear a este usuario? No podrá iniciar sesión hasta que lo desbanees.')) return;
+            await mutateCollection('profiles', arr => { const p = arr.find(x => (x.userId || x.email) === k); if (p) p.banned = true; });
+            state.profiles = (await readDataFile('profiles')).data || [];
+            showToast('Usuario baneado'); renderAdminCustomers();
+        };
+        window.unbanUser = async (k) => {
+            await mutateCollection('profiles', arr => { const p = arr.find(x => (x.userId || x.email) === k); if (p) p.banned = false; });
+            state.profiles = (await readDataFile('profiles')).data || [];
+            showToast('Usuario desbaneado'); renderAdminCustomers();
+        };
+        window.resetUserPassword = async (k) => {
+            const p = findProfileByKey(k); if (!p) return;
+            const np = prompt('Nueva contraseña para ' + (p.username || p.email) + ' (mínimo 4 caracteres):');
+            if (!np || np.length < 4) { showToast('Contraseña demasiado corta', true); return; }
+            const h = await hashPassword(np);
+            await mutateCollection('profiles', arr => { const x = arr.find(y => (y.userId || y.email) === k); if (x) x.pwHash = h; });
+            state.profiles = (await readDataFile('profiles')).data || [];
+            showToast('Contraseña restablecida'); renderAdminCustomers();
+        };
+        window.viewCustomerDetail = (k) => {
+            const p = findProfileByKey(k); if (!p) return;
+            const orders = state.orders.filter(o => (o.buyerUid || o.buyerEmail) === k).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            const spend = orders.reduce((s, o) => s + orderPaidTotal(o), 0);
+            const visits = (state.visits || []).filter(v => v.userId === (p.userId));
+            const reportsFiled = (state.reports || []).filter(r => r.reporterId === (p.userId) || r.reporterEmail === (p.email));
+            const myProductIds = p.role === 'seller' ? state.products.filter(pr => pr.sellerId === p.userId).map(pr => pr.id) : [];
+            const reportsAgainst = (state.reports || []).filter(r => (r.type === 'product' && myProductIds.includes(r.targetId)) || (r.type === 'user' && r.targetId === p.userId));
+            const stats = [['Pedidos', orders.length], ['Gasto total', formatEuro(spend)], ['Entradas (visitas)', visits.length], ['Reportes enviados', reportsFiled.length], ['Reportes recibidos', reportsAgainst.length]];
+            const ordersHtml = orders.length ? orders.map(o => `<tr class="border-b border-fija-100"><td class="py-2 font-mono text-xs">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</td><td class="py-2 text-sm">${new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES')}</td><td class="py-2 font-medium">${formatEuro(orderPaidTotal(o))}</td><td class="py-2">${statusBadge(o.status)}</td></tr>`).join('') : '<tr><td colspan="4" class="py-4 text-center text-fija-400">Sin pedidos.</td></tr>';
+            showGenericModal('Detalle de ' + escapeHtml(p.username || p.companyName || p.email), `
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">${stats.map(([l, v]) => `<div class="bg-fija-50 rounded-lg p-3 text-center"><p class="text-[11px] text-fija-500">${l}</p><p class="font-bold text-fija-900">${v}</p></div>`).join('')}</div>
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <button onclick="banUser('${escapeHtml(k)}')" class="text-sm ${p.banned ? 'text-green-700' : 'text-red-600'} font-medium"><i class="fa-solid ${p.banned ? 'fa-user-check' : 'fa-ban'} mr-1"></i>${p.banned ? 'Desbanear' : 'Banear'}</button>
+                    <button onclick="resetUserPassword('${escapeHtml(k)}')" class="text-sm text-fija-600 font-medium"><i class="fa-solid fa-key mr-1"></i>Restablecer clave</button>
+                </div>
+                <p class="text-sm font-semibold mb-2">Movimientos / Pedidos</p>
+                <div class="max-h-64 overflow-y-auto"><table class="w-full text-left text-sm"><thead><tr class="text-xs uppercase text-fija-500"><th class="py-1">ID</th><th class="py-1">Fecha</th><th class="py-1">Total</th><th class="py-1">Estado</th></tr></thead><tbody>${ordersHtml}</tbody></table></div>`);
+        };
+
+        // ---------- ADMIN: Reportes de usuarios ----------
+        function renderAdminUserReports() {
+            const list = (state.reports || []).slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            const open = list.filter(r => (r.status || 'open') === 'open').length;
+            const done = list.filter(r => r.status === 'resolved').length;
+            const dism = list.filter(r => r.status === 'dismissed').length;
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            set('ur-open', open); set('ur-done', done); set('ur-dismissed', dism); set('ur-total', list.length);
+            const filter = (document.getElementById('ur-filter') || {}).value || 'open';
+            const shown = filter === 'all' ? list : list.filter(r => (r.status || 'open') === filter);
+            const box = document.getElementById('ur-list'); if (!box) return;
+            if (!shown.length) { box.innerHTML = `<div class="px-6 py-10 text-center text-fija-400">No hay reportes en esta vista.</div>`; return; }
+            const badge = s => ({ open:['Abierto','bg-amber-100 text-amber-700'], resolved:['Resuelto','bg-green-100 text-green-700'], dismissed:['Descartado','bg-gray-100 text-gray-600'] }[s || 'open']);
+            box.innerHTML = shown.map(r => {
+                const b = badge(r.status);
+                const who = r.sellerId || r.reporterId;
+                const target = r.type === 'product' ? 'Producto: ' + escapeHtml(r.targetTitle || r.targetId) : (r.type === 'user' ? 'Usuario: ' + escapeHtml(r.targetTitle || r.targetId) : 'Web / general');
+                return `<div class="px-6 py-4 flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap mb-1"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${b[1]}">${b[0]}</span>
+                            <span class="text-sm font-medium text-fija-900">${escapeHtml(r.reason || 'Otro')}</span>
+                            <span class="text-xs text-fija-400">${r.createdAt ? new Date(r.createdAt).toLocaleString('es-ES') : ''}</span></div>
+                        <p class="text-sm text-fija-700">${target}</p>
+                        ${r.detail ? `<p class="text-xs text-fija-500 mt-0.5">“${escapeHtml(r.detail)}”</p>` : ''}
+                        <p class="text-[11px] text-fija-400 mt-1">Reportado por ${escapeHtml(r.reporterName || r.reporterEmail || 'anónimo')}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        ${r.sellerId ? `<button onclick="banUser('${escapeHtml(r.sellerId)}')" class="text-red-600 hover:underline text-sm font-medium"><i class="fa-solid fa-ban mr-1"></i>Banear vendedor</button>` : ''}
+                        ${r.type === 'product' && r.targetId ? `<button onclick="adminHideProduct('${escapeHtml(r.targetId)}','${escapeHtml(r.id)}')" class="text-fija-600 hover:underline text-sm font-medium"><i class="fa-solid fa-eye-slash mr-1"></i>Ocultar producto</button>` : ''}
+                        ${(r.status || 'open') !== 'resolved' ? `<button onclick="setReportStatus('${escapeHtml(r.id)}','resolved')" class="text-green-700 hover:underline text-sm font-medium"><i class="fa-solid fa-check mr-1"></i>Resolver</button>` : ''}
+                        ${(r.status || 'open') !== 'dismissed' ? `<button onclick="setReportStatus('${escapeHtml(r.id)}','dismissed')" class="text-fija-500 hover:underline text-sm font-medium"><i class="fa-solid fa-xmark mr-1"></i>Descartar</button>` : ''}
+                    </div></div>`;
+            }).join('');
+        }
+        window.setReportStatus = async (id, status) => {
+            await mutateCollection('reports', arr => { const r = arr.find(x => x.id === id); if (r) { r.status = status; r.reviewedAt = Date.now(); } });
+            state.reports = (await readDataFile('reports')).data || [];
+            renderAdminUserReports(); showToast(status === 'resolved' ? 'Reporte resuelto' : 'Reporte descartado');
+        };
+        window.adminHideProduct = async (pid, reportId) => {
+            await mutateCollection('products', arr => { const p = arr.find(x => x.id === pid); if (p) p.hidden = true; });
+            state.products = (await readDataFile('products')).data || [];
+            if (reportId) { await mutateCollection('reports', arr => { const r = arr.find(x => x.id === reportId); if (r) { r.status = 'resolved'; r.reviewedAt = Date.now(); } }); state.reports = (await readDataFile('reports')).data || []; }
+            showToast('Producto ocultado'); renderAdminUserReports();
         };
 
         // ---------- ADMIN: Reseñas ----------
@@ -2073,6 +2257,26 @@
             if (content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
             setTimeout(() => modal.classList.add('hide', 'hidden'), 300);
         };
+        // Modal genérico reutilizable (sin depender de un elemento estático en el HTML).
+        window.showGenericModal = (title, html) => {
+            let m = document.getElementById('fija-generic-modal');
+            if (!m) {
+                m = document.createElement('div');
+                m.id = 'fija-generic-modal';
+                m.className = 'fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50';
+                m.innerHTML = `<div class="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto">
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+                        <h3 id="fija-gm-title" class="font-bold text-fija-900"></h3>
+                        <button type="button" onclick="closeGenericModal()" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-500"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div id="fija-gm-body" class="p-6"></div></div>`;
+                document.body.appendChild(m);
+            }
+            document.getElementById('fija-gm-title').textContent = title || '';
+            document.getElementById('fija-gm-body').innerHTML = html || '';
+            m.classList.remove('hide', 'hidden');
+        };
+        window.closeGenericModal = () => { const m = document.getElementById('fija-generic-modal'); if (m) m.classList.add('hide', 'hidden'); };
         function showToast(message, isError = false) {
             const toast = document.getElementById('toast'), msgEl = document.getElementById('toast-message'), icon = toast.querySelector('i');
             msgEl.textContent = message;
