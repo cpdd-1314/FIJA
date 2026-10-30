@@ -110,5 +110,21 @@
     "role": "anon",
     "path": "/test_index.html",
     "ref": ""
+  },
+  {
+    "id": "v1793382037053_n88h02",
+    "ts": 1793382037053,
+    "ip": "118.25.10.211",
+    "country": "China",
+    "countryCode": "CN",
+    "city": "Shanghai",
+    "region": "Shanghai",
+    "device": "Escritorio",
+    "os": "Linux",
+    "browser": "Chrome",
+    "uid": "anon",
+    "role": "anon",
+    "path": "/test_index.html",
+    "ref": ""
   }
 ]
