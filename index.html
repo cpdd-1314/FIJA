@@ -431,7 +431,7 @@
                     <span class="hover:text-fija-gold cursor-pointer" onclick="openHelp('vendedores')">Vendedores verificados</span>
                 </div>
                 <div class="flex items-center gap-4 shrink-0 pl-4">
-                    <span class="text-white/70"><i class="fa-solid fa-phone mr-1"></i>900 100 200</span>
+                    <span class="text-white/70"><i class="fa-solid fa-phone mr-1"></i>633 616 054</span>
                     <button type="button" onclick="toggleTheme()" class="hover:text-fija-gold" title="Modo oscuro"><i class="fa-solid fa-moon"></i></button>
                 </div>
             </div>
@@ -4040,9 +4040,13 @@
                             <label class="text-sm font-semibold text-fija-900">Cantidad:</label>
                             <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
                                 <button type="button" onclick="pdQty(-1)" class="w-9 h-9 hover:bg-gray-100 flex items-center justify-center"><i class="fa-solid fa-minus text-xs"></i></button>
-                                <input type="number" id="pd-qty" value="1" min="1" max="20" class="w-12 text-center text-sm border-0 outline-none py-2">
+                                <input type="number" id="pd-qty" value="${(state.cart.find(c=>c.product.id===p.id)||{}).quantity || 1}" min="1" max="99" onchange="pdQtyClamp()" class="w-14 text-center text-sm border-0 outline-none py-2">
                                 <button type="button" onclick="pdQty(1)" class="w-9 h-9 hover:bg-gray-100 flex items-center justify-center"><i class="fa-solid fa-plus text-xs"></i></button>
                             </div>
+                            <select onchange="document.getElementById('pd-qty').value=this.value" class="text-sm border border-gray-300 rounded-lg py-2 px-2">
+                                ${[1,2,3,5,10,20].map(q => `<option value="${q}">${q} ud.</option>`).join('')}
+                            </select>
+                            ${(state.cart.find(c=>c.product.id===p.id)) ? `<span class="text-xs text-green-600 font-medium"><i class="fa-solid fa-cart-shopping mr-1"></i>Ya tienes ${state.cart.find(c=>c.product.id===p.id).quantity} en la cesta</span>` : ''}
                         </div>
                         <div class="flex gap-2 mb-2">
                             <button onclick="pdAddToCart()" class="flex-1 bg-fija-gold hover:bg-yellow-600 text-fija-900 font-semibold py-3 rounded-lg transition-colors shadow-sm"><i class="fa-solid fa-cart-plus mr-2"></i>Añadir a la cesta</button>
@@ -4123,9 +4127,10 @@
             if (ov) { ov.classList.remove('open'); document.body.style.overflow = ''; }
         };
         window.pdPlayVideo = () => { const h = document.getElementById('pd-video-holder'); if (h) h.classList.remove('hide'); };
+        window.pdQtyClamp = () => { const el = document.getElementById('pd-qty'); if (el) el.value = Math.max(1, Math.min(99, parseInt(el.value) || 1)); };
         window.pdQty = (d) => {
             const el = document.getElementById('pd-qty'); if (!el) return;
-            el.value = Math.max(1, Math.min(20, (parseInt(el.value) || 1) + d));
+            el.value = Math.max(1, Math.min(99, (parseInt(el.value) || 1) + d));
             // La barra de compra fija muestra su propio selector (q2): lo sincronizamos
             const p = state.products.find(x => x.id === window._pdId);
             const q2 = document.getElementById('pd-sticky-qty');
@@ -4135,12 +4140,12 @@
         };
         window.pdAddToCart = () => {
             const q = parseInt((document.getElementById('pd-qty') || {}).value) || 1;
-            for (let i = 0; i < q; i++) addToCart(window._pdId, true);
+            addToCart(window._pdId, true, q);
             showToast(`${q} × añadido a la cesta`);
         };
         window.pdBuyNow = () => {
             const q = parseInt((document.getElementById('pd-qty') || {}).value) || 1;
-            for (let i = 0; i < q; i++) addToCart(window._pdId, true);
+            addToCart(window._pdId, true, q);
             closeModal('product-detail-modal');
             switchView('cart');
         };
@@ -4357,7 +4362,7 @@
                         { i: 'fa-lock', t: 'Pago seguro', d: 'Métodos de pago cifrados. FIJA nunca almacena los datos de tu tarjeta.' },
                         { i: 'fa-user-check', t: 'Vendedores verificados', d: 'Cada vendedor verifica identidad, CIF y dirección antes de publicar.' },
                         { i: 'fa-box-open', t: 'Recogida sin colas', d: 'Confirmas tu punto de recogida y el pedido se prepara en 2 horas.' },
-                        { i: 'fa-headset', t: 'Soporte 900 100 200', d: 'Atención al cliente de lunes a sábado, de 9:00 a 21:00.' }
+                        { i: 'fa-headset', t: 'Soporte 633 616 054', d: 'Atención al cliente de lunes a sábado, de 9:00 a 21:00.' }
                     ].map(c => `<div class="border border-gray-200 rounded-xl p-4 flex items-start gap-3">
                         <i class="fa-solid ${c.i} text-fija-gold text-xl mt-0.5"></i>
                         <div><p class="font-bold text-fija-900 text-sm">${c.t}</p><p class="text-xs text-gray-500 mt-1">${c.d}</p></div></div>`).join('')}
@@ -4479,7 +4484,7 @@
                 const profile = profiles.find(p => (p.email && p.email.toLowerCase() === loginVal) || (p.username && p.username.toLowerCase() === loginVal));
                 const pwHash = await hashPassword(password);
                 if (!profile || profile.pwHash !== pwHash) { errorDiv.classList.remove('hidden'); return; }
-                if (profile.banned) { errorDiv.textContent = 'Esta cuenta ha sido suspendida por un administrador.'; errorDiv.classList.remove('hidden'); return; }
+                if (profile.banned) { errorDiv.textContent = 'Cuenta suspendida por un administrador' + (profile.banReason ? ': ' + profile.banReason : '.') + ' Contacta con soporte.'; errorDiv.classList.remove('hidden'); return; }
                 state.session = { userId: profile.userId, email: profile.email };
                 localStorage.setItem('fija_session', JSON.stringify(state.session));
                 state.profile = profile;
@@ -4552,11 +4557,20 @@
         // ===================== Productos =====================
 
         // ===================== Carrito =====================
-        window.addToCart = (productId, silent) => {
+        window.addToCart = (productId, silent, qty) => {
             const product = state.products.find(p => p.id === productId); if (!product) return;
+            const n = Math.max(1, Math.min(99, Number(qty) || 1));
             const existing = state.cart.find(item => item.product.id === productId);
-            if (existing) existing.quantity += 1; else state.cart.push({ product, quantity: 1 });
-            updateCartBadge(); if (!silent) showToast(`Añadido a la cesta: ${product.title}`);
+            if (existing) existing.quantity += n; else state.cart.push({ product, quantity: n });
+            updateCartBadge(); if (!silent) showToast(`Añadido a la cesta: ${product.title}${n > 1 ? ' ×' + n : ''}`);
+        };
+        // Cambia la cantidad exacta de una línea de la cesta (input manual o +/-)
+        window.setCartQty = (productId, qty) => {
+            const item = state.cart.find(i => i.product.id === productId); if (!item) return;
+            const n = Math.floor(Number(qty));
+            if (!Number.isFinite(n) || n <= 0) { window.removeFromCart(productId); return; }
+            item.quantity = Math.min(99, n);
+            updateCartBadge(); renderCart();
         };
         window.removeFromCart = (productId) => { state.cart = state.cart.filter(item => item.product.id !== productId); updateCartBadge(); renderCart(); };
         window.updateQuantity = (productId, delta) => {
@@ -4839,7 +4853,14 @@
                         ${crossPrice != null ? `<span class="f-price-old text-xs mr-1.5">${formatEuro(crossPrice)}</span>` : ''}
                         <span class="f-price text-lg">${formatEuro(finalPrice)}</span>
                         ${adminDisc > 0 ? '<div class="text-[10px] text-fija-gold font-semibold mt-0.5"><i class="fa-solid fa-tag mr-1"></i>Oferta FIJA</div>' : ''}
-                        <button onclick="event.stopPropagation(); addToCart('${p.id}')" class="f-btn f-btn-gold mt-2.5 w-full"><i class="fa-solid fa-cart-plus"></i> Añadir a la cesta</button>
+                        ${selMode ? '' : `<div class="mt-2.5 flex items-center gap-1.5">
+                            <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden shrink-0">
+                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', -1)" aria-label="Menos" class="w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-minus"></i></button>
+                                <input type="number" min="1" max="99" value="1" id="qty-${p.id}" onclick="event.stopPropagation()" onchange="clampCardQty('${p.id}')" aria-label="Cantidad" class="w-9 text-center text-xs border-0 outline-none py-1.5">
+                                <button type="button" onclick="event.stopPropagation(); stepCardQty('${p.id}', 1)" aria-label="Más" class="w-7 h-8 hover:bg-gray-100 text-xs"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                            <button onclick="event.stopPropagation(); addToCart('${p.id}', false, cardQty('${p.id}'))" class="f-btn f-btn-gold flex-1"><i class="fa-solid fa-cart-plus"></i> Añadir</button>
+                        </div>`}
                     </div>
                 </div>
             </div>`;
@@ -4977,6 +4998,10 @@
         window.scrollCarousel = (id, dir) => { const el = document.getElementById(id); if (el) el.scrollBy({ left: dir * 340, behavior: 'smooth' }); };
         window.scrollToCatalog = () => { const el = document.getElementById('catalog-tools'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
+        // ===================== Cantidad en la tarjeta de producto =====================
+        function cardQty(id) { const el = document.getElementById('qty-' + id); const n = Math.floor(Number(el && el.value)); return (Number.isFinite(n) && n > 0) ? Math.min(99, n) : 1; }
+        window.cardQty = cardQty; window.clampCardQty = (id) => { const el = document.getElementById('qty-' + id); if (el) el.value = cardQty(id); };
+        window.stepCardQty = (id, d) => { const el = document.getElementById('qty-' + id); if (el) el.value = Math.max(1, Math.min(99, (Number(el.value) || 1) + d)); };
         // ===================== Selección múltiple de productos =====================
         window.toggleSelectMode = () => {
             state.selectMode = !state.selectMode;
@@ -5001,7 +5026,7 @@
         }
         window.bulkAddToCart = () => {
             if (!state.selected.length) return;
-            state.selected.forEach(id => addToCart(id));
+            state.selected.forEach(id => addToCart(id, true, cardQty(id)));
             updateCartBadge(); showToast(state.selected.length + ' productos añadidos a la cesta');
             bulkCancel();
         };
@@ -5010,9 +5035,9 @@
             if (ids.length < 2) { showToast('Selecciona al menos 2 productos', true); return; }
             state.compare = ids; try { openCompare(); } catch (e) {}
         };
-        window.bulkSaveList = () => {
+        window.bulkSaveList = async () => {
             if (!state.selected.length) return;
-            const name = prompt('Nombre de la lista:', 'Mi lista ' + new Date().toLocaleDateString('es-ES'));
+            const name = await fijaPrompt({ title: 'Guardar en una lista', message: 'Ponle un nombre a la lista con los ' + state.selected.length + ' productos.', value: 'Mi lista ' + new Date().toLocaleDateString('es-ES'), placeholder: 'Nombre de la lista' });
             if (!name) return;
             try {
                 const lists = JSON.parse(localStorage.getItem('fija_lists') || '[]');
@@ -5416,7 +5441,7 @@
         }
         window.createNewList = async () => {
             if (!state.session) { openAuthModal(); return; }
-            const name = prompt('Nombre de tu nueva lista:', 'Mi lista');
+            const name = await fijaPrompt({ title: 'Nueva lista', message: 'Ponle un nombre a tu lista de productos.', value: 'Mi lista', placeholder: 'Nombre de la lista' });
             if (!name) return;
             const lists = getLists().slice(); lists.push({ id: uid(), name, items: [], createdAt: Date.now() });
             await saveLists(lists); renderListsPanel(); openListsModal();
@@ -5585,9 +5610,10 @@
             state.savedCart = []; localStorage.setItem('fija_saved_cart', '[]');
             showToast('Cesta restaurada'); renderCart();
         };
-        window.emptyCartWithConfirm = () => {
+        window.emptyCartWithConfirm = async () => {
             if (!state.cart.length) return;
-            if (confirm('¿Vaciar la cesta?')) { state.cart = []; state.promo = null; updateCartBadge(); renderCart(); showToast('Cesta vacía'); }
+            const ok = await fijaConfirm({ title: '¿Vaciar la cesta?', message: 'Se quitarán todos los productos y el cupón aplicado.', confirmText: 'Vaciar', danger: true });
+            if (ok) { state.cart = []; state.promo = null; updateCartBadge(); renderCart(); showToast('Cesta vacía'); }
         };
         // ---------- 11. RASTREAR PEDIDO ----------
         window.openOrdersLookup = () => {
@@ -5699,7 +5725,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             <textarea id="cf-body" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4" placeholder="Cuéntanos tu problema..."></textarea>
             <button type="button" onclick="sendContactForm()" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar mensaje</button>`);
         window.sendContactForm = () => { closeModal('generic-modal'); showToast('Mensaje enviado. Te responderemos en 24 h.'); };
-        window.openWhatsAppHelp = () => window.open('https://wa.me/34900100200?text=Hola%20FIJA,%20necesito%20ayuda', '_blank');
+        window.openWhatsAppHelp = () => window.open('https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?'), '_blank');
         window.openLegal = (which) => { openInfoModal(which || 'terminos'); };
         window.openGiftModal = () => showGenericModal('Regala FIJA', '<p class="text-sm text-gray-600 mb-3">Envía un código de regalo a un amigo.</p><div class="flex gap-2"><input type="text" id="gift-code" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase" placeholder="FIJA-REGALO"><button type="button" onclick="closeModal(\'generic-modal\'); showToast(\'Código de regalo copiado\')" class="bg-fija-900 text-white text-sm px-4 py-2 rounded-lg">Generar</button></div>');
 
@@ -6226,7 +6252,9 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         // Envía un reporte al back-office (colección 'reports' compartida en la nube) para
         // que el administrador lo revise y, si procede, banee al usuario o oculta el producto.
         window.submitReport = async (targetType, targetId, targetTitle) => {
-            const reason = (document.getElementById('report-reason') || {}).value || 'Otro';
+            const picked = document.querySelector('input[name="report-reason"]:checked');
+            if (!picked) { showToast('Elige un motivo del reporte', true); return; }
+            const reason = picked.value || 'Otro';
             const text = (document.getElementById('report-text') || {}).value || '';
             const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
             const rep = {
@@ -6281,7 +6309,8 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const o = state.orders.find(x => x.id === orderId);
             if (!o) return;
             if (o.status === 'collected') { showToast('El pedido ya fue recogido', true); return; }
-            if (!confirm('¿Seguro que quieres cancelar el pedido #' + String(o.id).slice(0, 8).toUpperCase() + '?')) return;
+            const _okCancel = await fijaConfirm({ title: 'Cancelar pedido', message: '¿Seguro que quieres cancelar el pedido <b>#' + String(o.id).slice(0, 8).toUpperCase() + '</b>?', confirmText: 'Cancelar pedido', cancelText: 'No, volver', danger: true });
+            if (!_okCancel) return;
             try {
                 await mutateCollection('orders', arr => { const or = arr.find(x => x.id === orderId); if (or) { or.status = 'cancelled'; or.cancelledAt = Date.now(); } });
                 const loc = state.orders.find(x => x.id === orderId); if (loc) { loc.status = 'cancelled'; loc.cancelledAt = Date.now(); }
@@ -6727,7 +6756,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         window.openSecuritySettings = () => showGenericModal('Seguridad de tu cuenta', `
             <div class="space-y-3">
                 <button type="button" onclick="closeModal('generic-modal'); openChangePassword()" class="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:border-fija-900 transition-colors"><i class="fa-solid fa-key mr-2 text-fija-gold"></i><span class="text-sm font-medium">Cambiar contraseña</span></button>
-                <button type="button" onclick="copyPromo('900100200')" class="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:border-fija-900 transition-colors"><i class="fa-solid fa-headset mr-2 text-fija-gold"></i><span class="text-sm font-medium">Soporte: 900 100 200</span></button>
+                <button type="button" onclick="copyPromo('633616054')" class="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:border-fija-900 transition-colors"><i class="fa-solid fa-headset mr-2 text-fija-gold"></i><span class="text-sm font-medium">Soporte: 633 616 054</span></button>
                 <button type="button" onclick="exportMyData(); closeModal('generic-modal')" class="w-full text-left border border-gray-200 rounded-lg px-4 py-3 hover:border-fija-900 transition-colors"><i class="fa-solid fa-download mr-2 text-fija-gold"></i><span class="text-sm font-medium">Exportar mis datos</span></button>
                 <div class="bg-gray-50 rounded-lg p-3 text-xs text-gray-600"><i class="fa-solid fa-shield-halved text-green-600 mr-1"></i>Tu contraseña se guarda cifrada con SHA-256. Nunca verás tus datos de pago.</div>
             </div>`);
@@ -7524,7 +7553,7 @@ const FIJA_THEMES = {
             if (input) input.value = '';
             setTimeout(() => {
                 const low = msg.toLowerCase();
-                let ans = 'Te paso con el equipo: escribe al 900 100 200 o usa el formulario de contacto.';
+                let ans = 'Te paso con el equipo: escribe al 633 616 054 o usa el formulario de contacto.';
                 if (/compr|pagar|pago/.test(low)) ans = 'Para comprar: añade productos a la cesta, inicia sesión y pulsa "Ir a pagar". El registro es obligatorio.';
                 else if (/llega|envío|recogida|recib/.test(low)) ans = 'Es Click & Collect: pagas y recoges en el punto del vendedor en 2 horas. Elige tu franja en la pasarela de pago.';
                 else if (/devolv|reembols|return/.test(low)) ans = 'Tienes 30 días desde la recogida. Solicítalo en Mi Cuenta → Devoluciones y te damos un código.';
@@ -7582,8 +7611,9 @@ const FIJA_THEMES = {
                 <p><strong>Tus derechos:</strong> puedes exportar o eliminar tus datos en cualquier momento desde Mi Cuenta.</p></div>
             <button type="button" onclick="exportMyData(); closeModal('generic-modal')" class="f-btn f-btn-outline w-full mt-4">Descargar mis datos</button>`);
         window.openCookiePolicy = () => openInfoModal('cookies');
-        window.clearAllLocalData = () => {
-            if (!confirm('Esto borrará tu sesión, carrito, listas y preferencias de este navegador. ¿Continuar?')) return;
+        window.clearAllLocalData = async () => {
+            const ok = await fijaConfirm({ title: 'Borrar mis datos', message: 'Esto borrará tu sesión, carrito, listas y preferencias de este navegador. ¿Continuar?', confirmText: 'Borrar todo', danger: true });
+            if (!ok) return;
             Object.keys(localStorage).filter(k => k.startsWith('fija_')).forEach(k => localStorage.removeItem(k));
             location.reload();
         };
@@ -7743,7 +7773,7 @@ const FIJA_THEMES = {
                 ${[['Lun - Vie', '9:00 - 21:00', true], ['Sábado', '10:00 - 20:00', true], ['Domingo', 'Cerrado', false]]
                 .map(([d, h, open]) => `<div class="f-card p-3"><p class="text-sm font-bold text-fija-900">${d}</p>
                     <p class="text-xs ${open ? 'text-green-600' : 'text-red-500'}">${h}</p></div>`).join('')}</div>
-            <p class="text-xs text-gray-500 mt-4 text-center">Teléfono 900 100 200 · WhatsApp disponible 24/7</p>`);
+            <p class="text-xs text-gray-500 mt-4 text-center">WhatsApp 633 616 054 · disponible 24/7</p>`);
         window.openVendorNews = () => showGenericModal('Novedades para vendedores', `
             <div class="space-y-3 text-sm max-h-96 overflow-y-auto pr-1">
                 ${[['Nuevas estadísticas', 'Ahora ves la distribución de precios y el análisis de catálogo en el panel.'],
@@ -7814,10 +7844,13 @@ const FIJA_THEMES = {
                     <div class="flex-1 w-full text-center sm:text-left">
                         <h4 class="font-bold text-gray-900">${escapeHtml(item.product.title)}</h4>
                         <div class="text-sm text-gray-500 mb-3">Vendido por ${escapeHtml(item.product.sellerName || 'FIJA')}</div>
-                        <div class="flex items-center justify-center sm:justify-start gap-3">
-                            <button onclick="updateQuantity('${item.product.id}', -1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i class="fa-solid fa-minus text-xs"></i></button>
-                            <span class="font-medium w-6 text-center">${item.quantity}</span>
-                            <button onclick="updateQuantity('${item.product.id}', 1)" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i class="fa-solid fa-plus text-xs"></i></button>
+                        <div class="flex items-center justify-center sm:justify-start gap-2">
+                            <button onclick="updateQuantity('${item.product.id}', -1)" aria-label="Quitar una unidad" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i class="fa-solid fa-minus text-xs"></i></button>
+                            <input type="number" min="1" max="99" value="${item.quantity}" onchange="setCartQty('${item.product.id}', this.value)" aria-label="Cantidad" class="w-14 text-center font-medium border border-gray-200 rounded-lg py-1.5 text-sm focus:ring-2 focus:ring-fija-900 outline-none">
+                            <button onclick="updateQuantity('${item.product.id}', 1)" aria-label="Añadir una unidad" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i class="fa-solid fa-plus text-xs"></i></button>
+                            <select onchange="setCartQty('${item.product.id}', this.value)" class="text-xs border border-gray-200 rounded-lg py-1.5 px-2 text-gray-600" aria-label="Cantidad rápida">
+                                ${[1,2,3,4,5,10,20].map(q => `<option value="${q}" ${item.quantity === q ? 'selected' : ''}>${q} ud.</option>`).join('')}
+                            </select>
                         </div>
                     </div>
                     <div class="text-center sm:text-right w-full sm:w-auto mt-4 sm:mt-0">
@@ -8033,8 +8066,9 @@ const FIJA_THEMES = {
         window.addToCompare = (pid) => { if (state.compare.includes(pid)) return;
             if (state.compare.length >= 4) return showToast('Máximo 4 productos en la comparadora', true);
             state.compare.push(pid); renderStorefront(); showToast('Añadido a la comparadora'); };
-        window.renameList = (listId) => { const lists = getLists(); const l = lists.find(x => x.id === listId); if (!l) return;
-            const n = prompt('Nuevo nombre de la lista', l.name); if (n) { l.name = n.trim(); saveLists(lists); renderListsPanel(); } };
+        window.renameList = async (listId) => { const lists = getLists(); const l = lists.find(x => x.id === listId); if (!l) return;
+            const n = await fijaPrompt({ title: 'Renombrar lista', value: l.name, placeholder: 'Nuevo nombre' });
+            if (n) { l.name = n.trim(); saveLists(lists); renderListsPanel(); } };
         window.listCount = () => getLists().length;
         window.toggleZoomImages = () => { state.zoomPref = !state.zoomPref; localStorage.setItem('fija_zoom', state.zoomPref ? '1' : '0'); showToast(state.zoomPref ? 'Imágenes ampliadas' : 'Zoom normal'); };
         window.openCompareSideBySide = () => { const items = state.compare.map(id => state.products.find(p => p.id === id)).filter(Boolean);
@@ -8139,14 +8173,46 @@ const FIJA_THEMES = {
         window.openProductVideoInfo = () => { const p = state.products.find(x => x.id === window._pdId); if (!p) return;
             showGenericModal('Vídeo del producto', `<p class="text-sm text-gray-600">${p.videoUrl ? 'Este producto tiene vídeo comprimido al 90% paraAHORRAR espacio sin perder calidad.' : 'Este producto todavía no tiene vídeo.'}</p>`); };
         window.flagProduct = (pid, reason) => { const id = pid || window._pdId; const p = state.products.find(x => x.id === id) || {}; openReportModal('product', id, p.title || ''); };
+        // Motivos de reporte (los mismos que revisa el administrador en el back-office)
+        const REPORT_REASONS = {
+            product: [
+                { v: 'Información engañosa', d: 'La descripción o las fotos no coinciden' },
+                { v: 'Precio incorrecto', d: 'El precio no es el que aparece al pagar' },
+                { v: 'Producto no disponible', d: 'No hay stock o nunca se entrega' },
+                { v: 'Producto falso o ilegal', d: 'Réplica, sin licencia o prohibido' },
+                { v: 'Contenido inapropiado', d: 'Imágenes o texto ofensivos' },
+                { v: 'Spam o estafa', d: 'Intento de fraude o engaño' },
+                { v: 'Otro', d: 'Cuéntanoslo en los detalles' }
+            ],
+            user: [
+                { v: 'Comportamiento abusivo', d: 'Insultos, amenazas o acoso' },
+                { v: 'Fraude o estafa', d: 'Intento de cobro indebido' },
+                { v: 'Suplantación de identidad', d: 'Se hace pasar por otra persona o empresa' },
+                { v: 'Spam', d: 'Mensajes masivos o publicidad no deseada' },
+                { v: 'Otro', d: 'Cuéntanoslo en los detalles' }
+            ],
+            site: [
+                { v: 'Error en la web', d: 'Algo no funciona como debería' },
+                { v: 'Problema con el pedido', d: 'Retraso, falta de producto o devolución' },
+                { v: 'Problema de pago', d: 'Cobro duplicado o pago rechazado' },
+                { v: 'Sugerencia de mejora', d: 'Una idea para mejorar FIJA' },
+                { v: 'Otro', d: 'Cuéntanoslo en los detalles' }
+            ]
+        };
         window.openReportModal = (targetType, targetId, targetTitle) => {
-            const reasons = ['Información engañosa', 'Precio incorrecto', 'Producto no disponible', 'Contenido inapropiado', 'Spam o estafa', 'Otro'];
-            const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
+            const type = REPORT_REASONS[targetType] ? targetType : 'site';
+            const reasons = REPORT_REASONS[type];
+            const p = type === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
             showGenericModal('Reportar', `
                 <p class="text-sm text-gray-600 mb-3">${p && p.title ? 'Estás informando sobre <b>' + escapeHtml(p.title) + '</b>.' : 'Cuéntanos qué ocurre y lo revisaremos en el back-office.'}</p>
-                <select id="report-reason" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"><option value="">Motivo…</option>${reasons.map(r => `<option>${r}</option>`).join('')}</select>
+                <label class="block text-xs font-semibold text-fija-900 mb-2">Motivo del reporte</label>
+                <div class="space-y-1.5 mb-3">${reasons.map(r => `
+                    <label class="flex items-start gap-2.5 border border-gray-200 rounded-lg px-3 py-2.5 cursor-pointer hover:border-fija-900 transition-colors">
+                        <input type="radio" name="report-reason" value="${escapeHtml(r.v)}" class="mt-0.5 accent-fija-900">
+                        <span class="min-w-0"><span class="block text-sm font-medium text-gray-900">${escapeHtml(r.v)}</span><span class="block text-xs text-gray-500">${escapeHtml(r.d)}</span></span>
+                    </label>`).join('')}</div>
                 <textarea id="report-text" rows="3" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" placeholder="Detalles adicionales (opcional)"></textarea>
-                <button type="button" onclick="submitReport('${targetType}','${escapeHtml(targetId || '')}','${escapeHtml(targetTitle || '')}')" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar informe</button>`);
+                <button type="button" onclick="submitReport('${type}','${escapeHtml(targetId || '')}','${escapeHtml(targetTitle || '')}')" class="w-full bg-fija-900 hover:bg-fija-800 text-white text-sm font-semibold py-2.5 rounded-lg transition-colors">Enviar informe</button>`);
         };
         window.openStockHistory = () => { const p = state.products.find(x => x.id === window._pdId); if (!p) return;
             const s = priceSeries(p);
@@ -8484,6 +8550,157 @@ const FIJA_THEMES = {
             setTimeout(() => toast.classList.add('translate-y-20','opacity-0'), 3000);
         }
         window.showToast = showToast;
+
+        // ===================== DIÁLOGOS NATIVOS DE LA WEB =====================
+        // Sustituye alert/confirm/prompt/select del navegador por ventanillas propias de
+        // FIJA. Todas devuelven una Promesa, así se pueden usar con await:
+        //   const ok = await fijaConfirm({title, message, confirmText});
+        //   const name = await fijaPrompt({title, message, value, placeholder});
+        //   const val = await fijaChoose({title, options: [{value,label,desc,icon}]});
+        (function () {
+            function ensure() {
+                let m = document.getElementById('fija-dialog');
+                if (m) return m;
+                m = document.createElement('div');
+                m.id = 'fija-dialog';
+                m.className = 'fixed inset-0 z-[80] flex items-center justify-center px-4 bg-black/60 hide hidden';
+                m.style.backdropFilter = 'blur(4px)';
+                m.innerHTML = `<div id="fija-dialog-box" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-200">
+                    <div class="px-6 pt-5 pb-1 flex items-start gap-3">
+                        <div id="fija-dialog-icon" class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-circle-question"></i></div>
+                        <div class="min-w-0 flex-1"><h3 id="fija-dialog-title" class="font-bold text-fija-900 text-lg leading-snug"></h3>
+                        <div id="fija-dialog-msg" class="text-sm text-gray-500 mt-1"></div></div>
+                    </div>
+                    <div id="fija-dialog-body" class="px-6 pt-3"></div>
+                    <div id="fija-dialog-actions" class="px-6 py-4 flex justify-end gap-2"></div>
+                </div>`;
+                document.body.appendChild(m);
+                return m;
+            }
+            let _resolve = null;
+            function close(val) {
+                const m = document.getElementById('fija-dialog');
+                const box = document.getElementById('fija-dialog-box');
+                if (box) { box.classList.remove('scale-100'); box.classList.add('scale-95'); }
+                if (m) setTimeout(() => { m.classList.add('hide', 'hidden'); }, 120);
+                const r = _resolve; _resolve = null;
+                if (r) r(val);
+            }
+            window.fijaDialogCancel = () => close(null);
+            function open(opts) {
+                const m = ensure();
+                const box = document.getElementById('fija-dialog-box');
+                const iconBox = document.getElementById('fija-dialog-icon');
+                const toneMap = {
+                    question: ['bg-amber-100 text-amber-600', 'fa-circle-question'],
+                    danger: ['bg-red-100 text-red-600', 'fa-triangle-exclamation'],
+                    info: ['bg-blue-100 text-blue-600', 'fa-circle-info'],
+                    success: ['bg-green-100 text-green-600', 'fa-circle-check'],
+                    list: ['bg-fija-100 text-fija-900', 'fa-list-check']
+                };
+                const [cls, ic] = toneMap[opts.tone || 'question'];
+                iconBox.className = 'w-10 h-10 rounded-full flex items-center justify-center shrink-0 ' + cls;
+                iconBox.innerHTML = '<i class="fa-solid ' + ic + '"></i>';
+                document.getElementById('fija-dialog-title').textContent = opts.title || '';
+                document.getElementById('fija-dialog-msg').innerHTML = opts.message || '';
+                document.getElementById('fija-dialog-msg').classList.toggle('hide', !opts.message);
+                const body = document.getElementById('fija-dialog-body');
+                body.innerHTML = opts.bodyHtml || '';
+                // Botones
+                const actions = document.getElementById('fija-dialog-actions');
+                if (opts.hideButtons) { actions.innerHTML = ''; actions.classList.add('hide'); }
+                else {
+                    actions.classList.remove('hide');
+                    actions.innerHTML = `<button type="button" id="fija-dialog-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">${opts.cancelText || 'Cancelar'}</button>
+                        <button type="button" id="fija-dialog-ok" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${opts.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-fija-900 hover:bg-fija-800'}">${opts.confirmText || 'Aceptar'}</button>`;
+                }
+                m.classList.remove('hide', 'hidden');
+                requestAnimationFrame(() => { if (box) { box.classList.remove('scale-95'); box.classList.add('scale-100'); } });
+                return new Promise(res => { _resolve = res; });
+            }
+            // Confirmación
+            window.fijaConfirm = (o) => {
+                o = o || {};
+                const p = open({
+                    title: o.title || '¿Continuar?', message: o.message || '', tone: o.danger ? 'danger' : 'question',
+                    confirmText: o.confirmText || 'Aceptar', cancelText: o.cancelText || 'Cancelar', danger: o.danger, bodyHtml: o.bodyHtml
+                });
+                setTimeout(() => {
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (ok) ok.onclick = () => close(true);
+                    if (ca) ca.onclick = () => close(false);
+                }, 0);
+                return p.then(v => v === true);
+            };
+            // Aviso simple
+            window.fijaAlert = (o) => {
+                o = (typeof o === 'string') ? { message: o } : (o || {});
+                const p = open({ title: o.title || 'Aviso', message: o.message, tone: o.tone || 'info', hideButtons: false, confirmText: o.confirmText || 'Entendido' });
+                setTimeout(() => {
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (ok) ok.onclick = () => close(true);
+                    if (ca) ca.classList.add('hide');
+                }, 0);
+                return p;
+            };
+            // Entrada de texto
+            window.fijaPrompt = (o) => {
+                o = o || {};
+                const p = open({
+                    title: o.title || 'Escribe un valor', message: o.message || '', tone: 'info',
+                    confirmText: o.confirmText || 'Guardar', cancelText: o.cancelText || 'Cancelar',
+                    bodyHtml: `<input id="fija-dialog-input" type="${o.type || 'text'}" value="${o.value != null ? String(o.value).replace(/"/g, '&quot;') : ''}" placeholder="${o.placeholder || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-fija-900 outline-none">`
+                });
+                setTimeout(() => {
+                    const inp = document.getElementById('fija-dialog-input');
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (inp) {
+                        inp.focus(); inp.select();
+                        inp.onkeydown = (e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); close(inp.value); }
+                            if (e.key === 'Escape') { e.preventDefault(); close(null); }
+                        };
+                    }
+                    if (ok) ok.onclick = () => close(inp ? inp.value : null);
+                    if (ca) ca.onclick = () => close(null);
+                }, 0);
+                return p;
+            };
+            // Elección entre varias opciones (devuelve value de la opción)
+            window.fijaChoose = (o) => {
+                o = o || {};
+                const opts = Array.isArray(o.options) ? o.options : [];
+                const p = open({
+                    title: o.title || 'Elige una opción', message: o.message || '', tone: 'list',
+                    confirmText: o.confirmText || 'Aceptar', cancelText: o.cancelText || 'Cancelar',
+                    bodyHtml: `<div id="fija-dialog-options" class="space-y-2 max-h-72 overflow-y-auto">${opts.map((it, i) => `
+                        <button type="button" data-val="${String(it.value).replace(/"/g, '&quot;')}" class="fija-dlg-opt w-full text-left border ${it.danger ? 'border-red-200 hover:border-red-400' : 'border-gray-200 hover:border-fija-900'} rounded-xl px-4 py-3 flex items-center gap-3 transition-colors">
+                            ${it.icon ? `<i class="fa-solid ${it.icon} ${it.danger ? 'text-red-500' : 'text-fija-gold'}"></i>` : ''}
+                            <span class="min-w-0 flex-1"><span class="block text-sm font-semibold ${it.danger ? 'text-red-600' : 'text-fija-900'}">${it.label}</span>${it.desc ? `<span class="block text-xs text-gray-500">${it.desc}</span>` : ''}</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-gray-300"></i></button>`).join('')}</div>`
+                });
+                setTimeout(() => {
+                    const box = document.getElementById('fija-dialog-options');
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (box) box.querySelectorAll('.fija-dlg-opt').forEach(b => {
+                        b.onclick = () => close(b.getAttribute('data-val'));
+                    });
+                    if (ok) ok.classList.add('hide');
+                    if (ca) { ca.textContent = 'Cancelar'; ca.onclick = () => close(null); }
+                }, 0);
+                return p;
+            };
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const m = document.getElementById('fija-dialog');
+                    if (m && !m.classList.contains('hide') && !e.target.matches('#fija-dialog-input')) close(null);
+                }
+            });
+        })();
 
         // ===================== Boot =====================
         // La tienda pública carga siempre con datos de ejemplo y, si está desplegada en
@@ -10075,8 +10292,8 @@ Object.assign(INFO_PAGES, {
         <tbody>
           <tr><td class="p-2 border">Chat en vivo</td><td class="p-2 border">Desde Mi Cuenta · respuesta inmediata</td></tr>
           <tr><td class="p-2 border">Correo</td><td class="p-2 border">soporte@fija.com</td></tr>
-          <tr><td class="p-2 border">WhatsApp</td><td class="p-2 border">+34 900 100 200</td></tr>
-          <tr><td class="p-2 border">Teléfono</td><td class="p-2 border">900 100 200 · l-v 9-21 h</td></tr>
+          <tr><td class="p-2 border">WhatsApp</td><td class="p-2 border">+34 633 616 054</td></tr>
+          <tr><td class="p-2 border">Teléfono</td><td class="p-2 border">633 616 054 · l-v 9-21 h</td></tr>
         </tbody>
       </table>
       <h2 class="text-lg font-bold text-fija-900 mt-4">Temas frecuentes</h2>

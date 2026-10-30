@@ -930,7 +930,7 @@
                 const profile = profiles.find(p => (p.email && p.email.toLowerCase() === v) || (p.username && p.username.toLowerCase() === v));
                 const pwHash = await hashPassword(pw);
                 if (!profile || profile.pwHash !== pwHash) { err.classList.remove('hidden-fade'); return; }
-                if (profile.banned) { err.textContent = 'Esta cuenta ha sido suspendida por un administrador.'; err.classList.remove('hidden-fade'); return; }
+                if (profile.banned) { err.textContent = 'Cuenta suspendida' + (profile.banReason ? ': ' + profile.banReason : '') + '. Contacta con el administrador.'; err.classList.remove('hidden-fade'); return; }
                 if (profile.role === 'user') { err.textContent = 'Esta cuenta es de cliente. Usa la tienda pública.'; err.classList.remove('hidden-fade'); return; }
                 state.session = { userId: profile.userId, email: profile.email };
                 localStorage.setItem('fija_backend_session', JSON.stringify(state.session));
@@ -1078,14 +1078,15 @@
         window.cancelSellerSelect = () => { state.selMode = false; state.selectedProducts = []; const btn = document.getElementById('sel-toggle-btn'); if (btn) btn.classList.remove('bg-fija-gold'); renderSeller(); };
         window.bulkDeleteProducts = async () => {
             const ids = state.selectedProducts || [];
-            if (!ids.length || !confirm('¿Eliminar ' + ids.length + ' productos?')) return;
+            const ok = ids.length && await fijaConfirm({ title: 'Eliminar productos', message: '¿Eliminar <b>' + ids.length + '</b> productos de tu catálogo? No se puede deshacer.', confirmText: 'Eliminar', danger: true });
+            if (!ok) return;
             await mutateCollection('products', arr => { ids.forEach(id => { const i = arr.findIndex(p => p.id === id); if (i >= 0) arr.splice(i, 1); }); });
             state.products = (await readDataFile('products')).data || [];
             state.selectedProducts = []; state.selMode = false; renderSeller(); showToast(ids.length + ' productos eliminados');
         };
         window.bulkSetDiscount = async () => {
             const ids = state.selectedProducts || []; if (!ids.length) return;
-            const v = prompt('Descuento FIJA para la selección (%) — ojo: lo asume FIJA, tú cobras igual:', '10');
+            const v = await fijaPrompt({ title: 'Descuento FIJA', message: 'Porcentaje para los ' + ids.length + ' productos seleccionados. Lo asume FIJA: tú cobras igual.', value: '10', type: 'number' });
             if (v == null) return;
             const d = Math.max(0, Math.min(90, Number(v) || 0));
             await mutateCollection('products', arr => { arr.forEach(p => { if (ids.includes(p.id)) p.discountPercent = d; }); });
@@ -1094,7 +1095,7 @@
         };
         window.bulkSetStock = async () => {
             const ids = state.selectedProducts || []; if (!ids.length) return;
-            const v = prompt('Stock para la selección:', '10');
+            const v = await fijaPrompt({ title: 'Ajustar stock', message: 'Stock para los ' + ids.length + ' productos seleccionados.', value: '10', type: 'number' });
             if (v == null) return;
             const s = Math.max(0, Number(v) || 0);
             await mutateCollection('products', arr => { arr.forEach(p => { if (ids.includes(p.id)) p.stock = s; }); });
@@ -1103,6 +1104,7 @@
         };
 
         function renderSeller() {
+            if (!state.profile) return;
             document.getElementById('seller-pending-banner').classList.toggle('hide', !isPendingSeller());
             const myProducts = state.products.filter(p => p.sellerId === state.profile.userId);
             document.getElementById('stat-products').textContent = myProducts.length;
@@ -1507,7 +1509,7 @@
                 const roleBadge = { user: ['Cliente', 'bg-gray-100 text-gray-600'], seller: ['Vendedor', 'bg-blue-100 text-blue-700'], admin: ['Admin', 'bg-fija-900 text-white'] }[p.role] || ['—', 'bg-gray-100 text-gray-600'];
                 return `<tr>
                 <td class="px-6 py-4"><p class="font-medium">${escapeHtml(p.username || p.companyName || '—')}</p><p class="text-xs text-fija-500">${escapeHtml(p.email || '')}</p></td>
-                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${p.banned ? 'bg-red-100 text-red-700' : roleBadge[1]}">${p.banned ? 'Baneado' : roleBadge[0]}</span></td>
+                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${p.banned ? 'bg-red-100 text-red-700' : roleBadge[1]}" ${p.banned && p.banReason ? 'title="Motivo: ' + escapeHtml(p.banReason) + '"' : ''}>${p.banned ? 'Baneado' : roleBadge[0]}</span>${p.banned && p.banReason ? `<div class="text-[11px] text-red-500 mt-1 max-w-[150px] truncate" title="${escapeHtml(p.banReason)}">${escapeHtml(p.banReason)}</div>` : ''}</td>
                 <td class="px-6 py-4">${ordersBy[k] || 0}</td>
                 <td class="px-6 py-4 font-medium">${formatEuro(spend[k] || 0)}</td>
                 <td class="px-6 py-4 text-fija-600 text-sm">${lastBuy[k] ? new Date(lastBuy[k]).toLocaleDateString('es-ES') : '—'}</td>
@@ -1532,21 +1534,60 @@
         };
         // ---------- ADMIN: Gestión de usuarios (ban / reset / detalle) ----------
         function findProfileByKey(k) { return state.profiles.find(p => (p.userId || p.email) === k); }
+        // Motivos de baneo predefinidos (se guardan en el perfil y quedan en el historial)
+        window.BAN_REASONS = [
+            { value: 'fraude', label: 'Fraude o estafa', desc: 'Cobros indebidos, pagos falsos o engaño al comprador' },
+            { value: 'producto-falso', label: 'Producto falso o ilegal', desc: 'Réplicas, artículos prohibidos o sin licencia' },
+            { value: 'spam', label: 'Spam o publicidad abusiva', desc: 'Mensajes masivos, enlaces sospechosos' },
+            { value: 'ofensivo', label: 'Contenido ofensivo', desc: 'Lenguaje o imágenes inapropiadas' },
+            { value: 'incumplimiento', label: 'Incumplimiento de normas', desc: 'No envía, no recoge o incumple los plazos' },
+            { value: 'multi-cuenta', label: 'Cuentas múltiples / suplantación', desc: 'Suplantar identidad o crear cuentas duplicadas' },
+            { value: 'reportes', label: 'Acumulación de reportes', desc: 'Varios usuarios han reportado esta cuenta' },
+            { value: 'otro', label: 'Otro motivo', desc: 'Escribe el motivo manualmente' }
+        ];
         window.banUser = async (k) => {
-            if (!confirm('¿Banear a este usuario? No podrá iniciar sesión hasta que lo desbanees.')) return;
-            await mutateCollection('profiles', arr => { const p = arr.find(x => (x.userId || x.email) === k); if (p) p.banned = true; });
+            const p = findProfileByKey(k);
+            const who = escapeHtml((p && (p.username || p.companyName || p.email)) || k);
+            const reason = await fijaChoose({
+                title: 'Banear usuario',
+                message: 'Vas a banear a <b>' + who + '</b>. No podrá iniciar sesión hasta que lo desbanees. Elige el motivo:',
+                options: BAN_REASONS.map(r => ({ value: r.value, label: r.label, desc: r.desc, icon: 'fa-ban', danger: r.value === 'otro' }))
+            });
+            if (!reason) return;
+            let detail = (BAN_REASONS.find(r => r.value === reason) || {}).label || reason;
+            if (reason === 'otro') {
+                const txt = await fijaPrompt({ title: 'Motivo del baneo', message: 'Escribe el motivo que verá el usuario.', placeholder: 'Ej.: suplantación de identidad' });
+                if (!txt) { showToast('Baneo cancelado', true); return; }
+                detail = txt.trim();
+            }
+            let applied = false;
+            await mutateCollection('profiles', arr => {
+                let x = arr.find(y => (y.userId || y.email) === k);
+                if (!x && p) { x = Object.assign({}, p); arr.push(x); }
+                if (x) { x.banned = true; x.banReason = detail; x.banReasonCode = reason; x.bannedAt = Date.now(); applied = true; }
+            });
+            if (!applied) { showToast('No se pudo banear: usuario no encontrado', true); return; }
+            // Deja constancia del baneo en la bandeja de reportes
+            try {
+                await mutateCollection('reports', arr => arr.push({ id: uid(), type: 'user', targetId: k, targetTitle: (p && (p.username || p.email)) || k, reason: 'Baneo: ' + detail, detail: 'Baneado por el administrador', reporterName: 'admin', status: 'resolved', createdAt: Date.now(), reviewedAt: Date.now() }));
+                state.reports = (await readDataFile('reports')).data || [];
+            } catch (e) {}
             state.profiles = (await readDataFile('profiles')).data || [];
-            showToast('Usuario baneado'); renderAdminCustomers();
+            showToast('Usuario baneado: ' + detail); renderAdminCustomers();
         };
         window.unbanUser = async (k) => {
-            await mutateCollection('profiles', arr => { const p = arr.find(x => (x.userId || x.email) === k); if (p) p.banned = false; });
+            await mutateCollection('profiles', arr => {
+                for (let i = arr.length - 1; i >= 0; i--) {
+                    if ((arr[i].userId || arr[i].email) === k) arr[i] = Object.assign({}, arr[i], { banned: false, banReason: null, banReasonCode: null, bannedAt: null });
+                }
+            });
             state.profiles = (await readDataFile('profiles')).data || [];
             showToast('Usuario desbaneado'); renderAdminCustomers();
         };
         window.resetUserPassword = async (k) => {
             const p = findProfileByKey(k); if (!p) return;
-            const np = prompt('Nueva contraseña para ' + (p.username || p.email) + ' (mínimo 4 caracteres):');
-            if (!np || np.length < 4) { showToast('Contraseña demasiado corta', true); return; }
+            const np = await fijaPrompt({ title: 'Restablecer contraseña', message: 'Nueva contraseña para <b>' + escapeHtml(p.username || p.email) + '</b> (mínimo 4 caracteres).', type: 'text', placeholder: 'Nueva contraseña' });
+            if (!np || np.length < 4) { if (np !== null) showToast('Contraseña demasiado corta', true); return; }
             const h = await hashPassword(np);
             await mutateCollection('profiles', arr => { const x = arr.find(y => (y.userId || y.email) === k); if (x) x.pwHash = h; });
             state.profiles = (await readDataFile('profiles')).data || [];
@@ -1648,7 +1689,7 @@
             } catch (e) { console.error(e); showToast('Error al actualizar', true); }
         };
         window.deleteReview = async (productId, userId) => {
-            if (!confirm('¿Eliminar esta reseña permanentemente?')) return;
+            if (!await fijaConfirm({ title: 'Eliminar reseña', message: 'Esta opinión se borrará permanentemente.', confirmText: 'Eliminar', danger: true })) return;
             try { await mutateCollection('products', arr => { const p = arr.find(x => x.id === productId); if (p && Array.isArray(p.reviews)) p.reviews = p.reviews.filter(x => x.userId !== userId); });
                 await loadAll(); showToast('Reseña eliminada');
             } catch (e) { console.error(e); showToast('Error al eliminar', true); }
@@ -1703,7 +1744,7 @@
             } catch (e) { console.error(e); showToast('Error al actualizar', true); }
         };
         window.deleteCoupon = async (code) => {
-            if (!confirm('¿Eliminar el cupón ' + code + '?')) return;
+            if (!await fijaConfirm({ title: 'Eliminar cupón', message: '¿Eliminar el cupón <b>' + escapeHtml(code) + '</b>?', confirmText: 'Eliminar', danger: true })) return;
             try {
                 await mutateCoupons(obj => { delete obj[code]; });
                 await loadAll(); showToast('Cupón eliminado');
@@ -1745,7 +1786,7 @@
             catch (e) { console.error(e); showToast('Error al actualizar', true); }
         };
         window.deleteSellerCoupon = async (code) => {
-            if (!confirm('¿Eliminar el cupón ' + code + '?')) return;
+            if (!await fijaConfirm({ title: 'Eliminar cupón', message: '¿Eliminar el cupón <b>' + escapeHtml(code) + '</b>?', confirmText: 'Eliminar', danger: true })) return;
             try { await mutateCoupons(obj => { delete obj[code]; }); await loadAll(); showToast('Cupón eliminado'); }
             catch (e) { console.error(e); showToast('Error al eliminar', true); }
         };
@@ -2075,7 +2116,7 @@
         window.deleteProduct = async (id) => {
             const p = state.products.find(x => x.id === id);
             if (!isAdmin() && p && p.sellerId !== state.profile.userId) { showToast('Solo puedes eliminar tus propios productos', true); return; }
-            if (!confirm('¿Eliminar este producto?')) return;
+            if (!await fijaConfirm({ title: 'Eliminar producto', message: 'Este producto desaparecerá de la tienda.', confirmText: 'Eliminar', danger: true })) return;
             try { await mutateCollection('products', arr => { const i = arr.findIndex(x => x.id === id); if (i >= 0) arr.splice(i, 1); }); await loadAll(); showToast('Producto eliminado'); }
             catch (error) { console.error(error); showToast('Error al eliminar', true); }
         };
@@ -2166,7 +2207,7 @@
             if (!isAdmin() && !o.items.some(it => it.sellerId === state.profile.userId)) { showToast('Este pedido no contiene productos tuyos', true); return; }
             if (o.status === 'cancelled') { showToast('Ese pedido está cancelado', true); return; }
             if (o.status === 'collected') { showToast('Ese pedido ya fue recogido', true); return; }
-            if (!confirm(`Entregar pedido de ${o.buyerName || 'cliente'} (${o.items.reduce((s, it) => s + it.quantity, 0)} artículos)?`)) return;
+            if (!await fijaConfirm({ title: 'Entregar pedido', message: `¿Entregar el pedido de <b>${escapeHtml(o.buyerName || 'cliente')}</b> (${o.items.reduce((s, it) => s + it.quantity, 0)} artículos)?`, confirmText: 'Entregar' })) return;
             try {
                 await mutateCollection('orders', arr => { const x = arr.find(y => y.id === o.id); if (x) { x.status = 'collected'; x.verifiedAt = Date.now(); x.verifiedBy = (state.profile.companyName || state.profile.username) + (isAdmin() ? ' (admin)' : ' (vendedor)'); } });
                 const inp = document.getElementById(isAdmin() ? 'admin-verify-code' : 'seller-verify-code'); if (inp) inp.value = '';
@@ -2286,6 +2327,157 @@
             setTimeout(() => toast.classList.add('translate-y-20','opacity-0'), 3000);
         }
         window.showToast = showToast;
+
+        // ===================== DIÁLOGOS NATIVOS DE LA WEB =====================
+        // Sustituye alert/confirm/prompt/select del navegador por ventanillas propias de
+        // FIJA. Todas devuelven una Promesa, así se pueden usar con await:
+        //   const ok = await fijaConfirm({title, message, confirmText});
+        //   const name = await fijaPrompt({title, message, value, placeholder});
+        //   const val = await fijaChoose({title, options: [{value,label,desc,icon}]});
+        (function () {
+            function ensure() {
+                let m = document.getElementById('fija-dialog');
+                if (m) return m;
+                m = document.createElement('div');
+                m.id = 'fija-dialog';
+                m.className = 'fixed inset-0 z-[80] flex items-center justify-center px-4 bg-black/60 hide hidden';
+                m.style.backdropFilter = 'blur(4px)';
+                m.innerHTML = `<div id="fija-dialog-box" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform scale-95 transition-transform duration-200">
+                    <div class="px-6 pt-5 pb-1 flex items-start gap-3">
+                        <div id="fija-dialog-icon" class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0"><i class="fa-solid fa-circle-question"></i></div>
+                        <div class="min-w-0 flex-1"><h3 id="fija-dialog-title" class="font-bold text-fija-900 text-lg leading-snug"></h3>
+                        <div id="fija-dialog-msg" class="text-sm text-gray-500 mt-1"></div></div>
+                    </div>
+                    <div id="fija-dialog-body" class="px-6 pt-3"></div>
+                    <div id="fija-dialog-actions" class="px-6 py-4 flex justify-end gap-2"></div>
+                </div>`;
+                document.body.appendChild(m);
+                return m;
+            }
+            let _resolve = null;
+            function close(val) {
+                const m = document.getElementById('fija-dialog');
+                const box = document.getElementById('fija-dialog-box');
+                if (box) { box.classList.remove('scale-100'); box.classList.add('scale-95'); }
+                if (m) setTimeout(() => { m.classList.add('hide', 'hidden'); }, 120);
+                const r = _resolve; _resolve = null;
+                if (r) r(val);
+            }
+            window.fijaDialogCancel = () => close(null);
+            function open(opts) {
+                const m = ensure();
+                const box = document.getElementById('fija-dialog-box');
+                const iconBox = document.getElementById('fija-dialog-icon');
+                const toneMap = {
+                    question: ['bg-amber-100 text-amber-600', 'fa-circle-question'],
+                    danger: ['bg-red-100 text-red-600', 'fa-triangle-exclamation'],
+                    info: ['bg-blue-100 text-blue-600', 'fa-circle-info'],
+                    success: ['bg-green-100 text-green-600', 'fa-circle-check'],
+                    list: ['bg-fija-100 text-fija-900', 'fa-list-check']
+                };
+                const [cls, ic] = toneMap[opts.tone || 'question'];
+                iconBox.className = 'w-10 h-10 rounded-full flex items-center justify-center shrink-0 ' + cls;
+                iconBox.innerHTML = '<i class="fa-solid ' + ic + '"></i>';
+                document.getElementById('fija-dialog-title').textContent = opts.title || '';
+                document.getElementById('fija-dialog-msg').innerHTML = opts.message || '';
+                document.getElementById('fija-dialog-msg').classList.toggle('hide', !opts.message);
+                const body = document.getElementById('fija-dialog-body');
+                body.innerHTML = opts.bodyHtml || '';
+                // Botones
+                const actions = document.getElementById('fija-dialog-actions');
+                if (opts.hideButtons) { actions.innerHTML = ''; actions.classList.add('hide'); }
+                else {
+                    actions.classList.remove('hide');
+                    actions.innerHTML = `<button type="button" id="fija-dialog-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">${opts.cancelText || 'Cancelar'}</button>
+                        <button type="button" id="fija-dialog-ok" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${opts.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-fija-900 hover:bg-fija-800'}">${opts.confirmText || 'Aceptar'}</button>`;
+                }
+                m.classList.remove('hide', 'hidden');
+                requestAnimationFrame(() => { if (box) { box.classList.remove('scale-95'); box.classList.add('scale-100'); } });
+                return new Promise(res => { _resolve = res; });
+            }
+            // Confirmación
+            window.fijaConfirm = (o) => {
+                o = o || {};
+                const p = open({
+                    title: o.title || '¿Continuar?', message: o.message || '', tone: o.danger ? 'danger' : 'question',
+                    confirmText: o.confirmText || 'Aceptar', cancelText: o.cancelText || 'Cancelar', danger: o.danger, bodyHtml: o.bodyHtml
+                });
+                setTimeout(() => {
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (ok) ok.onclick = () => close(true);
+                    if (ca) ca.onclick = () => close(false);
+                }, 0);
+                return p.then(v => v === true);
+            };
+            // Aviso simple
+            window.fijaAlert = (o) => {
+                o = (typeof o === 'string') ? { message: o } : (o || {});
+                const p = open({ title: o.title || 'Aviso', message: o.message, tone: o.tone || 'info', hideButtons: false, confirmText: o.confirmText || 'Entendido' });
+                setTimeout(() => {
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (ok) ok.onclick = () => close(true);
+                    if (ca) ca.classList.add('hide');
+                }, 0);
+                return p;
+            };
+            // Entrada de texto
+            window.fijaPrompt = (o) => {
+                o = o || {};
+                const p = open({
+                    title: o.title || 'Escribe un valor', message: o.message || '', tone: 'info',
+                    confirmText: o.confirmText || 'Guardar', cancelText: o.cancelText || 'Cancelar',
+                    bodyHtml: `<input id="fija-dialog-input" type="${o.type || 'text'}" value="${o.value != null ? String(o.value).replace(/"/g, '&quot;') : ''}" placeholder="${o.placeholder || ''}" class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-fija-900 outline-none">`
+                });
+                setTimeout(() => {
+                    const inp = document.getElementById('fija-dialog-input');
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (inp) {
+                        inp.focus(); inp.select();
+                        inp.onkeydown = (e) => {
+                            if (e.key === 'Enter') { e.preventDefault(); close(inp.value); }
+                            if (e.key === 'Escape') { e.preventDefault(); close(null); }
+                        };
+                    }
+                    if (ok) ok.onclick = () => close(inp ? inp.value : null);
+                    if (ca) ca.onclick = () => close(null);
+                }, 0);
+                return p;
+            };
+            // Elección entre varias opciones (devuelve value de la opción)
+            window.fijaChoose = (o) => {
+                o = o || {};
+                const opts = Array.isArray(o.options) ? o.options : [];
+                const p = open({
+                    title: o.title || 'Elige una opción', message: o.message || '', tone: 'list',
+                    confirmText: o.confirmText || 'Aceptar', cancelText: o.cancelText || 'Cancelar',
+                    bodyHtml: `<div id="fija-dialog-options" class="space-y-2 max-h-72 overflow-y-auto">${opts.map((it, i) => `
+                        <button type="button" data-val="${String(it.value).replace(/"/g, '&quot;')}" class="fija-dlg-opt w-full text-left border ${it.danger ? 'border-red-200 hover:border-red-400' : 'border-gray-200 hover:border-fija-900'} rounded-xl px-4 py-3 flex items-center gap-3 transition-colors">
+                            ${it.icon ? `<i class="fa-solid ${it.icon} ${it.danger ? 'text-red-500' : 'text-fija-gold'}"></i>` : ''}
+                            <span class="min-w-0 flex-1"><span class="block text-sm font-semibold ${it.danger ? 'text-red-600' : 'text-fija-900'}">${it.label}</span>${it.desc ? `<span class="block text-xs text-gray-500">${it.desc}</span>` : ''}</span>
+                            <i class="fa-solid fa-chevron-right text-xs text-gray-300"></i></button>`).join('')}</div>`
+                });
+                setTimeout(() => {
+                    const box = document.getElementById('fija-dialog-options');
+                    const ok = document.getElementById('fija-dialog-ok');
+                    const ca = document.getElementById('fija-dialog-cancel');
+                    if (box) box.querySelectorAll('.fija-dlg-opt').forEach(b => {
+                        b.onclick = () => close(b.getAttribute('data-val'));
+                    });
+                    if (ok) ok.classList.add('hide');
+                    if (ca) { ca.textContent = 'Cancelar'; ca.onclick = () => close(null); }
+                }, 0);
+                return p;
+            };
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const m = document.getElementById('fija-dialog');
+                    if (m && !m.classList.contains('hide') && !e.target.matches('#fija-dialog-input')) close(null);
+                }
+            });
+        })();
 
         // ===================== Boot =====================
         if (state.session) {
