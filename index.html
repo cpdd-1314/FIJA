@@ -7503,7 +7503,7 @@ const FIJA_THEMES = {
             showGenericModal('Bienvenido a FIJA', `
                 <div class="text-center mb-5"><img src="logo.png" alt="FIJA" class="h-12 md:h-14 mx-auto"></div>
                 <div class="mb-5 rounded-xl overflow-hidden border border-gray-100 bg-black">
-                    <video src="assets/bienvenida.mp4" controls playsinline preload="metadata" class="w-full max-h-72 object-contain bg-black"></video>
+                    <video src="assets/bienvenida.mp4" autoplay muted loop playsinline controls preload="auto" oncanplay="this.play().catch(function(){});" class="w-full max-h-72 object-contain bg-black"></video>
                 </div>
                 <div class="space-y-2 text-sm">
                     ${[['fa-magnifying-glass', 'Busca con filtros', 'Precio, valoración, ofertas y vendedores verificados.'],
