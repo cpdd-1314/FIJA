@@ -405,6 +405,14 @@
         }
         .dark .fija-wm-inner { color: rgba(255, 255, 255, .25); }
         #fija-wm.wm-off { display: none; }
+
+        /* ===== MENÚ DE USUARIO: nunca sobresale de la pantalla =====
+           En móvil el header es más alto (buscador + barra de categorías),
+           así que se resta más altura para que el menú quepa y haga scroll. */
+        #nav-user-info > div { max-height: calc(100vh - 7rem); max-height: calc(100dvh - 7rem); }
+        @media (max-width: 767px) {
+            #nav-user-info > div { max-height: calc(100vh - 12.5rem); max-height: calc(100dvh - 12.5rem); }
+        }
     </style>
 </head>
 <body class="antialiased flex flex-col min-h-screen">
@@ -460,7 +468,7 @@
                         <img id="nav-user-photo" alt="" class="w-6 h-6 rounded-full object-cover mr-2 hidden">
                         <span id="nav-username" class="mr-1 hidden sm:inline">Usuario</span>
                         <i class="fa-solid fa-chevron-down text-xs"></i>
-                        <div class="absolute top-full right-0 mt-2 w-60 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-y-auto overscroll-contain" style="max-height: calc(100vh - 7rem);">
+                        <div class="absolute top-full right-0 mt-2 w-60 bg-white rounded-lg shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 overflow-y-auto overscroll-contain" style="-webkit-overflow-scrolling: touch;">
                             <div class="px-4 py-3 border-b border-gray-100">
                                 <p class="font-semibold text-fija-900 truncate" id="dd-username">Usuario</p>
                                 <p class="text-xs text-gray-500 truncate" id="dd-email">email</p>
@@ -3395,7 +3403,7 @@
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", ivaType: "general", commissionRate: 0.047, createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [] };
 
         const DOM = {
             loginBtn: document.getElementById('nav-login-btn'),
@@ -3783,6 +3791,75 @@
         // Vuelca el tiempo visto al ocultar la pestaña o cerrar la página (mejor esfuerzo).
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { try { window.leaveProductView && window.leaveProductView(); } catch (e) {} } });
         window.addEventListener('pagehide', () => { try { window.leaveProductView && window.leaveProductView(); } catch (e) {} });
+
+        // ---------- Analítica de ENTRADAS DE CLIENTES: IP, dispositivo y país ----------
+        // Cada visita real (sesión/navegador) queda registrada una sola vez con su
+        // IP, país y dispositivo, para que el administrador lo vea en Back-Office.
+        let _visitLogged = false;
+        function _detectDevice() {
+            const ua = navigator.userAgent || '';
+            const uaL = ua.toLowerCase();
+            let os = 'Desconocido', browser = 'Desconocido', kind = 'Escritorio';
+            if (/windows nt/i.test(uaL)) os = 'Windows';
+            else if (/iphone|ipad|ipod/i.test(uaL)) os = 'iOS';
+            else if (/mac os x/i.test(uaL)) os = 'macOS';
+            else if (/android/i.test(uaL)) os = 'Android';
+            else if (/linux/i.test(uaL)) os = 'Linux';
+            else if (/cros/i.test(uaL)) os = 'ChromeOS';
+            if (/edg\//i.test(uaL)) browser = 'Edge';
+            else if (/opr\/|opera/i.test(uaL)) browser = 'Opera';
+            else if (/chrome|crios/i.test(uaL) && !/edg\//i.test(uaL)) browser = 'Chrome';
+            else if (/firefox|fxios/i.test(uaL)) browser = 'Firefox';
+            else if (/safari/i.test(uaL) && /version\//i.test(uaL)) browser = 'Safari';
+            if (/ipad|tablet|kindle|playbook|silk/i.test(uaL) || (uaL.includes('android') && !uaL.includes('mobile'))) kind = 'Tablet';
+            else if (/iphone|ipod|android.*mobile|blackberry|windows phone|webos|iemobile/i.test(uaL)) kind = 'Móvil';
+            return { os, browser, kind };
+        }
+        async function _lookupGeo(timeoutMs = 2500) {
+            // API pública sin clave y con CORS. Devuelve {} si falla (sin bloquear la navegación).
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(() => ctrl.abort(), timeoutMs);
+                const res = await fetch('https://ipwho.is/', { signal: ctrl.signal, cache: 'no-store' });
+                clearTimeout(t);
+                if (!res.ok) return {};
+                const d = await res.json();
+                if (!d || d.success === false) return {};
+                return { ip: d.ip || '', country: d.country || 'Desconocido', countryCode: d.country_code || '', city: d.city || '', region: d.region || '' };
+            } catch (e) { return {}; }
+        }
+        async function logVisitorEntry() {
+            if (_visitLogged) return;
+            _visitLogged = true;
+            // Una sola entrada por pestaña/sesión: evita duplicar al recargar la página.
+            try { if (sessionStorage.getItem('fija_visit_logged') === '1') return; } catch (e) {}
+            try { sessionStorage.setItem('fija_visit_logged', '1'); } catch (e) {}
+            try {
+                const dev = _detectDevice();
+                const geo = await _lookupGeo();
+                const entry = {
+                    id: 'v' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                    ts: Date.now(),
+                    ip: geo.ip || '',
+                    country: geo.country || 'Desconocido',
+                    countryCode: (geo.countryCode || '').toUpperCase(),
+                    city: geo.city || '',
+                    region: geo.region || '',
+                    device: dev.kind,
+                    os: dev.os,
+                    browser: dev.browser,
+                    uid: (state.session && (state.session.userId || state.session.email)) || 'anon',
+                    role: (state.session && state.session.role) || 'anon',
+                    path: location.pathname,
+                    ref: document.referrer || ''
+                };
+                await mutateCollection('visits', arr => {
+                    arr.push(entry);
+                    if (arr.length > 5000) arr.splice(0, arr.length - 5000); // tope para no crecer sin límite
+                });
+            } catch (e) { /* error de red/escritura no debe bloquear la navegación */ }
+        }
+        window.logVisitorEntry = logVisitorEntry;
         function renderProductDetailUI(p, tab) {
             if (tab) window._pdTab = tab;
             window._pdId = p.id;
@@ -7381,7 +7458,10 @@ const FIJA_THEMES = {
         window.openOnboarding = () => {
             if (localStorage.getItem('fija_onboarded')) return;
             showGenericModal('Bienvenido a FIJA', `
-                <div class="text-center mb-5"><span class="text-4xl font-black gold-gradient inline-block">FIJA</span></div>
+                <div class="text-center mb-5"><img src="logo.png" alt="FIJA" class="h-12 md:h-14 mx-auto"></div>
+                <div class="mb-5 rounded-xl overflow-hidden border border-gray-100 bg-black">
+                    <video src="assets/bienvenida.mp4" controls playsinline preload="metadata" class="w-full max-h-72 object-contain bg-black"></video>
+                </div>
                 <div class="space-y-2 text-sm">
                     ${[['fa-magnifying-glass', 'Busca con filtros', 'Precio, valoración, ofertas y vendedores verificados.'],
                     ['fa-store', 'Compra con Click & Collect', 'Pagas online y recoges en 2 horas en el punto del vendedor.'],
@@ -8237,6 +8317,8 @@ const FIJA_THEMES = {
         renderMiniCart();
         watchPriceDrops();
         loadAll().then(() => { if (!state.onboarded) setTimeout(() => { if (state.currentView === 'storefront' && !state.currentPageDesc) openOnboarding(); }, 900); });
+        // Analítica de entradas de clientes (IP, dispositivo, país). Fire-and-forget.
+        try { logVisitorEntry(); } catch (e) {}
         // Botón "volver arriba" visible al hacer scroll
         window.addEventListener('scroll', () => {
             const b = document.getElementById('back-to-top');

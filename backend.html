@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIJA · Back-Office (Admin &amp; Vendedores)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -409,6 +410,41 @@
                                 </table></div>
                             </div>
                         </div>
+
+                        <!-- ===== Analítica de entradas de clientes ===== -->
+                        <div class="mt-10 mb-4">
+                            <h2 class="text-xl font-bold"><i class="fa-solid fa-users-viewfinder text-fija-gold mr-2"></i>Analítica de entradas de clientes</h2>
+                            <p class="text-fija-500 text-sm">Origen de cada visita: IP, país y dispositivo (se registra una entrada por sesión en la tienda).</p>
+                        </div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Entradas totales</p><p class="text-3xl font-bold text-fija-900" id="an-entries">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Países distintos</p><p class="text-3xl font-bold text-fija-900" id="an-countries">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Entradas móviles</p><p class="text-3xl font-bold text-fija-900" id="an-mobile">0%</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">IPs únicas</p><p class="text-3xl font-bold text-fija-900" id="an-uniqip">0</p></div>
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold"><i class="fa-solid fa-earth-europe text-fija-gold mr-2"></i>Entradas por país</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">País</th><th class="px-6 py-3 font-medium text-right">Entradas</th><th class="px-6 py-3 font-medium text-right">%</th></tr></thead>
+                                    <tbody id="an-by-country" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                            <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                                <div class="px-6 py-4 border-b border-fija-200 font-semibold"><i class="fa-solid fa-mobile-screen text-fija-gold mr-2"></i>Dispositivos</div>
+                                <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                    <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Tipo</th><th class="px-6 py-3 font-medium text-right">Entradas</th><th class="px-6 py-3 font-medium text-right">%</th></tr></thead>
+                                    <tbody id="an-by-device" class="divide-y divide-fija-100"></tbody>
+                                </table></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 font-semibold flex items-center justify-between"><span><i class="fa-solid fa-clock-rotate-left text-fija-gold mr-2"></i>Últimas entradas</span><span class="text-xs font-normal text-fija-400" id="an-last-update"></span></div>
+                            <div class="overflow-x-auto"><table class="w-full text-left text-sm">
+                                <thead><tr class="text-xs uppercase text-fija-500 bg-fija-100 border-b border-fija-200"><th class="px-6 py-3 font-medium">Hora</th><th class="px-6 py-3 font-medium">IP</th><th class="px-6 py-3 font-medium">País</th><th class="px-6 py-3 font-medium">Dispositivo</th><th class="px-6 py-3 font-medium">Navegador</th></tr></thead>
+                                <tbody id="an-last-entries" class="divide-y divide-fija-100"></tbody>
+                            </table></div>
+                        </div>
                     </section>
 
                     <!-- ===== RESEÑAS ===== -->
@@ -695,6 +731,42 @@
         function productDiscount(p) { return Math.max(0, Math.min(90, Number(p.discountPercent) || 0)); }
         function effectivePrice(p) { const d = productDiscount(p); return d > 0 ? +(p.price * (1 - d / 100)).toFixed(2) : p.price; }
 
+        // ===================== Proveedor de nube: 'supabase' > 'github' > 'local' =====================
+        // Alineado con la tienda: si hay supabaseUrl + supabaseKey, TODOS los datos
+        // (productos, pedidos, perfiles, cupones, ajustes) se leen/escriben en Supabase
+        // (tabla fija_data). Así el back-office y la tienda comparten la misma fuente en
+        // tiempo real y las ediciones de aquí SÍ llegan a los clientes (y viceversa).
+        function cloudProvider() {
+            if (CONFIG.supabaseUrl && CONFIG.supabaseKey) return 'supabase';
+            if (CONFIG.owner && CONFIG.repo && CONFIG.token) return 'github';
+            return 'local';
+        }
+        // ---- Adaptador Supabase (prioritario si CONFIG.supabaseUrl + supabaseKey están) ----
+        // Modelo de datos: una tabla `fija_data` con clave `name` (texto) y `content` (jsonb).
+        // Cada colección (products, orders, profiles, coupons, settings) es un array/objeto
+        // guardado en una fila. Ver DDL en el panel de "Sincronización" de la tienda.
+        let _sbClient = null;
+        function sbClient() {
+            if (_sbClient) return _sbClient;
+            if (!CONFIG.supabaseUrl || !CONFIG.supabaseKey) return null;
+            if (!window.supabase || !window.supabase.createClient) return null;
+            _sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, { auth: { persistSession: false } });
+            return _sbClient;
+        }
+        async function sbReadDataFile(name) {
+            const sb = sbClient(); if (!sb) throw new Error('Supabase no disponible');
+            const { data, error } = await sb.from('fija_data').select('content').eq('name', name).maybeSingle();
+            if (error) throw error;
+            if (!data) return { data: clone(DEFAULTS[name] || []), sha: null };
+            return { data: data.content, sha: null };
+        }
+        async function sbWriteDataFile(name, data) {
+            const sb = sbClient(); if (!sb) throw new Error('Supabase no disponible');
+            const { error } = await sb.from('fija_data').upsert({ name: name, content: data, updated_at: new Date().toISOString() }, { onConflict: 'name' });
+            if (error) throw error;
+            return null;
+        }
+
         // ===================== GitHub backend =====================
         function ghHeaders(extra = {}) {
             const h = Object.assign({ 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' }, extra);
@@ -710,7 +782,24 @@
         function b64decode(b64) { return decodeURIComponent(escape(atob(b64.replace(/\s/g, '')))); }
 
         async function readDataFile(name) {
-            if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
+            const prov = cloudProvider();
+            // --- Supabase (misma fuente en tiempo real que la tienda) ---
+            if (prov === 'supabase') {
+                try {
+                    const sb = sbClient();
+                    if (!sb) throw new Error('Supabase no disponible (librería o credenciales)');
+                    return await sbReadDataFile(name);
+                } catch (e) {
+                    const m = String((e && e.message) || '');
+                    // Si la tabla aún no existe, caemos a los datos de ejemplo en lugar de romper.
+                    if (m.includes('does not exist') || m.includes('relation') || m.includes('Could not find') || m.includes('404')) { console.warn('Supabase: falta la tabla fija_data, usando ejemplo:', m); return { data: clone(DEFAULTS[name] || []), sha: null }; }
+                    // Cualquier otro fallo de Supabase no debe romper el back-office: avisamos y
+                    // dejamos que siga por GitHub/local si están configurados.
+                    console.warn('Supabase: error de lectura, se usa GitHub/local:', m);
+                }
+            }
+            // --- GitHub (solo si está configurado y Supabase no respondió) ---
+            if (prov === 'github') {
                 try {
                     const res = await ghApi(`/repos/${CONFIG.owner}/${CONFIG.repo}/contents/data/${name}.json`);
                     const j = await res.json();
@@ -749,12 +838,25 @@
             return { data: clone(DEFAULTS[name] || []), sha: null };
         }
         async function writeDataFile(name, data, sha) {
-            if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
+            const prov = cloudProvider();
+            // --- Supabase (misma fuente en tiempo real que la tienda) ---
+            if (prov === 'supabase') {
+                try {
+                    const sb = sbClient();
+                    if (!sb) throw new Error('Supabase no disponible');
+                    return await sbWriteDataFile(name, data);
+                } catch (e) {
+                    console.warn('Supabase: error de escritura, se usa GitHub/local:', String(e && e.message || e));
+                }
+            }
+            // --- GitHub (solo si está configurado y Supabase no respondió) ---
+            if (prov === 'github') {
                 const body = { message: `FIJA backend: actualiza ${name}.json`, content: b64encode(JSON.stringify(data, null, 2)) };
                 if (sha) body.sha = sha;
                 const res = await ghApi(`/repos/${CONFIG.owner}/${CONFIG.repo}/contents/data/${name}.json`, { method: 'PUT', body: JSON.stringify(body) });
                 const j = await res.json(); return j.content.sha;
             }
+            // --- Local / GitHub Pages ---
             // Escribe en la MISMA clave que la tienda (fija_*) para mantener los datos conectados.
             localStorage.setItem('fija_' + name, JSON.stringify(data));
             return null;
@@ -1153,7 +1255,7 @@
             const h = Math.floor(m / 60);
             return `${h}h ${m % 60}m`;
         }
-        function renderAdminAnalytics() {
+        async function renderAdminAnalytics() {
             const ps = (state.products || []).filter(p => p && (Number(p.views) > 0 || Number(p.clicks) > 0 || Number(p.viewSeconds) > 0));
             const totalClicks = ps.reduce((s, p) => s + (Number(p.clicks) || 0), 0);
             const totalViews = ps.reduce((s, p) => s + (Number(p.views) || 0), 0);
@@ -1180,6 +1282,43 @@
             if (tC) tC.innerHTML = byClicks.length ? byClicks.slice(0, 10).map((p, i) => row(p, i + 1, x => (Number(x.clicks) || 0))).join('') : noData;
             const tT = document.getElementById('an-top-time-table');
             if (tT) tT.innerHTML = byTime.length ? byTime.slice(0, 10).map((p, i) => row(p, i + 1, x => anFmtDur(x.viewSeconds))).join('') : noData;
+
+            // ---- Analítica de entradas de clientes (IP / país / dispositivo) ----
+            let visits = [];
+            try { const v = await readDataFile('visits'); visits = (v && v.data) || []; } catch (e) { visits = []; }
+            visits = Array.isArray(visits) ? visits : [];
+            const total = visits.length || 1;
+            set('an-entries', visits.length);
+            const uniqIp = new Set(visits.map(v => v.ip).filter(Boolean)).size;
+            set('an-uniqip', uniqIp);
+            const countries = {};
+            visits.forEach(v => { const c = v.country || 'Desconocido'; countries[c] = (countries[c] || 0) + 1; });
+            set('an-countries', Object.keys(countries).length);
+            const dev = { 'Móvil': 0, 'Escritorio': 0, 'Tablet': 0, 'Desconocido': 0 };
+            visits.forEach(v => { const k = (dev[v.device] != null) ? v.device : 'Desconocido'; dev[k] = (dev[k] || 0) + 1; });
+            set('an-mobile', Math.round((dev['Móvil'] / total) * 100) + '%');
+            const cRows = Object.entries(countries).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c, n]) => `<tr>
+                <td class="px-6 py-2.5 font-medium text-fija-900">${escapeHtml(c)}</td>
+                <td class="px-6 py-2.5 text-right">${n}</td>
+                <td class="px-6 py-2.5 text-right text-fija-500">${Math.round((n / total) * 100)}%</td></tr>`).join('');
+            const cEl = document.getElementById('an-by-country');
+            if (cEl) cEl.innerHTML = cRows || `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin entradas registradas todavía.</td></tr>`;
+            const dRows = Object.entries(dev).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr>
+                <td class="px-6 py-2.5 font-medium text-fija-900">${escapeHtml(k)}</td>
+                <td class="px-6 py-2.5 text-right">${n}</td>
+                <td class="px-6 py-2.5 text-right text-fija-500">${Math.round((n / total) * 100)}%</td></tr>`).join('');
+            const dEl = document.getElementById('an-by-device');
+            if (dEl) dEl.innerHTML = dRows || `<tr><td colspan="3" class="px-6 py-8 text-center text-fija-400">Sin datos.</td></tr>`;
+            const last = [...visits].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 12);
+            const lEl = document.getElementById('an-last-entries');
+            if (lEl) lEl.innerHTML = last.length ? last.map(v => `<tr>
+                <td class="px-6 py-2.5 text-fija-500 whitespace-nowrap">${new Date(v.ts || 0).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                <td class="px-6 py-2.5 font-mono text-xs">${escapeHtml(v.ip || '—')}</td>
+                <td class="px-6 py-2.5">${(v.countryCode ? v.countryCode + ' · ' : '') + escapeHtml(v.country || 'Desconocido')}</td>
+                <td class="px-6 py-2.5">${escapeHtml((v.device || '—') + (v.os ? ' · ' + v.os : ''))}</td>
+                <td class="px-6 py-2.5">${escapeHtml(v.browser || '—')}</td></tr>`).join('') : `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Sin entradas todavía.</td></tr>`;
+            const lu = document.getElementById('an-last-update');
+            if (lu && visits.length) lu.textContent = 'Total: ' + visits.length + ' entradas';
         }
 
         // ---------- ADMIN: Informes ----------
