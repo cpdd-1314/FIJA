@@ -7513,7 +7513,18 @@ const FIJA_THEMES = {
                 </div>
                 <button type="button" onclick="finishOnboarding()" class="f-btn f-btn-gold w-full mt-5">Empezar a explorar</button>`);
         };
-        window.finishOnboarding = () => { localStorage.setItem('fija_onboarded', '1'); ensureStorefront(); setTimeout(() => scrollToCatalog(), 150); };
+        window.finishOnboarding = () => {
+            try { localStorage.setItem('fija_onboarded', '1'); } catch (e) {}
+            try {
+                // Pausa el video de la bienvenida y limpia el estado de página para que
+                // no quede "vivo" en #view-page ni reaparezca al navegar (volver del back-office, etc.).
+                const vp = document.getElementById('view-page');
+                if (vp) { const v = vp.querySelector('video'); if (v) { try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {} } }
+                state.currentPageDesc = null; state.pageStack = [];
+            } catch (e) {}
+            ensureStorefront();
+            setTimeout(() => { try { scrollToCatalog(); } catch (e) {} }, 150);
+        };
         window.openLegalMenu = () => showGenericModal('Legal y políticas', `
             <div class="space-y-2">
                 ${[['fa-file-contract', 'Términos y condiciones', 'openTerms()'], ['fa-user-lock', 'Política de privacidad', 'openPrivacyPolicy()'],
