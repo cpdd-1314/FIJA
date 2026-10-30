@@ -3652,6 +3652,8 @@
                 if (state.currentView === 'user-dashboard') renderUserDashboard();
                 // Hidrata cupones y ajustes desde la misma fuente que el back-office
                 hydrateCloudConfig();
+                // Firma inicial para que la primera re-sincronización no re-pinte de más.
+                _syncSig = cloudDataSig(state.products, state.orders, state.profiles);
             } catch (e) { console.error('loadAll', e); }
         }
         // Descarga cupones/ajustes (creados en el back-office) y los deja en localStorage
@@ -3676,6 +3678,47 @@
                 }
             } catch (e) { console.warn('hydrateCloudConfig', e); }
         }
+
+        // ---- Re-sincronización en la nube (refleja ediciones del back-office en vivo) ----
+        // Firma ligera de lo que el back-office puede cambiar. Excluye vistas/clics que la
+        // propia tienda escribe, para no provocar re-pintados innecesarios del catálogo.
+        function cloudDataSig(products, orders, profiles) {
+            return (products || []).map(p => [p.id, p.title, p.price, p.category, p.sellerName, p.stock, p.discountPercent, p.imageUrl, p.active, p.verified].join('|')).join('#')
+                + '::' + (profiles ? profiles.length : 0) + '::' + (orders ? orders.length : 0);
+        }
+        let _syncSig = '';
+        let _syncBusy = false;
+        async function syncCloudData() {
+            if (_syncBusy) return;
+            _syncBusy = true;
+            try {
+                const [products, orders, profiles] = await Promise.all([
+                    readDataFile('products'), readDataFile('orders'), readDataFile('profiles')
+                ]);
+                const newProducts = products.data || [];
+                const newOrders = orders.data || [];
+                const newProfiles = profiles.data || [];
+                const sig = cloudDataSig(newProducts, newOrders, newProfiles);
+                const changed = sig !== _syncSig;
+                state.products = newProducts;
+                state.orders = newOrders;
+                state.profiles = newProfiles;
+                state._sha = Object.assign({}, state._sha, { products: products.sha, orders: orders.sha, profiles: profiles.sha });
+                state.approvedSellers = new Set(newProfiles.filter(p => p.role === 'seller' && p.verificationStatus === 'approved').map(p => p.userId));
+                if (state.session) { const pr = newProfiles.find(p => p.userId === state.session.userId); if (pr) state.profile = pr; }
+                _syncSig = sig;
+                // Solo re-pinta si cambió algo y el usuario está en el catálogo, sin molestar
+                // mientras escribe, tiene un modal abierto o está viendo un producto/página.
+                if (changed && state.currentView === 'storefront' && document.visibilityState === 'visible') {
+                    const typing = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+                    const megaOpen = (() => { const mm = document.getElementById('mega-menu'); return mm && !mm.classList.contains('hide'); })();
+                    const modalOpen = document.querySelector('.modal-backdrop:not(.hide)') || megaOpen;
+                    if (!typing && !modalOpen) renderStorefront();
+                }
+            } catch (e) { console.warn('syncCloudData', e); }
+            finally { _syncBusy = false; }
+        }
+        window.syncCloudData = syncCloudData;
 
         // ===================== UI: Vistas y Modales =====================
         window.switchView = (viewId) => {
@@ -8324,13 +8367,19 @@ const FIJA_THEMES = {
             const b = document.getElementById('back-to-top');
             if (b) { b.classList.toggle('hide', window.scrollY < 400); b.classList.toggle('flex', window.scrollY >= 400); }
         });
-        if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
-            setInterval(() => { if (document.visibilityState === 'visible') loadAll(); }, 15000);
-        }
-        // Cupones/ajustes creados en el back-office se reflejan en la tienda en vivo
-        // (misma fuente Supabase). Re-pull cada 12s para sincronizar entre pestañas/dispositivos.
+        // Re-sincronización en la nube: cada 5s la tienda re-pregunta a Supabase y refleja
+        // al instante las ediciones del back-office (productos, pedidos, perfiles) y los
+        // cupones/ajustes. Solo re-pinta el catálogo si algo cambió y el usuario no está
+        // interactuando (escribiendo o con un modal/producto abierto).
         if (CONFIG.supabaseUrl && CONFIG.supabaseKey) {
-            setInterval(() => { if (document.visibilityState === 'visible') { try { hydrateCloudConfig(); } catch (e) {} } }, 12000);
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    try { syncCloudData(); } catch (e) {}
+                    try { hydrateCloudConfig(); } catch (e) {}
+                }
+            }, 5000);
+        } else if (CONFIG.owner && CONFIG.repo && CONFIG.token) {
+            setInterval(() => { if (document.visibilityState === 'visible') loadAll(); }, 15000);
         }
 
         // ===================== Buscador (unificado header + catálogo) =====================
