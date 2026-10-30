@@ -1140,6 +1140,23 @@
 
     <!-- BOTONES FLOTANTES -->
     <button type="button" onclick="scrollToTop()" id="back-to-top" class="hide fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-fija-900 text-white shadow-lg hover:bg-fija-800 transition-all items-center justify-center"><i class="fa-solid fa-arrow-up"></i></button>
+    
+    <!-- Chatbot especializado FIJA -->
+    <button type="button" onclick="toggleChatbot()" id="chatbot-fab" class="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-fija-900 text-fija-gold shadow-lg hover:bg-fija-800 transition-all flex items-center justify-center text-xl" title="Asistente FIJA"><i class="fa-solid fa-robot"></i></button>
+    <div id="chatbot-panel" class="fixed bottom-24 left-6 z-50 w-[340px] max-w-[calc(100vw-2rem)] h-[480px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 hidden flex-col overflow-hidden">
+        <div class="bg-fija-900 text-white px-4 py-3 flex items-center gap-3 shrink-0">
+            <div class="w-9 h-9 rounded-full gold-gradient flex items-center justify-center"><i class="fa-solid fa-robot text-fija-900"></i></div>
+            <div class="flex-1 min-w-0"><p class="font-bold text-sm leading-tight">Asistente FIJA</p><p class="text-[11px] text-fija-gold">Responde al instante · 24/7</p></div>
+            <button type="button" onclick="toggleChatbot()" class="text-white/70 hover:text-white text-lg leading-none">&times;</button>
+        </div>
+        <div id="chatbot-msgs" class="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-gray-50"></div>
+        <div id="chatbot-chips" class="px-3 pb-2 flex flex-wrap gap-1.5 bg-gray-50 shrink-0"></div>
+        <div class="p-2.5 border-t border-gray-100 flex gap-2 shrink-0 bg-white">
+            <input id="chatbot-input" class="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-fija-900" placeholder="Escribe tu pregunta..." onkeydown="if(event.key==='Enter')chatbotSend()">
+            <button type="button" onclick="chatbotSend()" class="bg-fija-900 hover:bg-fija-800 text-white w-10 h-10 rounded-full shrink-0"><i class="fa-solid fa-paper-plane text-sm"></i></button>
+        </div>
+    </div>
+
     <button type="button" onclick="openWhatsAppHelp()" class="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-green-500 text-white shadow-lg hover:bg-green-600 transition-all flex items-center justify-center text-2xl" title="Soporte por WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
 
     <!-- Auth Modal -->
@@ -3417,7 +3434,7 @@
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", ivaType: "general", commissionRate: 0.047, createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [], reports: [] };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [], reports: [], tickets: [] };
 
         const DOM = {
             loginBtn: document.getElementById('nav-login-btn'),
@@ -3649,13 +3666,15 @@
 
         async function loadAll() {
             try {
-                const [products, orders, profiles] = await Promise.all([
-                    readDataFile('products'), readDataFile('orders'), readDataFile('profiles')
+                const [products, orders, profiles, tickets] = await Promise.all([
+                    readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('tickets')
                 ]);
                 state.products = products.data || [];
                 state.orders = orders.data || [];
                 state.profiles = profiles.data || [];
+                state.tickets = tickets.data || [];
                 state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha };
+                applyDailyDeals();
                 state.approvedSellers = new Set(state.profiles.filter(p => p.role === 'seller' && p.verificationStatus === 'approved').map(p => p.userId));
                 if (state.session) {
                     state.profile = state.profiles.find(p => p.userId === state.session.userId) || null;
@@ -4701,6 +4720,33 @@
         // ===================== Render: Storefront (estilo Amazon) =====================
         function hashStr(s) { let h = 0; for (let i = 0; i < (s || '').length; i++) { h = (h * 31 + s.charCodeAt(i)) >>> 0; } return h; }
         // Precio final que paga el cliente (con el descuento FIJA aplicado, si lo hay)
+
+        // ---------- 47b. OFERTAS DIARIAS ALEATORIAS ----------
+        // Cada día se selecciona aleatoriamente ~25% del catálogo y se le aplica un
+        // descuento aleatorio del 1% al 70%. La probabilidad es decreciente: los
+        // descuentos altos son más difíciles de salir (u^2). Determinista por día
+        // (semilla = fecha + id de producto) para que todos vean las mismas ofertas.
+        function fnvHash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = (h * 0x01000193) >>> 0; } return h >>> 0; }
+        function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+        function dailyDiscountFor(p) {
+            const day = todayKey();
+            const sel = fnvHash(day + '|' + (p.id || '') + '|sel') % 1000;
+            if (sel >= 250) return 0; // ~25% de los productos tienen oferta hoy
+            const u = fnvHash(day + '|' + (p.id || '') + '|dsc') / 4294967296; // 0..1
+            return Math.max(1, Math.min(70, 1 + Math.floor(69 * u * u)));
+        }
+        function dailyDealLabel(p) { const d = dailyDiscountFor(p); return d > 0 ? 'Oferta del día -' + d + '%' : ''; }
+        // Aplica las ofertas del día en memoria (sin tocar los datos guardados):
+        // todos los badges, precios y carritos existentes las reflejan solos.
+        function applyDailyDeals() {
+            (state.products || []).forEach(p => {
+                if (p._ddBasePrice === undefined) { p._ddBasePrice = p.price; p._ddBaseDiscount = Number(p.discountPercent) || 0; }
+                const dd = dailyDiscountFor(p);
+                p.price = p._ddBasePrice;
+                p.discountPercent = Math.max(p._ddBaseDiscount, dd);
+            });
+        }
+
         function effectivePrice(p) { const d = Math.max(0, Math.min(90, Number(p.discountPercent) || 0)); return d > 0 ? +(p.price * (1 - d / 100)).toFixed(2) : p.price; }
         // Dirección de recogida: la que puso el vendedor en el producto o, si no, la de su perfil
         function pickupAddressFor(p) {
@@ -5719,12 +5765,139 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             showGenericModal(t.title, t.items.map(([q, a]) => `<details class="faq mb-2"><summary>${escapeHtml(q)}<i class="fa-solid fa-plus text-fija-gold text-xs"></i></summary><p>${escapeHtml(a)}</p></details>`).join(''));
         };
         window.openContactForm = () => showGenericModal('Contactar con FIJA', `
+            <label class="block text-xs font-medium mb-1">Tu correo</label>
+            <input type="email" id="cf-email" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" placeholder="tu@correo.com" value="${escapeHtml((state.profile || {}).email || '')}">
             <label class="block text-xs font-medium mb-1">Asunto</label>
             <input type="text" id="cf-subject" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3" placeholder="¿Sobre qué necesitas ayuda?">
             <label class="block text-xs font-medium mb-1">Mensaje</label>
             <textarea id="cf-body" rows="4" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4" placeholder="Cuéntanos tu problema..."></textarea>
             <button type="button" onclick="sendContactForm()" class="w-full bg-fija-900 text-white text-sm font-medium py-2.5 rounded-lg">Enviar mensaje</button>`);
-        window.sendContactForm = () => { closeModal('generic-modal'); showToast('Mensaje enviado. Te responderemos en 24 h.'); };
+        window.sendContactForm = async () => {
+            const subject = ((document.getElementById('cf-subject') || {}).value || '').trim();
+            const body = ((document.getElementById('cf-body') || {}).value || '').trim();
+            const email = ((document.getElementById('cf-email') || {}).value || '').trim();
+            if (!subject || !body) { showToast('Completa el asunto y el mensaje', true); return; }
+            if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast('Introduce un correo válido', true); return; }
+            const btn = document.querySelector('#generic-modal-content button, [id*=generic] button');
+            const ok = await submitTicketToCloud('soporte', { email: email || ((state.profile || {}).email || ''), subject: subject, message: body.slice(0, 2000) });
+            if (!ok) { showToast('No se pudo enviar el mensaje, inténtalo de nuevo', true); return; }
+            closeModal('generic-modal'); showToast('Mensaje enviado. Te responderemos en 24 h.');
+        };
+
+        // ---------- 48b. CHATBOT ESPECIALIZADO FIJA ----------
+        window.toggleChatbot = () => {
+            const p = document.getElementById('chatbot-panel');
+            p.classList.toggle('hidden'); p.classList.toggle('flex');
+            if (!p.classList.contains('hidden')) { renderChatChips(); if (!document.getElementById('chatbot-msgs').children.length) { botPush('bot', '¡Hola! 👋 Soy el asistente de FIJA. Puedo ayudarte con pedidos, ofertas del día, devoluciones, recogidas y más. ¿Qué necesitas?'); } }
+        };
+        function botPush(who, html) {
+            const box = document.getElementById('chatbot-msgs'); if (!box) return;
+            const el = document.createElement('div');
+            el.className = who === 'bot' ? 'flex items-start gap-2' : 'flex justify-end';
+            el.innerHTML = who === 'bot'
+                ? `<div class="max-w-[85%] bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 text-sm shadow-sm">${html}</div>`
+                : `<div class="max-w-[85%] bg-fija-900 text-white rounded-2xl rounded-tr-sm px-3 py-2 text-sm">${html}</div>`;
+            box.appendChild(el); box.scrollTop = box.scrollHeight;
+        }
+        function renderChatChips(list) {
+            const chips = list || ['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Recogida', 'Buscar producto'];
+            document.getElementById('chatbot-chips').innerHTML = chips.map(c => `<button type="button" onclick="chatbotQuick('${c}')" class="text-[11px] border border-fija-900/30 text-fija-900 rounded-full px-2.5 py-1 hover:bg-fija-50">${c}</button>`).join('');
+        }
+        window.chatbotQuick = (t) => { document.getElementById('chatbot-input').value = t; chatbotSend(); };
+        window.chatbotSend = () => {
+            const inp = document.getElementById('chatbot-input');
+            const q = (inp.value || '').trim(); if (!q) return;
+            inp.value = '';
+            botPush('user', escapeHtml(q));
+            setTimeout(() => { botPush('bot', botReply(q)); }, 350);
+        };
+        function botFindProducts(q) {
+            const words = q.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !['para','como','donde','quiero','buscar','producto','productos','tienes','cuesta','precio'].includes(w));
+            return (state.products || []).filter(p => words.some(w => (p.title || '').toLowerCase().includes(w) || (p.category || '').toLowerCase().includes(w))).slice(0, 3);
+        }
+        function botDealTop(n) {
+            return (state.products || []).filter(p => (Number(p.discountPercent) || 0) > 0 && dailyDiscountFor(p) > 0)
+                .sort((a, b) => dailyDiscountFor(b) - dailyDiscountFor(a)).slice(0, n);
+        }
+        function botOrderLookup(q) {
+            const m = q.match(/#?([0-9a-f]{8,}|[A-Z0-9]{8,})/i);
+            const mailM = q.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+            let o = null;
+            if (m) o = (state.orders || []).find(x => (x.id || '').toLowerCase().replace(/-/g, '').startsWith(m[1].toLowerCase().replace(/-/g, '')));
+            if (!o && mailM) o = (state.orders || []).filter(x => (x.buyerEmail || '').toLowerCase() === mailM[0].toLowerCase()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+            return o;
+        }
+        function botReply(q) {
+            const t = q.toLowerCase();
+            const has = (...ws) => ws.some(w => t.includes(w));
+            // Pedido / rastreo
+            if (has('pedido', 'rastrear', 'rastreo', 'seguimiento', 'orden', 'envío de mi compra', 'donde esta mi pedido', 'dónde está mi pedido')) {
+                const o = botOrderLookup(q);
+                if (o) {
+                    const st = { pending: 'Confirmado', preparing: 'En preparación', ready: 'Listo para recoger', collected: 'Recogido', cancelled: 'Cancelado' }[o.status] || o.status;
+                    const items = (o.items || []).map(i => escapeHtml(i.title)).join(', ');
+                    return `<b>Pedido ${(o.id || '').slice(0, 8).toUpperCase()}</b><br>Estado: <b>${st}</b><br>Total: <b>${fmtMoney(o.total != null ? o.total : 0)}</b><br>Artículos: ${items}<br><button type="button" onclick="toggleChatbot();window.openOrderTracking && openOrderTracking('${o.id}')" class="mt-1 text-xs bg-fija-900 text-white px-3 py-1.5 rounded-lg">Ver seguimiento</button>`;
+                }
+                renderChatChips(['Rastrear pedido', 'Devoluciones']);
+                return 'Claro, puedo ayudarte a rastrear tu pedido. Dime el <b>número de pedido</b> (p. ej. #A1B2C3D4) o el <b>correo</b> con el que compraste.';
+            }
+            // Ofertas del día
+            if (has('oferta', 'descuento', 'rebaja', 'promoción', 'promo')) {
+                const top = botDealTop(3);
+                if (!top.length) return 'Hoy no hay ofertas destacadas, ¡pero vuelve mañana! Cada día renovamos <b>~25% del catálogo</b> con descuentos de hasta el <b>70%</b>.';
+                renderChatChips(['Buscar producto', 'Cupones']);
+                return '🔥 <b>Ofertas de hoy</b> (renovadas cada día, hasta -70%):<br>' + top.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · <span class="text-red-600 font-bold">-${dailyDiscountFor(p)}%</span> · ${fmtMoney(effectivePrice(p))}</button>`).join('');
+            }
+            // Buscar producto / precio
+            if (has('busca', 'buscar', 'tienes', 'cuesta', 'precio de', 'encontrar', 'catálogo', 'catalogo')) {
+                const ps = botFindProducts(q);
+                if (ps.length) {
+                    renderChatChips(['Ofertas del día', 'Recogida']);
+                    return 'Esto es lo que encontré:<br>' + ps.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · ${fmtMoney(effectivePrice(p))}${(Number(p.discountPercent) || 0) > 0 ? ` <span class="text-red-600 font-bold">-${p.discountPercent}%</span>` : ''}</button>`).join('') + '<br>¿Quieres que te ayude con algo más?';
+                }
+                return 'Escribe el nombre del producto que buscas (p. ej. «auriculares», «zapatillas», «lámpara») y te lo encuentro.';
+            }
+            // Devoluciones
+            if (has('devol', 'devolver', 'retorno', 'reembolso', 'arrepent')) {
+                renderChatChips(['Rastrear pedido', 'Contactar soporte']);
+                return '<b>Devoluciones</b>: tienes <b>30 días</b> desde la recogida para devolver cualquier producto en su embalaje original. El reembolso se procesa en <b>3–5 días laborables</b> tras recibir el artículo. Puedes gestionarlo desde «Mis pedidos» o escribirnos por WhatsApp.';
+            }
+            // Recogida / envío
+            if (has('recog', 'envío', 'envio', 'entrega', 'click', 'collect', 'tienda')) {
+                return '<b>Click & Collect</b>: compra online y recoge gratis en el punto FIJA del vendedor. Recibirás un aviso cuando esté listo (normalmente <b>24–48 h</b>). Tienes <b>7 días</b> para recogerlo llevando tu código de pedido.';
+            }
+            // Pago
+            if (has('pago', 'tarjeta', 'bizum', 'paypal', 'factura')) {
+                return '<b>Métodos de pago</b>: tarjeta (Visa/Mastercard), Bizum y PayPal. Todos los pagos son seguros y puedes solicitar factura desde tu pedido.';
+            }
+            // Cupones
+            if (has('cupón', 'cupon', 'código', 'codigo', 'voucher')) {
+                const act = Object.entries(state.coupons || {}).filter(([k, c]) => c && c.active !== false).slice(0, 3);
+                return (act.length ? 'Cupones activos ahora mismo:<br>' + act.map(([k, c]) => `<b>${k}</b> · -${Math.round((c.pct || c.percent || 10))}%`).join('<br>') : 'Ahora mismo no hay cupones activos, pero sí <b>ofertas del día</b> en el catálogo.') + '<br>Copia el código y pégalo en la cesta.';
+            }
+            // Horario
+            if (has('horario', 'abierto', 'hora', 'atienden')) {
+                return 'Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. El asistente (yo 😊) estamos 24/7.';
+            }
+            // Contacto / soporte humano
+            if (has('humano', 'persona', 'agente', 'soporte', 'ayuda', 'contactar', 'teléfono', 'telefono', 'whatsapp')) {
+                renderChatChips(['Contactar soporte']);
+                return 'Puedes hablar con una persona: 💬 WhatsApp <b>633 616 054</b> o usar el <b>formulario de soporte</b> y te responde el equipo en menos de 24 h.';
+            }
+            // Web / presupuesto (el caso del dueño)
+            if (has('presupuesto', 'web como', 'página web', 'pagina web', 'crear web', 'hacer web', 'tienda online como')) {
+                return '¡Genial! Escríbenos por WhatsApp y te damos presupuesto para una web como esta:<br><a href="https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?') + '" target="_blank" class="inline-block mt-1 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Abrir WhatsApp</a>';
+            }
+            // Saludo
+            if (has('hola', 'buenas', 'hey', 'buenos días', 'buenas tardes')) {
+                renderChatChips(['Ofertas del día', 'Rastrear pedido', 'Devoluciones']);
+                return '¡Hola! ¿En qué puedo ayudarte? Puedo buscarte productos, decirte las ofertas del día o rastrear tu pedido.';
+            }
+            // Fallback
+            renderChatChips(['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Contactar soporte']);
+            return 'No estoy seguro de haberlo entendido 🤔 Puedo ayudarte con: <b>ofertas del día</b>, <b>rastrear un pedido</b>, <b>devoluciones</b>, <b>recogida Click & Collect</b>, <b>pagos</b>, <b>buscar productos</b> o ponerte en contacto con soporte.';
+        }
+
         window.openWhatsAppHelp = () => window.open('https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?'), '_blank');
         window.openLegal = (which) => { openInfoModal(which || 'terminos'); };
         window.openGiftModal = () => showGenericModal('Regala FIJA', '<p class="text-sm text-gray-600 mb-3">Envía un código de regalo a un amigo.</p><div class="flex gap-2"><input type="text" id="gift-code" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm uppercase" placeholder="FIJA-REGALO"><button type="button" onclick="closeModal(\'generic-modal\'); showToast(\'Código de regalo copiado\')" class="bg-fija-900 text-white text-sm px-4 py-2 rounded-lg">Generar</button></div>');
@@ -5840,6 +6013,38 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast('Introduce un correo válido', true); return; }
             localStorage.setItem('fija_newsletter', email); showToast('¡Suscrito! Recibirás ofertas en ' + email);
         };
+
+        // ---------- 38b. TICKETS DE SOPORTE (llegan al back-office) ----------
+        // Guarda una consulta (soporte, suscripción, etc.) en la colección 'tickets'
+        // compartida con el back-office para que admin y atención al cliente
+        // puedan leerla y responderla.
+        window.submitTicketToCloud = async (type, payload) => {
+            const t = Object.assign({
+                id: uid(), type: type,
+                email: ((state.profile || {}).email || payload.email || ''),
+                name: ((state.profile || {}).username || payload.name || 'invitado'),
+                userId: (state.profile || {}).userId || null,
+                status: 'open', replies: [], createdAt: Date.now()
+            }, payload);
+            try {
+                await mutateCollection('tickets', arr => arr.push(t));
+                if (!Array.isArray(state.tickets)) state.tickets = [];
+                state.tickets.push(t);
+                return t;
+            } catch (e) { console.error('ticket', e); return null; }
+        };
+        // Suscripción al boletín: guarda el correo y avisa al equipo (antes solo
+        // se guardaba en este navegador y nadie lo veía).
+        window.subscribeNewsletter = async () => {
+            const email = ((document.getElementById('newsletter-email') || {}).value || '').trim();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast('Introduce un correo válido', true); return; }
+            const already = (state.tickets || []).some(t => t.type === 'newsletter' && (t.email || '').toLowerCase() === email.toLowerCase());
+            if (already) { showToast('Ese correo ya está suscrito al boletín'); return; }
+            const ok = await submitTicketToCloud('newsletter', { email: email, subject: 'Suscripción al boletín', message: 'Nueva suscripción al boletín semanal de FIJA.' });
+            if (ok) { try { localStorage.setItem('fija_newsletter', email); } catch (e) {} showToast('¡Suscrito! Recibirás ofertas en ' + email); }
+            else showToast('No se pudo completar la suscripción, inténtalo de nuevo', true);
+        };
+
         // ---------- 23. MODAL GENÉRICO ----------
         function showGenericModal(title, html) {
             openFullPage(title, null, null, html, ['Tienda', title]);
@@ -6256,7 +6461,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             if (!picked) { showToast('Elige un motivo del reporte', true); return; }
             const reason = picked.value || 'Otro';
             const text = (document.getElementById('report-text') || {}).value || '';
-            const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : null;
+            const p = targetType === 'product' ? (state.products.find(x => x.id === targetId) || {}) : {};
             const rep = {
                 id: uid(), type: targetType, targetId: targetId || null, targetTitle: targetTitle || (p.title || null),
                 sellerId: p.sellerId || null, sellerName: p.sellerName || null,
@@ -8328,15 +8533,31 @@ const FIJA_THEMES = {
             <input id="cf-mail" class="f-input w-full" placeholder="Tu correo" value="${escapeHtml((state.session && state.session.email) || '')}">
             <textarea id="cf-msg" rows="4" class="f-input w-full" placeholder="¿En qué podemos ayudarte?"></textarea>
             <button type="button" onclick="sendTicket()" class="f-btn f-btn-gold w-full">Enviar mensaje</button></div>`);
-        window.sendTicket = () => { const m = (document.getElementById('cf-msg') || {}).value || '';
+        window.sendTicket = async () => { const m = (document.getElementById('cf-msg') || {}).value || '';
             if (!m.trim()) return showToast('Escribe tu mensaje', true);
+            const mail = ((document.getElementById('cf-mail') || {}).value || '').trim();
             const log = JSON.parse(localStorage.getItem('fija_support') || '[]');
             log.push({ at: Date.now(), by: (state.session && state.session.email) || 'anónimo', msg: m.slice(0, 400) });
-            localStorage.setItem('fija_support', JSON.stringify(log.slice(-30))); closeModal('generic-modal'); showToast('Mensaje enviado. Te respondemos en 24 h'); };
+            localStorage.setItem('fija_support', JSON.stringify(log.slice(-30)));
+            const ok = await submitTicketToCloud('soporte', { email: mail, subject: 'Consulta de soporte', message: m.slice(0, 2000) });
+            if (!ok) return showToast('No se pudo enviar el mensaje, inténtalo de nuevo', true);
+            closeModal('generic-modal'); showToast('Mensaje enviado. Te respondemos en 24 h'); };
         window.supportTicketCount = () => JSON.parse(localStorage.getItem('fija_support') || '[]').length;
-        window.openSupportHistory = () => { const log = JSON.parse(localStorage.getItem('fija_support') || '[]');
-            showGenericModal('Tus mensajes a soporte', log.length ? `<div class="space-y-2 text-sm">${log.map(l =>
-                `<div class="f-card p-3"><p>${escapeHtml(l.msg)}</p><p class="text-[11px] text-gray-500 mt-1">${fmtDateTime(l.at)}</p></div>`).join('')}</div>` : '<p class="text-sm text-gray-500">No has enviado mensajes.</p>'); };
+        window.openSupportHistory = async () => {
+            const log = JSON.parse(localStorage.getItem('fija_support') || '[]');
+            // Consulta los tickets en la nube para mostrar también las respuestas del equipo
+            try { state.tickets = (await readDataFile('tickets')).data || []; } catch (e) {}
+            const mine = (state.tickets || []).filter(t => t.type !== 'newsletter' && ((t.email || '').toLowerCase() === (((state.profile || {}).email) || '').toLowerCase() && !!state.profile));
+            const mineHTML = mine.length ? mine.slice().reverse().map(t => `
+                <div class="f-card p-3 mb-2">
+                    <div class="flex items-center justify-between gap-2"><p class="font-semibold text-sm">${escapeHtml(t.subject || 'Consulta')}</p><span class="text-[10px] px-2 py-0.5 rounded-full ${t.status === 'answered' ? 'bg-green-100 text-green-700' : t.status === 'closed' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'}">${t.status === 'answered' ? 'Respondido' : t.status === 'closed' ? 'Cerrado' : 'Pendiente'}</span></div>
+                    <p class="text-sm mt-1">${escapeHtml(t.message || '')}</p>
+                    ${(t.replies || []).map(r => `<div class="mt-2 bg-fija-50 border border-fija-100 rounded-lg p-2"><p class="text-[11px] font-bold text-fija-900 mb-0.5"><i class="fa-solid fa-headset mr-1"></i>Equipo FIJA</p><p class="text-sm">${escapeHtml(r.text)}</p></div>`).join('')}
+                    <p class="text-[11px] text-gray-500 mt-1">${fmtDateTime(t.createdAt)}</p>
+                </div>`).join('') : '';
+            showGenericModal('Tus mensajes a soporte', (mineHTML || (log.length ? `<div class="space-y-2 text-sm">${log.map(l =>
+                `<div class="f-card p-3"><p>${escapeHtml(l.msg)}</p><p class="text-[11px] text-gray-500 mt-1">${fmtDateTime(l.at)}</p></div>`).join('')}</div>` : '<p class="text-sm text-gray-500">No has enviado mensajes.</p>')));
+        };
         window.openEscalation = () => showGenericModal('Escalar a un agente', `<p class="text-sm text-gray-600 mb-3">Si tu problema no se resuelve, nuestro equipo lo revisa en 48 h.</p>
             <button type="button" onclick="closeModal('generic-modal'); openTicketForm()" class="f-btn f-btn-gold w-full">Solicitar agente</button>`);
         window.openServiceStatus = () => showGenericModal('Estado del servicio', `<div class="space-y-2 text-sm">

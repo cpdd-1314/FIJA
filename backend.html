@@ -257,18 +257,18 @@
                     <section id="sec-panel">
                         <div class="mb-6"><h1 class="text-2xl font-bold">Panel de Administración</h1><p class="text-fija-500 text-sm">Verifica vendedores y supervisa la plataforma.</p></div>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Vendedores pendientes</p><p class="text-3xl font-bold text-amber-600" id="admin-pending-count">0</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Vendedores activos</p><p class="text-3xl font-bold text-green-600" id="admin-sellers-count">0</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Productos</p><p class="text-3xl font-bold text-fija-900" id="admin-products-count">0</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Pedidos totales</p><p class="text-3xl font-bold text-fija-900" id="admin-orders-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-amber-400 transition-colors" onclick="showSection('pending')" title="Ver solicitudes"><p class="text-sm text-fija-500 mb-1">Vendedores pendientes</p><p class="text-3xl font-bold text-amber-600" id="admin-pending-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-green-400 transition-colors" onclick="showSection('sellers')" title="Ver vendedores"><p class="text-sm text-fija-500 mb-1">Vendedores activos</p><p class="text-3xl font-bold text-green-600" id="admin-sellers-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-fija-400 transition-colors" onclick="showSection('products')" title="Ver productos"><p class="text-sm text-fija-500 mb-1">Productos</p><p class="text-3xl font-bold text-fija-900" id="admin-products-count">0</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-fija-400 transition-colors" onclick="showSection('orders')" title="Ver pedidos"><p class="text-sm text-fija-500 mb-1">Pedidos totales</p><p class="text-3xl font-bold text-fija-900" id="admin-orders-count">0</p></div>
                         </div>
                         <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Ventas brutas (precio empresa)</p><p class="text-3xl font-bold text-fija-900" id="admin-gross">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Cobrado a clientes</p><p class="text-3xl font-bold text-fija-900" id="admin-paid">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Coste descuentos (a cargo FIJA)</p><p class="text-3xl font-bold text-red-600" id="admin-discounts">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (<span data-comm-label>4,7%</span>)</p><p class="text-3xl font-bold text-fija-gold" id="admin-commission">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Neto a vendedores</p><p class="text-3xl font-bold text-green-600" id="admin-net">0,00 €</p></div>
-                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Balance FIJA (comisión − descuentos)</p><p class="text-3xl font-bold" id="admin-balance">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-fija-400 transition-colors" onclick="showSection('orders')" title="Ver desglose en pedidos"><p class="text-sm text-fija-500 mb-1">Ventas brutas (precio empresa)</p><p class="text-3xl font-bold text-fija-900" id="admin-gross">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-fija-400 transition-colors" onclick="showSection('orders')" title="Ver desglose en pedidos"><p class="text-sm text-fija-500 mb-1">Cobrado a clientes</p><p class="text-3xl font-bold text-fija-900" id="admin-paid">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-red-400 transition-colors" onclick="showSection('orders')" title="Ver desglose en pedidos"><p class="text-sm text-fija-500 mb-1">Coste descuentos (a cargo FIJA)</p><p class="text-3xl font-bold text-red-600" id="admin-discounts">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-yellow-400 transition-colors" onclick="showSection('orders')" title="Ver desglose en pedidos"><p class="text-sm text-fija-500 mb-1">Comisión FIJA (<span data-comm-label>4,7%</span>)</p><p class="text-3xl font-bold text-fija-gold" id="admin-commission">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-green-400 transition-colors" onclick="showSection('orders')" title="Ver desglose en pedidos"><p class="text-sm text-fija-500 mb-1">Neto a vendedores</p><p class="text-3xl font-bold text-green-600" id="admin-net">0,00 €</p></div>
+                            <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5 cursor-pointer hover:border-fija-400 transition-colors" onclick="showSection('reports')" title="Ver informes"><p class="text-sm text-fija-500 mb-1">Balance FIJA (comisión − descuentos)</p><p class="text-3xl font-bold" id="admin-balance">0,00 €</p></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-sm border border-fija-200 overflow-hidden mb-6">
                             <div class="px-6 py-4 border-b border-fija-200 bg-fija-100/60 flex items-center"><i class="fa-solid fa-sack-dollar text-fija-gold mr-2"></i><h2 class="font-semibold">Comisiones por Vendedor (<span data-comm-label>4,7%</span>)</h2></div>
@@ -476,6 +476,25 @@
                     </section>
 
                     <!-- ===== REPORTES DE USUARIOS ===== -->
+                    <section id="sec-tickets" class="hide">
+                        <div class="mb-6"><h1 class="text-2xl font-bold">Soporte & Tickets</h1><p class="text-fija-500 text-sm">Consultas, suscripciones y mensajes de clientes. Responde y el cliente verá tu respuesta en «Mis mensajes a soporte».</p></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm cursor-pointer hover:border-fija-400 transition-colors" onclick="tkSetFilter('open')"><p class="text-sm text-fija-500 mb-1">Pendientes</p><p class="text-3xl font-bold text-amber-600" id="tk-open">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm cursor-pointer hover:border-fija-400 transition-colors" onclick="tkSetFilter('answered')"><p class="text-sm text-fija-500 mb-1">Respondidos</p><p class="text-3xl font-bold text-green-600" id="tk-answered">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm cursor-pointer hover:border-fija-400 transition-colors" onclick="tkSetFilter('newsletter')"><p class="text-sm text-fija-500 mb-1">Suscripciones</p><p class="text-3xl font-bold text-fija-900" id="tk-news">0</p></div>
+                            <div class="bg-white rounded-xl border border-fija-200 p-5 shadow-sm cursor-pointer hover:border-fija-400 transition-colors" onclick="tkSetFilter('all')"><p class="text-sm text-fija-500 mb-1">Total</p><p class="text-3xl font-bold text-fija-900" id="tk-total">0</p></div>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 overflow-hidden">
+                            <div class="px-6 py-4 border-b border-fija-200 flex flex-wrap items-center justify-between gap-3">
+                                <h2 class="font-semibold">Bandeja de entrada</h2>
+                                <div class="flex items-center gap-2">
+                                    <input id="tk-search" oninput="renderAdminTickets()" placeholder="Buscar correo, asunto…" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm w-44">
+                                    <select id="tk-filter" onchange="renderAdminTickets()" class="border border-fija-300 rounded-lg px-3 py-1.5 text-sm"><option value="open">Pendientes</option><option value="answered">Respondidos</option><option value="closed">Cerrados</option><option value="newsletter">Suscripciones</option><option value="all">Todos</option></select>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-left"><thead class="bg-fija-50 text-xs text-fija-500 uppercase"><tr><th class="px-6 py-3">Tipo</th><th class="px-6 py-3">Cliente</th><th class="px-6 py-3">Asunto / Mensaje</th><th class="px-6 py-3">Fecha</th><th class="px-6 py-3">Estado</th><th class="px-6 py-3">Acciones</th></tr></thead><tbody id="tk-table"></tbody></table></div>
+                        </div>
+                    </section>
                     <section id="sec-userreports" class="hide">
                         <div class="mb-6"><h1 class="text-2xl font-bold">Reportes de usuarios</h1><p class="text-fija-500 text-sm">Avisos enviados desde la tienda. Revísalos para banear al usuario o retirar el producto.</p></div>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -730,12 +749,13 @@
             'FIJA20': { type: 'pct', value: 20, label: '20% de descuento', active: true, createdAt: 1700000000000 }
         };
         const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'soporte@fija.demo' };
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [] };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [], tickets: [] };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
 
         // ===================== Helpers =====================
         function isAdmin() { return !!(state.profile && (state.profile.role === 'admin')); }
+        function isSupportAgent() { return !!(state.profile && (state.profile.role === 'support' || state.profile.role === 'admin')); }
         function isApprovedSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'approved'); }
         function isPendingSeller() { return !!(state.profile && state.profile.role === 'seller' && state.profile.verificationStatus === 'pending'); }
         function formatEuro(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' €'; }
@@ -906,8 +926,8 @@
 
         async function loadAll() {
             try {
-                const [products, orders, profiles, coupons, settings, reports, visits] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('coupons'), readDataFile('settings'), readDataFile('reports'), readDataFile('visits')]);
-                state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || []; state.reports = reports.data || []; state.visits = visits.data || [];
+                const [products, orders, profiles, coupons, settings, reports, visits, tickets] = await Promise.all([readDataFile('products'), readDataFile('orders'), readDataFile('profiles'), readDataFile('coupons'), readDataFile('settings'), readDataFile('reports'), readDataFile('visits'), readDataFile('tickets')]);
+                state.products = products.data || []; state.orders = orders.data || []; state.profiles = profiles.data || []; state.reports = reports.data || []; state.visits = visits.data || []; state.tickets = tickets.data || [];
                 state.coupons = (coupons.data && typeof coupons.data === 'object' && !Array.isArray(coupons.data)) ? coupons.data : (Array.isArray(coupons.data) ? {} : clone(DEFAULT_COUPONS));
                 state.settings = (settings.data && typeof settings.data === 'object' && !Array.isArray(settings.data)) ? Object.assign(clone(DEFAULT_SETTINGS), settings.data) : clone(DEFAULT_SETTINGS);
                 state._sha = { products: products.sha, orders: orders.sha, profiles: profiles.sha, coupons: coupons.sha, settings: settings.sha };
@@ -1004,6 +1024,7 @@
                 items += navItem('pending', 'Solicitudes', 'fa-clock');
                 items += navItem('customers', 'Clientes', 'fa-users');
                 items += navItem('userreports', 'Reportes', 'fa-flag');
+                items += navItem('tickets', 'Soporte & Tickets' + ((state.tickets || []).filter(t => t.status === 'open').length ? ' <span class="ml-1 inline-flex items-center justify-center text-[10px] bg-red-600 text-white rounded-full px-1.5 py-0.5">' + (state.tickets || []).filter(t => t.status === 'open').length + '</span>' : ''), 'fa-headset');
                 items += navItem('reviews', 'Reseñas', 'fa-star');
                 items += navItem('coupons', 'Cupones', 'fa-ticket');
                 items += navItem('settings', 'Ajustes', 'fa-sliders');
@@ -1020,6 +1041,7 @@
             if (items === '') items = `<div class="px-4 py-2 text-xs text-fija-400">Sin secciones disponibles.</div>`;
             nav.innerHTML = items;
             const known = id => (id in ADMIN_SECTIONS) || (id in SELLER_SECTIONS);
+            if (isSupportAgent()) { items = navItem('tickets', 'Soporte & Tickets', 'fa-headset'); nav.innerHTML = items; showSection('tickets'); return; }
             showSection(state.view && known(state.view) ? state.view : (isAdmin() ? 'panel' : 'products'));
         }
         function navItem(id, label, icon) {
@@ -1027,7 +1049,7 @@
         }
 
         // ===================== Views / sections =====================
-        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', analytics:'sec-analytics', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', userreports:'sec-userreports', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
+        const ADMIN_SECTIONS = { panel:'sec-panel', reports:'sec-reports', analytics:'sec-analytics', pending:'sec-pending', sellers:'sec-sellers', products:'sec-products', orders:'sec-orders', customers:'sec-customers', userreports:'sec-userreports', tickets:'sec-tickets', reviews:'sec-reviews', coupons:'sec-coupons', settings:'sec-settings' };
         const SELLER_SECTIONS = { products:'sec-s-products', stats:'sec-s-stats', promos:'sec-s-promos', inventory:'sec-s-inventory', myorders:'sec-s-myorders', reviews:'sec-s-reviews', billing:'sec-s-billing' };
         function showSection(id) {
             state.view = id;
@@ -1045,8 +1067,10 @@
             const active = document.getElementById('nav-' + id);
             if (active) active.className = 'w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium bg-fija-900 text-white transition-colors flex items-center';
             const main = document.querySelector('main'); if (main) main.scrollTop = 0;
+            if (isSupportAgent() && !isAdmin()) { if (id !== 'tickets') { showSection('tickets'); return; } renderAdminTickets(); return; }
             if (isAdmin()) renderAdmin(); else renderSeller();
             if (isAdmin() && id === 'analytics') renderAdminAnalytics();
+            if (isAdmin() && id === 'tickets') renderAdminTickets();
         }
 
         // ---------- Selección múltiple de productos del vendedor ----------
@@ -1274,7 +1298,7 @@
                     return `<tr>
                     <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id||'').slice(0,8).toUpperCase())}</td>
                     <td class="px-6 py-4">${escapeHtml(o.buyerName || o.buyerEmail || '—')}</td>
-                    <td class="px-6 py-4 font-medium">${formatEuro(paid)}</td>
+                    <td class="px-6 py-4 font-medium"><button onclick="openOrderDetail('${o.id}')" class="hover:underline text-fija-900 cursor-pointer" title="Ver detalle del pedido">${formatEuro(paid)}</button></td>
                     <td class="px-6 py-4">${formatEuro(g)}</td>
                     <td class="px-6 py-4 text-fija-gold font-medium">${formatEuro(c)}</td>
                     <td class="px-6 py-4 text-red-600">${d > 0 ? '− ' + formatEuro(d) : '—'}</td>
@@ -1510,8 +1534,8 @@
                 return `<tr>
                 <td class="px-6 py-4"><p class="font-medium">${escapeHtml(p.username || p.companyName || '—')}</p><p class="text-xs text-fija-500">${escapeHtml(p.email || '')}</p></td>
                 <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${p.banned ? 'bg-red-100 text-red-700' : roleBadge[1]}" ${p.banned && p.banReason ? 'title="Motivo: ' + escapeHtml(p.banReason) + '"' : ''}>${p.banned ? 'Baneado' : roleBadge[0]}</span>${p.banned && p.banReason ? `<div class="text-[11px] text-red-500 mt-1 max-w-[150px] truncate" title="${escapeHtml(p.banReason)}">${escapeHtml(p.banReason)}</div>` : ''}</td>
-                <td class="px-6 py-4">${ordersBy[k] || 0}</td>
-                <td class="px-6 py-4 font-medium">${formatEuro(spend[k] || 0)}</td>
+                <td class="px-6 py-4"><button onclick="viewCustomerOrders('${escapeHtml(k)}')" class="hover:underline text-fija-900 cursor-pointer" title="Ver pedidos del cliente">${ordersBy[k] || 0}</button></td>
+                <td class="px-6 py-4 font-medium"><button onclick="viewCustomerDetail('${escapeHtml(k)}')" class="hover:underline text-fija-900 cursor-pointer" title="Ver detalle del cliente">${formatEuro(spend[k] || 0)}</button></td>
                 <td class="px-6 py-4 text-fija-600 text-sm">${lastBuy[k] ? new Date(lastBuy[k]).toLocaleDateString('es-ES') : '—'}</td>
                 <td class="px-6 py-4 text-fija-600 text-sm">${p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-ES') : '—'}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -1527,7 +1551,7 @@
             document.getElementById('cu-table').innerHTML = orders.map(o => `<tr>
                 <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</td>
                 <td class="px-6 py-4 text-sm">${new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES')}</td>
-                <td class="px-6 py-4 font-medium">${formatEuro(orderPaidTotal(o))}</td>
+                <td class="px-6 py-4 font-medium"><button onclick="openOrderDetail('${o.id}')" class="hover:underline text-fija-900 cursor-pointer" title="Ver detalle del pedido">${formatEuro(orderPaidTotal(o))}</button></td>
                 <td class="px-6 py-4">${statusBadge(o.status)}</td>
                 <td class="px-6 py-4 text-xs text-fija-500">${(o.items || []).map(it => escapeHtml(it.title || '')).join(', ').slice(0, 80)}</td>
                 <td class="px-6 py-4"></td><td class="px-6 py-4"><button onclick="renderAdminCustomers()" class="text-fija-900 hover:underline text-sm"><i class="fa-solid fa-arrow-left mr-1"></i>Volver</button></td></tr>`).join('');
@@ -1657,6 +1681,94 @@
             state.products = (await readDataFile('products')).data || [];
             if (reportId) { await mutateCollection('reports', arr => { const r = arr.find(x => x.id === reportId); if (r) { r.status = 'resolved'; r.reviewedAt = Date.now(); } }); state.reports = (await readDataFile('reports')).data || []; }
             showToast('Producto ocultado'); renderAdminUserReports();
+        };
+
+
+        // ---------- ADMIN/SOPORTE: Tickets de soporte y suscripciones ----------
+        window.tkSetFilter = (f) => { const el = document.getElementById('tk-filter'); if (el) el.value = f; renderAdminTickets(); };
+        window.renderAdminTickets = () => {
+            const tickets = state.tickets || [];
+            document.getElementById('tk-open').textContent = tickets.filter(t => t.status === 'open' && t.type !== 'newsletter').length;
+            document.getElementById('tk-answered').textContent = tickets.filter(t => t.status === 'answered').length;
+            document.getElementById('tk-news').textContent = tickets.filter(t => t.type === 'newsletter').length;
+            document.getElementById('tk-total').textContent = tickets.length;
+            const filter = (document.getElementById('tk-filter') || {}).value || 'open';
+            const q = ((document.getElementById('tk-search') || {}).value || '').trim().toLowerCase();
+            let list = tickets.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            if (filter === 'open') list = list.filter(t => t.status === 'open' && t.type !== 'newsletter');
+            else if (filter === 'answered') list = list.filter(t => t.status === 'answered');
+            else if (filter === 'closed') list = list.filter(t => t.status === 'closed');
+            else if (filter === 'newsletter') list = list.filter(t => t.type === 'newsletter');
+            if (q) list = list.filter(t => ((t.email || '') + ' ' + (t.subject || '') + ' ' + (t.message || '') + ' ' + (t.name || '')).toLowerCase().includes(q));
+            const typeBadge = { soporte: ['Soporte', 'bg-blue-100 text-blue-700'], newsletter: ['Boletín', 'bg-purple-100 text-purple-700'] };
+            const stBadge = { open: ['Pendiente', 'bg-amber-100 text-amber-700'], answered: ['Respondido', 'bg-green-100 text-green-700'], closed: ['Cerrado', 'bg-gray-100 text-gray-500'] };
+            const tb = document.getElementById('tk-table');
+            if (!list.length) { tb.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-fija-400">No hay tickets.</td></tr>`; return; }
+            tb.innerHTML = list.map(t => {
+                const tb2 = typeBadge[t.type] || [t.type || '—', 'bg-gray-100 text-gray-600'];
+                const sb = stBadge[t.status] || [t.status || 'open', 'bg-amber-100 text-amber-700'];
+                return `<tr class="hover:bg-fija-50 cursor-pointer" onclick="viewTicketDetail('${escapeHtml(t.id)}')">
+                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${tb2[1]}">${tb2[0]}</span>${(t.replies || []).length ? `<div class="text-[11px] text-fija-500 mt-1">${(t.replies || []).length} respuesta(s)</div>` : ''}</td>
+                <td class="px-6 py-4"><p class="font-medium">${escapeHtml(t.name || '—')}</p><p class="text-xs text-fija-500">${escapeHtml(t.email || '')}</p></td>
+                <td class="px-6 py-4 max-w-[280px]"><p class="font-medium truncate">${escapeHtml(t.subject || '(sin asunto)')}</p><p class="text-xs text-fija-500 truncate">${escapeHtml(t.message || '')}</p></td>
+                <td class="px-6 py-4 text-fija-600 text-sm">${t.createdAt ? new Date(t.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                <td class="px-6 py-4"><span class="inline-block text-xs px-2.5 py-1 rounded-full font-medium ${sb[1]}">${sb[0]}</span></td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <button onclick="event.stopPropagation();viewTicketDetail('${escapeHtml(t.id)}')" class="text-fija-900 hover:underline text-sm font-medium mr-2"><i class="fa-solid fa-eye mr-1"></i>Detalle</button>
+                    ${t.type !== 'newsletter' ? `<button onclick="event.stopPropagation();replyTicket('${escapeHtml(t.id)}')" class="text-blue-700 hover:underline text-sm font-medium mr-2"><i class="fa-solid fa-reply mr-1"></i>Responder</button>` : ''}
+                    ${t.status !== 'closed' && t.type !== 'newsletter' ? `<button onclick="event.stopPropagation();closeTicket('${escapeHtml(t.id)}')" class="text-fija-500 hover:underline text-sm font-medium"><i class="fa-solid fa-check mr-1"></i>Cerrar</button>` : ''}
+                </td></tr>`;
+            }).join('');
+        };
+        window.viewTicketDetail = async (id) => {
+            try { state.tickets = (await readDataFile('tickets')).data || []; } catch (e) {}
+            const t = (state.tickets || []).find(x => x.id === id); if (!t) return;
+            const typeBadge = { soporte: ['Soporte', 'bg-blue-100 text-blue-700'], newsletter: ['Boletín', 'bg-purple-100 text-purple-700'] };
+            const tb2 = typeBadge[t.type] || [t.type || '—', 'bg-gray-100 text-gray-600'];
+            const replies = (t.replies || []).map(r => `
+                <div class="ml-6 bg-fija-50 border border-fija-100 rounded-xl p-3 mt-2">
+                    <div class="flex items-center gap-2"><i class="fa-solid fa-headset text-fija-900"></i><span class="text-xs font-bold text-fija-900">${escapeHtml(r.by || 'Equipo FIJA')}</span><span class="text-[11px] text-fija-500">${r.at ? new Date(r.at).toLocaleString('es-ES') : ''}</span></div>
+                    <p class="text-sm mt-1 whitespace-pre-wrap">${escapeHtml(r.text)}</p>
+                </div>`).join('');
+            showGenericModal('Ticket · ' + (t.subject || 'Consulta'), `
+                <div class="space-y-3 text-sm">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium ${tb2[1]}">${tb2[0]}</span>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium ${t.status === 'answered' ? 'bg-green-100 text-green-700' : t.status === 'closed' ? 'bg-gray-100 text-gray-500' : 'bg-amber-100 text-amber-700'}">${t.status === 'answered' ? 'Respondido' : t.status === 'closed' ? 'Cerrado' : 'Pendiente'}</span>
+                        <span class="text-xs text-fija-500">${t.createdAt ? new Date(t.createdAt).toLocaleString('es-ES') : ''}</span>
+                    </div>
+                    <div class="border border-fija-200 rounded-xl p-3">
+                        <p class="font-semibold">${escapeHtml(t.name || 'Invitado')} <span class="text-fija-500 font-normal">· ${escapeHtml(t.email || 'sin correo')}</span></p>
+                        <p class="mt-1 whitespace-pre-wrap">${escapeHtml(t.message || '')}</p>
+                    </div>
+                    ${replies || ''}
+                    ${t.type !== 'newsletter' ? `
+                    <textarea id="tk-reply-text" rows="3" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="Escribe la respuesta que verá el cliente…"></textarea>
+                    <div class="flex gap-2">
+                        <button onclick="replyTicket('${escapeHtml(t.id)}')" class="flex-1 bg-fija-900 hover:bg-fija-800 text-white text-sm font-medium py-2.5 rounded-lg"><i class="fa-solid fa-reply mr-2"></i>Enviar respuesta</button>
+                        ${t.status !== 'closed' ? `<button onclick="closeTicket('${escapeHtml(t.id)}')" class="border border-fija-300 text-fija-600 text-sm font-medium px-4 py-2.5 rounded-lg"><i class="fa-solid fa-check mr-2"></i>Cerrar ticket</button>` : ''}
+                    </div>` : `<p class="text-xs text-fija-500">Suscripción al boletín: no requiere respuesta.</p>`}
+                </div>`);
+        };
+        window.replyTicket = async (id) => {
+            const txtEl = document.getElementById('tk-reply-text');
+            let text = txtEl ? txtEl.value.trim() : '';
+            if (!text) {
+                text = await fijaPrompt({ title: 'Responder ticket', message: 'El cliente verá esta respuesta en «Mis mensajes a soporte».', placeholder: 'Escribe tu respuesta…' });
+                if (!text || !text.trim()) return;
+                text = text.trim();
+            }
+            const by = ((state.profile || {}).username || 'Equipo FIJA') + (isAdmin() ? ' (admin)' : ' (soporte)');
+            await mutateCollection('tickets', arr => { const t = arr.find(x => x.id === id); if (t) { t.replies = (t.replies || []).concat([{ by: by, text: text, at: Date.now() }]); t.status = 'answered'; t.answeredAt = Date.now(); } });
+            state.tickets = (await readDataFile('tickets')).data || [];
+            showToast('Respuesta enviada al cliente'); renderAdminTickets(); buildSideNav();
+            const t = (state.tickets || []).find(x => x.id === id);
+            if (t) viewTicketDetail(id);
+        };
+        window.closeTicket = async (id) => {
+            await mutateCollection('tickets', arr => { const t = arr.find(x => x.id === id); if (t) { t.status = 'closed'; t.closedAt = Date.now(); } });
+            state.tickets = (await readDataFile('tickets')).data || [];
+            showToast('Ticket cerrado'); renderAdminTickets(); buildSideNav();
         };
 
         // ---------- ADMIN: Reseñas ----------
