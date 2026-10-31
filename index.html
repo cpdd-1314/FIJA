@@ -5851,7 +5851,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             ctx: { lastProducts: [], lastOrder: null, lastIntent: null, lastQuery: '', turns: [] },
             busy: false
         };
-        const BOT_STOP = new Set(['para', 'como', 'donde', 'cuando', 'cuanto', 'quiero', 'quiere', 'quisiera', 'buscar', 'busco', 'buscame', 'producto', 'productos', 'tienes', 'tiene', 'tienen', 'cuesta', 'cuestan', 'precio', 'precios', 'hola', 'buenas', 'favor', 'algo', 'algun', 'alguna', 'alguno', 'que', 'con', 'los', 'las', 'del', 'una', 'uno', 'unos', 'unas', 'hay', 'esta', 'este', 'estos', 'estas', 'mi', 'mis', 'tu', 'tus', 'es', 'son', 'el', 'la', 'de', 'en', 'y', 'o', 'a', 'por', 'mas', 'menos', 'muy', 'pero', 'sin', 'sobre', 'dime', 'sabes', 'puedes', 'podrias', 'ayuda', 'ayudame', 'necesito', 'ser', 'ver', 'tema', 'sabrias', 'decirme', 'explicame', 'cuentame']);
+        const BOT_STOP = new Set(['fija', 'funciona', 'funcionan', 'funcionamiento', 'usar', 'usa', 'uso', 'para', 'como', 'donde', 'cuando', 'cuanto', 'quiero', 'quiere', 'quisiera', 'buscar', 'busco', 'buscame', 'producto', 'productos', 'tienes', 'tiene', 'tienen', 'cuesta', 'cuestan', 'precio', 'precios', 'hola', 'buenas', 'favor', 'algo', 'algun', 'alguna', 'alguno', 'que', 'con', 'los', 'las', 'del', 'una', 'uno', 'unos', 'unas', 'hay', 'esta', 'este', 'estos', 'estas', 'mi', 'mis', 'tu', 'tus', 'es', 'son', 'el', 'la', 'de', 'en', 'y', 'o', 'a', 'por', 'mas', 'menos', 'muy', 'pero', 'sin', 'sobre', 'dime', 'sabes', 'puedes', 'podrias', 'ayuda', 'ayudame', 'necesito', 'ser', 'ver', 'tema', 'sabrias', 'decirme', 'explicame', 'cuentame']);
         const BOT_SYN = {
             auricular: 'auriculares', auriculares: 'auriculares', cascos: 'auriculares', audifonos: 'auriculares', airpods: 'auriculares',
             movil: 'smartphone', moviles: 'smartphone', celular: 'smartphone', telefono: 'smartphone',
@@ -6165,6 +6165,16 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             intents.sort((a, b) => b.score - a.score);
             const top = intents[0];
             const prodHits = botSearch(q, { limit: 4 });
+            // Preguntas generales sobre la tienda: se contestan con el proceso, nunca con un listado de productos
+            const asksAbout = /como (funciona|funcionan|va|se usa|se compra|compro|comprar|hago (una )?compra|puedo comprar)|que es (fija|esta web|esta pagina|esto)|en que consiste|de que va|quienes sois|que haceis|para que sirve (fija|la web|esta pagina|esto)|informacion general|como va el tema/.test(t);
+            if (asksAbout && !prodHits.length) {
+                BOT.ctx.lastIntent = 'about';
+                return {
+                    html: '<b>Cómo funciona FIJA</b><br>1. <b>Busca</b> el producto (o pídemelo y lo busco yo).<br>2. <b>Paga</b> online con tarjeta, Bizum o PayPal.<br>3. El vendedor lo prepara y te avisamos: listo en <b>24–48 h</b>.<br>4. <b>Recoge gratis</b> en su punto con tu <b>código QR</b>; tienes <b>7 días</b>.<br><br>No hay envío a domicilio (por eso los precios son más bajos). Devoluciones en <b>30 días</b> y <b>2 años</b> de garantía.',
+                    chips: ['Buscar producto', 'Ofertas del día', 'Puntos de recogida'],
+                    score: 1.7
+                };
+            }
             // Presupuesto sin resultados: ofrece lo más ajustado en vez de rendirse
             const entQ = botEntities(q);
             if (!prodHits.length && (entQ.priceMax != null || entQ.priceMin != null)) {
@@ -6236,6 +6246,8 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 'Eres el asistente virtual de ' + (s.storeName || 'FIJA') + ', un marketplace español de Click & Collect (compra online, recogida en tienda).',
                 'Hablas español de España, cercano y breve: máximo 80 palabras. Nada de HTML; usa **negrita** y guiones si hace falta.',
                 'Nunca inventes precios, stock, plazos ni pedidos: usa solo los datos de este mensaje. Si falta el dato, dilo y ofrece soporte.',
+                'Contesta EXACTAMENTE a lo que se pregunta. Si es una duda general («cómo funciona», «qué es esto», «cómo compro»), explica el proceso en 2-4 pasos y no listes productos.',
+                'No empieces con «Esto es lo que tengo» ni sueltes un listado de productos salvo que el usuario pida ver o buscar productos.',
                 '',
                 'DATOS DE LA TIENDA',
                 '- Recogida gratis en el punto del vendedor, listo en 24-48 h, 7 días para retirar con código QR.',
