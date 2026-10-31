@@ -5678,7 +5678,9 @@
         }
 
         // ---------- 9. CÓDIGO DE DESCUENTO ----------
-        const DEFAULT_PROMOS = { 'FIJA10': { type: 'pct', value: 10, label: '10% de descuento' }, 'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra' }, 'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria' }, 'FIJA20': { type: 'pct', value: 20, label: '20% de descuento' } };
+        // Respaldo SOLO para la primera visita sin conexión (nunca se usa si ya hay copia
+        // del back-office). Se mantiene alineado con los cupones reales de la tienda.
+        const DEFAULT_PROMOS = { 'FIJA10': { type: 'pct', value: 10, label: '10% de descuento' }, 'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra' }, 'FIJA20': { type: 'pct', value: 20, label: '20% de descuento' } };
         // Cupones gestionables desde el back-office (fija_coupons en localStorage / data/coupons.json).
         // La copia sincronizada es la ÚNICA fuente de verdad: si el dueño borra un cupón en el
         // back-office desaparece también aquí (antes se volvían a colar los de fábrica y se
