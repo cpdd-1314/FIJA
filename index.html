@@ -6188,7 +6188,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         window.botTicketOpen = () => {
             botPush('bot', 'Cuéntame el caso y lo registro para el equipo de soporte. Te contestamos en menos de 24 h.');
             botPush('bot', `<div class="space-y-1.5">
-                <input id="bot-tk-email" type="email" placeholder="Tu correo" value="${escapeHtml((state.profile || {}).email || '')}" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs">
+                <input id="bot-tk-email" type="email" placeholder="Tu correo" value="" autocomplete="off" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs">
                 <textarea id="bot-tk-msg" rows="2" placeholder="Describe tu problema..." class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs"></textarea>
                 <button type="button" onclick="botTicketSend()" class="w-full bg-fija-900 text-white text-xs font-semibold py-2 rounded-lg">Enviar a soporte</button>
                 <div class="text-[10px] text-gray-400">También puedes escribir a ${escapeHtml(botFaqText().mail)}</div>
