@@ -604,6 +604,25 @@
                                 <button onclick="restoreDeliveredTemplate()" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-rotate-left mr-1"></i>Restaurar texto por defecto</button>
                             </div>
                         </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <div class="flex items-start justify-between gap-3 mb-1">
+                                <h2 class="font-semibold">Asistente del chat (IA opcional)</h2>
+                                <span id="chat-ai-state" class="text-[11px] px-2 py-1 rounded-full bg-fija-100 text-fija-600">modo local</span>
+                            </div>
+                            <p class="text-xs text-fija-500 mb-4 leading-relaxed">El asistente de la tienda ya funciona <b>sin configurar nada</b>: busca en el catálogo, rastrea pedidos, aplica cupones y responde dudas con datos reales. Si añades una clave de IA, las preguntas que el motor local no entiende las contesta un <b>modelo pequeño</b> al que se le pasa el catálogo, las ofertas y los pedidos del cliente como contexto (así no inventa precios).</p>
+                            <label class="flex items-center gap-2 mb-4 text-sm text-fija-700"><input type="checkbox" id="set-chat-ai-enabled" class="rounded border-fija-300" checked><span>Usar IA para las preguntas que no entiende el motor local</span></label>
+                            <div class="grid sm:grid-cols-2 gap-3 mb-3">
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Endpoint (compatible OpenAI)</label><input type="text" id="set-chat-ai-endpoint" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="https://api.groq.com/openai/v1/chat/completions"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Modelo</label><input type="text" id="set-chat-ai-model" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="llama-3.1-8b-instant"></div>
+                            </div>
+                            <div class="mb-3"><label class="block text-xs font-medium text-fija-700 mb-1">API Key</label><input type="password" id="set-chat-ai-key" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="gsk_... / sk-... (se guarda en los ajustes de la tienda)"></div>
+                            <div><label class="block text-xs font-medium text-fija-700 mb-1">Instrucciones extra para el asistente <span class="text-fija-400 font-normal">(opcional)</span></label><textarea id="set-chat-ai-prompt" rows="3" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="Ej.: tutea al cliente, no des plazos distintos a 24-48 h, promociona la categoría Electrónica..."></textarea></div>
+                            <p class="text-[11px] text-fija-400 mt-2 leading-relaxed">Opciones gratuitas: <b>Groq</b> (console.groq.com, modelo <span class="font-mono">llama-3.1-8b-instant</span>), <b>OpenRouter</b> (<span class="font-mono">https://openrouter.ai/api/v1/chat/completions</span>) o <b>Hugging Face</b> Router. Aviso: al ser una web estática la clave viaja al navegador; usa una clave dedicada con límite de gasto y cámbiala si ves uso raro.</p>
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <button onclick="testChatAi()" class="border border-fija-300 text-fija-700 hover:bg-fija-50 px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-flask mr-2"></i>Probar la IA</button>
+                                <button onclick="document.getElementById('set-chat-ai-endpoint').value='https://api.groq.com/openai/v1/chat/completions';document.getElementById('set-chat-ai-model').value='llama-3.1-8b-instant';" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-bolt mr-1"></i>Rellenar con Groq</button>
+                            </div>
+                        </div>
                         <button onclick="savePlatformSettings()" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-floppy-disk mr-2"></i>Guardar ajustes</button>
                     </section>
                 </section>
@@ -789,7 +808,7 @@
             { id: "demo-003", title: "Mochila Urbana Antirrobo", price: 59.5, oldPrice: 79.0, category: "Deportes", imageUrl: "https://picsum.photos/seed/fija-bag/400/500", description: "Tejido resistente al corte, USB integrado y compartimento para portátil.", sellerId: "demo-seller", sellerName: "Audio Lux SL", verified: true, createdAt: 1700000200000 }
         ];
         const DEFAULT_PROFILES = [
-            { userId: "admin", username: "admin", email: "admin@fija.com", role: "admin", verificationStatus: "approved", createdAt: 1700000000000, pwHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" },
+            { userId: "admin", username: "admin", email: "jchenw02@gmail.com", role: "admin", verificationStatus: "approved", createdAt: 1700000000000, pwHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" },
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
@@ -800,11 +819,12 @@
             'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria', active: true, createdAt: 1700000000000 },
             'FIJA20': { type: 'pct', value: 20, label: '20% de descuento', active: true, createdAt: 1700000000000 }
         };
-        const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'soporte@fija.demo',
+        const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'jchenw02@gmail.com',
             welcomeEmailEnabled: true, emailjsService: '', emailjsTemplate: '', emailjsKey: '', emailWebhookUrl: '',
             welcomeSubject: '¡Gracias por suscribirte a {{tienda}}!', welcomeMessage: '',
             orderEmailEnabled: true, emailjsOrderTemplate: '', orderSubject: 'Tu pedido {{pedido}} en {{tienda}}', orderMessage: '',
-            deliveredEmailEnabled: true, emailjsDeliveredTemplate: '', deliveredSubject: 'Tu pedido {{pedido}} ya está entregado · valóralo', deliveredMessage: '' };
+            deliveredEmailEnabled: true, emailjsDeliveredTemplate: '', deliveredSubject: 'Tu pedido {{pedido}} ya está entregado · valóralo', deliveredMessage: '',
+            chatAiEnabled: true, chatAiEndpoint: '', chatAiModel: '', chatAiKey: '', chatAiPrompt: '' };
         const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [], tickets: [] };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
@@ -1984,7 +2004,7 @@
             return String(tpl || '')
                 .replace(/\{\{\s*email\s*\}\}/gi, to || '')
                 .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
-                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'jchenw02@gmail.com')
                 .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
         }
         // Cabecera común de los correos: logo original de FIJA sobre fondo blanco
@@ -1999,7 +2019,7 @@
         function welcomeEmailHtml(to) {
             const s = state.settings || {};
             const store = s.storeName || 'FIJA';
-            const support = s.supportEmail || 'soporte@fija.demo';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
             const body = welcomeFill(s.welcomeMessage || WELCOME_TEXT_DEFAULT, to)
                 .split('\n')
                 .map(l => l.trim() === '' ? '<div style="height:10px"></div>'
@@ -2086,7 +2106,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 .replace(/\{\{\s*fecha\s*\}\}/gi, new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES'))
                 .replace(/\{\{\s*email\s*\}\}/gi, o.buyerEmail || '')
                 .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
-                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'jchenw02@gmail.com')
                 .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
         }
         function orderPickupAddress(o) {
@@ -2099,7 +2119,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
         function orderEmailHtml(order) {
             const s = state.settings || {};
             const store = s.storeName || 'FIJA';
-            const support = s.supportEmail || 'soporte@fija.demo';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
             const o = order || {};
             const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
             const addr = orderPickupAddress(o);
@@ -2165,7 +2185,7 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         function deliveredEmailHtml(order) {
             const s = state.settings || {};
             const store = s.storeName || 'FIJA';
-            const support = s.supportEmail || 'soporte@fija.demo';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
             const o = order || {};
             const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
             const when = new Date(o.verifiedAt || Date.now());
@@ -2237,6 +2257,51 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             else if (r.status === 'pendiente') showToast('Sin proveedor configurado: el correo queda pendiente', true);
             else if (r.status === 'desactivado') showToast('El envío de "pedido entregado" está desactivado', true);
             else showToast('Error al enviar: ' + (r.error || ''), true);
+        };
+        // --- Asistente del chat: IA opcional ---
+        function chatAiState() {
+            const s = state.settings || {};
+            const el = document.getElementById('chat-ai-state');
+            if (!el) return;
+            const key = String(s.chatAiKey || '').trim();
+            const on = s.chatAiEnabled !== false;
+            let txt = 'modo local', cls = 'bg-fija-100 text-fija-600';
+            if (!on) { txt = 'IA desactivada'; cls = 'bg-gray-100 text-gray-500'; }
+            else if (key) { txt = 'IA activa'; cls = 'bg-green-100 text-green-700'; }
+            el.textContent = txt; el.className = 'text-[11px] px-2 py-1 rounded-full ' + cls;
+        }
+        window.chatAiState = chatAiState;
+        window.testChatAi = async () => {
+            const s = state.settings || {};
+            const endpoint = ((document.getElementById('set-chat-ai-endpoint') || {}).value || '').trim() || String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions';
+            const model = ((document.getElementById('set-chat-ai-model') || {}).value || '').trim() || String(s.chatAiModel || '').trim() || 'llama-3.1-8b-instant';
+            const key = ((document.getElementById('set-chat-ai-key') || {}).value || '').trim() || String(s.chatAiKey || '').trim();
+            if (!key) { showToast('Pega primero una API Key (o guarda los ajustes)', true); return; }
+            showToast('Probando la IA...');
+            const ctrl = new AbortController();
+            const tmr = setTimeout(() => ctrl.abort(), 20000);
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST', signal: ctrl.signal,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                    body: JSON.stringify({
+                        model: model, temperature: 0.3, max_tokens: 80,
+                        messages: [
+                            { role: 'system', content: 'Eres el asistente de FIJA, marketplace español de Click & Collect. Responde en español, máximo 25 palabras, sin HTML.' },
+                            { role: 'user', content: '¿Hacéis envíos a domicilio?' }
+                        ]
+                    })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 140));
+                const data = await res.json();
+                const txt = (((data.choices || [])[0] || {}).message || {}).content || '';
+                if (!txt.trim()) throw new Error('respuesta vacía');
+                showToast('IA OK (' + model + '): ' + txt.trim().slice(0, 70));
+                chatAiState();
+            } catch (e) {
+                console.error(e);
+                showToast('La IA no responde: ' + String(e.message || e).slice(0, 90), true);
+            } finally { clearTimeout(tmr); }
         };
         function deliveredEmailConfigState() {
             const s = state.settings || {};
@@ -2417,6 +2482,13 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             set('set-delivered-message', state.settings.deliveredMessage || DELIVERED_TEXT_DEFAULT);
             const dEn = document.getElementById('set-delivered-enabled');
             if (dEn) dEn.checked = state.settings.deliveredEmailEnabled !== false;
+            set('set-chat-ai-endpoint', state.settings.chatAiEndpoint || '');
+            set('set-chat-ai-model', state.settings.chatAiModel || '');
+            set('set-chat-ai-key', state.settings.chatAiKey || '');
+            set('set-chat-ai-prompt', state.settings.chatAiPrompt || '');
+            const cEn = document.getElementById('set-chat-ai-enabled');
+            if (cEn) cEn.checked = state.settings.chatAiEnabled !== false;
+            chatAiState();
             emailConfigState();
             orderEmailConfigState();
             deliveredEmailConfigState();
@@ -2443,12 +2515,18 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             const emailjsDeliveredTemplate = val('set-emailjs-delivered-template');
             const deliveredSubject = val('set-delivered-subject') || 'Tu pedido {{pedido}} ya está entregado · valóralo';
             const deliveredMessage = ((document.getElementById('set-delivered-message') || {}).value || '').trim() || DELIVERED_TEXT_DEFAULT;
+            const chatAiEnabled = !!(document.getElementById('set-chat-ai-enabled') || {}).checked;
+            const chatAiEndpoint = val('set-chat-ai-endpoint');
+            const chatAiModel = val('set-chat-ai-model');
+            const chatAiKey = val('set-chat-ai-key');
+            const chatAiPrompt = ((document.getElementById('set-chat-ai-prompt') || {}).value || '').trim();
             try {
                 await mutateSettings(obj => { obj.commissionRate = commission; obj.freeShipThreshold = freeShip; obj.storeName = storeName; obj.supportEmail = supportEmail; obj.maintenance = maintenance;
                     obj.welcomeEmailEnabled = welcomeEnabled; obj.emailjsService = emailjsService; obj.emailjsTemplate = emailjsTemplate; obj.emailjsKey = emailjsKey;
                     obj.emailWebhookUrl = emailWebhookUrl; obj.welcomeSubject = welcomeSubject; obj.welcomeMessage = welcomeMessage;
                     obj.orderEmailEnabled = orderEnabled; obj.emailjsOrderTemplate = emailjsOrderTemplate; obj.orderSubject = orderSubject; obj.orderMessage = orderMessage;
-                    obj.deliveredEmailEnabled = deliveredEnabled; obj.emailjsDeliveredTemplate = emailjsDeliveredTemplate; obj.deliveredSubject = deliveredSubject; obj.deliveredMessage = deliveredMessage; });
+                    obj.deliveredEmailEnabled = deliveredEnabled; obj.emailjsDeliveredTemplate = emailjsDeliveredTemplate; obj.deliveredSubject = deliveredSubject; obj.deliveredMessage = deliveredMessage;
+                    obj.chatAiEnabled = chatAiEnabled; obj.chatAiEndpoint = chatAiEndpoint; obj.chatAiModel = chatAiModel; obj.chatAiKey = chatAiKey; obj.chatAiPrompt = chatAiPrompt; });
                 await loadAll(); showToast('Ajustes guardados');
             } catch (e) { console.error(e); showToast('Error al guardar los ajustes', true); }
         };

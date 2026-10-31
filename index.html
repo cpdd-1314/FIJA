@@ -25,7 +25,7 @@
        - Nombre del repositorio
        - Rama (main)
        - El token (PAT)
-       - Emails de administrador (quién aprueba vendedores), ej: admin@fija.com
+       - Emails de administrador (quién aprueba vendedores), ej: jchenw02@gmail.com
        Guarda y recarga. ¡Listo! Ya sincroniza con token.
 
   NOTA DE SEGURIDAD (demo): el token vive en el navegador (es visible en el código
@@ -1163,6 +1163,14 @@
             overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
         }
         #chatbot-panel #chatbot-chips { max-height: 84px; overflow-y: auto; }
+        /* Indicador de "escribiendo" */
+        .bot-dots { display: inline-flex; gap: 3px; align-items: center; height: 14px; }
+        .bot-dots i { width: 5px; height: 5px; border-radius: 999px; background: #9ca3af; animation: botBounce 1.2s infinite ease-in-out; }
+        .bot-dots i:nth-child(2) { animation-delay: .15s; }
+        .bot-dots i:nth-child(3) { animation-delay: .3s; }
+        @keyframes botBounce { 0%, 80%, 100% { transform: translateY(0); opacity: .5 } 40% { transform: translateY(-4px); opacity: 1 } }
+        #chatbot-msgs table { border-collapse: collapse; }
+        #chatbot-msgs table td { vertical-align: middle; }
         /* Movil: pantalla completa, sin crecer nunca */
         @media (max-width: 640px) {
             #chatbot-panel {
@@ -1180,7 +1188,7 @@
     <div id="chatbot-panel">
         <div class="bg-fija-900 text-white px-4 py-3 flex items-center gap-3 shrink-0">
             <div class="w-9 h-9 rounded-full gold-gradient flex items-center justify-center"><i class="fa-solid fa-robot text-fija-900"></i></div>
-            <div class="flex-1 min-w-0"><p class="font-bold text-sm leading-tight">Asistente FIJA</p><p class="text-[11px] text-fija-gold">Responde al instante · 24/7</p></div>
+            <div class="flex-1 min-w-0"><p class="font-bold text-sm leading-tight">Asistente FIJA</p><p id="chatbot-status" class="text-[11px] text-fija-gold">Responde al instante · 24/7</p></div>
             <button type="button" onclick="toggleChatbot()" class="text-white/70 hover:text-white text-lg leading-none">&times;</button>
         </div>
         <div id="chatbot-msgs" class="flex-1 overflow-y-auto px-3 py-3 space-y-2 bg-gray-50"></div>
@@ -3464,7 +3472,7 @@
         }
 ];
         const DEFAULT_PROFILES = [
-            { userId: "admin", username: "admin", email: "admin@fija.com", role: "admin", verificationStatus: "approved", createdAt: 1700000000000, pwHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" },
+            { userId: "admin", username: "admin", email: "jchenw02@gmail.com", role: "admin", verificationStatus: "approved", createdAt: 1700000000000, pwHash: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918" },
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", ivaType: "general", commissionRate: 0.047, createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
@@ -5832,7 +5840,468 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             showToast('Mensaje enviado. Te responderemos en 24 h.');
         };
 
-        // ---------- 48b. CHATBOT ESPECIALIZADO FIJA ----------
+        // ---------- 48b. ASISTENTE FIJA: motor local + IA opcional ----------
+        // Capa 1 (siempre): motor local. Normaliza acentos, tolera erratas,
+        // recuerda el contexto de la conversación y consulta catálogo, ofertas,
+        // pedidos y cupones reales.
+        // Capa 2 (opcional): si el back-office guarda una clave de IA, las
+        // preguntas que el motor local no reconoce las contesta un modelo
+        // pequeño con TODO el contexto de la tienda inyectado (RAG).
+        const BOT = {
+            ctx: { lastProducts: [], lastOrder: null, lastIntent: null, lastQuery: '', turns: [] },
+            busy: false
+        };
+        const BOT_STOP = new Set(['para', 'como', 'donde', 'cuando', 'cuanto', 'quiero', 'quiere', 'quisiera', 'buscar', 'busco', 'buscame', 'producto', 'productos', 'tienes', 'tiene', 'tienen', 'cuesta', 'cuestan', 'precio', 'precios', 'hola', 'buenas', 'favor', 'algo', 'algun', 'alguna', 'alguno', 'que', 'con', 'los', 'las', 'del', 'una', 'uno', 'unos', 'unas', 'hay', 'esta', 'este', 'estos', 'estas', 'mi', 'mis', 'tu', 'tus', 'es', 'son', 'el', 'la', 'de', 'en', 'y', 'o', 'a', 'por', 'mas', 'menos', 'muy', 'pero', 'sin', 'sobre', 'dime', 'sabes', 'puedes', 'podrias', 'ayuda', 'ayudame', 'necesito', 'ser', 'ver', 'tema', 'sabrias', 'decirme', 'explicame', 'cuentame']);
+        const BOT_SYN = {
+            auricular: 'auriculares', auriculares: 'auriculares', cascos: 'auriculares', audifonos: 'auriculares', airpods: 'auriculares',
+            movil: 'smartphone', moviles: 'smartphone', celular: 'smartphone', telefono: 'smartphone',
+            portatil: 'ordenador', portatiles: 'ordenador', laptop: 'ordenador', notebook: 'ordenador', pc: 'ordenador',
+            zapatilla: 'zapatillas', zapato: 'zapatillas', zapatos: 'zapatillas', tenis: 'zapatillas', sneakers: 'zapatillas',
+            camiseta: 'camisetas', camisetas: 'camisetas', sudadera: 'sudaderas',
+            lampara: 'iluminacion', lamparas: 'iluminacion', luz: 'iluminacion', luces: 'iluminacion',
+            nevera: 'refrigerador', refri: 'refrigerador',
+            bici: 'bicicleta', bicis: 'bicicleta', coche: 'automovil', carro: 'automovil',
+            perro: 'mascotas', gato: 'mascotas', perros: 'mascotas',
+            nino: 'bebe', ninos: 'bebe', bebe: 'bebe', bebes: 'bebe',
+            ofert: 'oferta', ofertas: 'oferta', descuento: 'oferta', descuentos: 'oferta', rebaja: 'oferta', rebajas: 'oferta', promo: 'oferta', promos: 'oferta', promocion: 'oferta', promociones: 'oferta', chollo: 'oferta', chollos: 'oferta',
+            barat: 'barato', baratos: 'barato', barata: 'barato', economicos: 'barato', economico: 'barato', economicas: 'barato', asequible: 'barato',
+            caro: 'caro', caros: 'caro', premium: 'caro',
+            envio: 'recogida', envian: 'recogida', envios: 'recogida', domicilio: 'recogida', mensajeria: 'recogida',
+            devolucion: 'devoluciones', devoluciones: 'devoluciones', devolver: 'devoluciones', reembolso: 'devoluciones', reembolsos: 'devoluciones', retorno: 'devoluciones',
+            rastrear: 'pedido', rastreo: 'pedido', seguimiento: 'pedido', orden: 'pedido', ordenes: 'pedido',
+            pagar: 'pago', pagos: 'pago', tarjeta: 'pago', bizum: 'pago', paypal: 'pago',
+            cupon: 'cupon', cupones: 'cupon', voucher: 'cupon', codigo: 'cupon',
+            horario: 'horario', horarios: 'horario', abren: 'horario', cierran: 'horario',
+            factura: 'factura', facturas: 'factura'
+        };
+        window.botNorm = function (s) {
+            return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9@.\s#%+]/g, ' ').replace(/\s+/g, ' ').trim();
+        };
+        function botTokens(s) {
+            return botNorm(s).split(' ').filter(Boolean).map(w => BOT_SYN[w] || w);
+        }
+        function botEdit(a, b) {
+            if (a === b) return 0;
+            const m = a.length, n = b.length;
+            if (Math.abs(m - n) > 2) return 9;
+            let prev = [], cur = [];
+            for (let j = 0; j <= n; j++) prev[j] = j;
+            for (let i = 1; i <= m; i++) {
+                cur[0] = i;
+                for (let j = 1; j <= n; j++) {
+                    cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+                }
+                const tmp = prev; prev = cur; cur = tmp;
+            }
+            return prev[n];
+        }
+        function botTokMatch(word, key) {
+            if (!word || !key) return 0;
+            if (word === key) return 1;
+            if (key.length >= 4 && word.includes(key)) return 0.9;
+            if (word.length >= 5 && key.includes(word)) return 0.85;
+            const d = botEdit(word, key);
+            if (d <= 1) return 0.8;
+            if (d === 2 && key.length >= 6) return 0.6;
+            return 0;
+        }
+        function botScore(tokens, keys) {
+            let best = 0, hits = 0;
+            (keys || []).forEach(k => {
+                let m = 0;
+                tokens.forEach(t => { if (m < 1) m = Math.max(m, botTokMatch(t, k)); });
+                if (m >= 0.6) hits++;
+                best = Math.max(best, m);
+            });
+            return best + Math.min(0.45, hits * 0.15);
+        }
+        function botEntities(q) {
+            const t = botNorm(q);
+            const out = { priceMax: null, priceMin: null, onlyDeal: false, cheap: false, expensive: false, qty: null };
+            let m;
+            if ((m = t.match(/entre (\d+(?:[.,]\d+)?) y (\d+(?:[.,]\d+)?)/))) {
+                out.priceMin = parseFloat(m[1].replace(',', '.'));
+                out.priceMax = parseFloat(m[2].replace(',', '.'));
+            }
+            if (out.priceMax == null && (m = t.match(/(?:menos de|por debajo de|hasta|maximo|max|no mas de)\s*(\d+(?:[.,]\d+)?)/))) out.priceMax = parseFloat(m[1].replace(',', '.'));
+            if (out.priceMax == null && (m = t.match(/(\d+(?:[.,]\d+)?)\s*(?:e|eur|euro|euros)?\s*(?:o menos|como maximo)/))) out.priceMax = parseFloat(m[1].replace(',', '.'));
+            if (out.priceMin == null && (m = t.match(/(?:mas de|a partir de|desde)\s*(\d+(?:[.,]\d+)?)/))) out.priceMin = parseFloat(m[1].replace(',', '.'));
+            if (/\b(barat|economic|asequible)/.test(t)) out.cheap = true;
+            if (/\b(caro|premium|alta gama|top)\b/.test(t)) out.expensive = true;
+            if (/(oferta|descuento|rebaja|chollo)/.test(t)) out.onlyDeal = true;
+            return out;
+        }
+        // Busca en el catálogo real con filtros de precio y orden.
+        function botSearch(q, opts) {
+            const o = Object.assign({ limit: 5, sort: '' }, opts || {});
+            const ent = botEntities(q);
+            const toks = botTokens(q).filter(t => t.length > 2 && !BOT_STOP.has(t));
+            const rows = (state.products || []).filter(p => p && p.title).map(p => {
+                const hay = botNorm([p.title, p.category, p.sellerName, p.brand, (p.description || '').slice(0, 140)].filter(Boolean).join(' '));
+                const words = hay.split(' ').filter(Boolean);
+                let sc = 0;
+                toks.forEach(t => {
+                    let best = 0;
+                    for (let i = 0; i < words.length && best < 1; i++) best = Math.max(best, botTokMatch(words[i], t));
+                    if (best < 0.7 && t.length >= 4 && hay.includes(t)) best = 0.75;
+                    sc += best;
+                });
+                const cat = botNorm(p.category || '');
+                if (cat && toks.some(t => cat && (cat === t || cat.includes(t) || t.includes(cat)))) sc += 1.1;
+                const price = effectivePrice(p);
+                if (ent.priceMax != null && price > ent.priceMax) sc -= 2.5;
+                if (ent.priceMin != null && price < ent.priceMin) sc -= 2.5;
+                if (o.onlyDeal && !(Number(p.discountPercent) || 0)) sc -= 1;
+                return { p, sc, price };
+            }).filter(x => x.sc > 0.55);
+            const sort = o.sort || (ent.cheap ? 'asc' : ent.expensive ? 'desc' : 'rel');
+            rows.sort((a, b) => sort === 'asc' ? a.price - b.price : sort === 'desc' ? b.price - a.price : b.sc - a.sc || a.price - b.price);
+            return rows.slice(0, o.limit).map(x => x.p);
+        }
+        function botDealTop(n) {
+            return (state.products || []).filter(p => (Number(p.discountPercent) || 0) > 0)
+                .sort((a, b) => (Number(b.discountPercent) || 0) - (Number(a.discountPercent) || 0)).slice(0, n);
+        }
+        function botOrderLookup(q) {
+            q = q || '';
+            const m = q.match(/#?\s?([0-9a-f]{8,36}|[A-Z0-9]{8,36})/i);
+            const mailM = q.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
+            const orders = state.orders || [];
+            let o = null;
+            if (m) {
+                const key = m[1].toLowerCase().replace(/-/g, '');
+                o = orders.find(x => (x.id || '').toLowerCase().replace(/-/g, '').startsWith(key)) || null;
+            }
+            if (!o && mailM) o = orders.filter(x => (x.buyerEmail || '').toLowerCase() === mailM[0].toLowerCase()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+            if (!o && state.profile) {
+                const mine = orders.filter(x => x.buyerUid === state.profile.userId || (x.buyerEmail || '') === state.profile.email);
+                o = mine.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0] || null;
+            }
+            return o;
+        }
+        function botCard(p) {
+            const price = effectivePrice(p);
+            const off = Number(p.discountPercent) || 0;
+            const old = Number(p.oldPrice) || 0;
+            return `<button type="button" onclick="toggleChatbot();openProductDetail('${escapeHtml(p.id)}')" class="block w-full text-left mt-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg px-2.5 py-2 border border-gray-100">
+                <span class="block text-[13px] font-semibold text-fija-900 leading-tight">${escapeHtml(p.title)}</span>
+                <span class="block text-[11px] text-gray-500 mt-0.5">${escapeHtml(p.category || '')}${p.sellerName ? ' · ' + escapeHtml(p.sellerName) : ''}</span>
+                <span class="block text-xs mt-1"><b class="text-fija-900">${fmtMoney(price)}</b>${off > 0 ? ` <span class="text-red-600 font-bold">-${off}%</span>` : ''}${old > price ? ` <span class="text-gray-400 line-through text-[11px]">${fmtMoney(old)}</span>` : ''}</span>
+            </button>`;
+        }
+        function botOrderInfo(o) {
+            const stMap = { pending: 'Confirmado', preparing: 'En preparación', ready: 'Listo para recoger', collected: 'Recogido', completed: 'Entregado', cancelled: 'Cancelado' };
+            const st = stMap[o.status] || o.status || '—';
+            const items = (o.items || []).map(i => `${i.quantity || 1}× ${escapeHtml(i.title)}`).join('<br>');
+            const first = (o.items || [])[0] || {};
+            const seller = (state.profiles || []).find(x => x.userId === first.sellerId) || {};
+            const when = o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '';
+            return `<b>Pedido ${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</b>${when ? ' · ' + escapeHtml(when) : ''}<br>Estado: <b>${escapeHtml(st)}</b><br>Total: <b>${fmtMoney(o.total || 0)}</b>${items ? `<div class="mt-1 text-[12px] text-gray-600 leading-snug">${items}</div>` : ''}${o.pickupCode ? `<div class="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 text-[12px]">Código de recogida: <b class="font-mono">${escapeHtml(o.pickupCode)}</b>${seller.address ? `<br>Punto: ${escapeHtml(seller.address)}` : ''}</div>` : ''}<button type="button" onclick="toggleChatbot();window.openOrderTracking && openOrderTracking('${escapeHtml(o.id)}')" class="mt-2 text-xs bg-fija-900 text-white px-3 py-1.5 rounded-lg">Ver seguimiento</button>`;
+        }
+        function botFaqText() {
+            const s = storeSettings() || {};
+            const mail = s.supportEmail || 'jchenw02@gmail.com';
+            return { mail: mail, wa: '633 616 054', tienda: s.storeName || 'FIJA' };
+        }
+        // --- Respuestas locales por tema (con datos reales cuando aplica) ---
+        function botAnswerDeals() {
+            const top = botDealTop(3);
+            const count = (state.products || []).filter(p => (Number(p.discountPercent) || 0) > 0).length;
+            if (!top.length) return { html: 'Hoy no hay ofertas activas, pero cada día renovamos <b>~25% del catálogo</b> con descuentos de <b>1% a 70%</b>. Vuelve mañana o mira las novedades.', chips: ['Buscar producto', 'Cupones'] };
+            return {
+                html: `<i class="fa-solid fa-fire" style="color:#ea580c"></i> <b>Ofertas de hoy</b> · ${count} producto(s) rebajados (se renuevan cada día):<br>` + top.map(botCard).join(''),
+                chips: ['Todo el catálogo', 'Cupones', 'Buscar producto']
+            };
+        }
+        function botAnswerSearch(q, forced) {
+            const ps = forced || botSearch(q, { limit: 4 });
+            if (!ps.length) {
+                return { html: `No encuentro nada con eso en el catálogo. Prueba con otra palabra (por ejemplo <b>«auriculares»</b>, <b>«zapatillas»</b>, <b>«lámpara»</b>) o dime tu presupuesto y te enseño lo mejor por ese precio.`, chips: ['Ofertas del día', 'Ver categorías', 'Contactar soporte'], score: 0.5 };
+            }
+            const ent = botEntities(q);
+            const filtro = ent.priceMax != null ? ` por menos de ${fmtMoney(ent.priceMax)}` : '';
+            return {
+                html: `Esto es lo que tengo${filtro}:<br>` + ps.map(botCard).join('') + `<div class="mt-1.5 text-[11px] text-gray-500">Dime «más barato», «el segundo» o «compáralos» y sigo.</div>`,
+                chips: ['Más barato', 'Ofertas del día', 'Ver categorías']
+            };
+        }
+        function botAnswerOrder(q) {
+            const o = botOrderLookup(q);
+            if (o) {
+                BOT.ctx.lastOrder = o;
+                return { html: botOrderInfo(o), chips: ['Devoluciones', 'Contactar soporte', 'Ofertas del día'] };
+            }
+            const has = /[0-9a-f]{8,}|@/i.test(q);
+            return {
+                html: has
+                    ? 'No encuentro ese pedido. Revisa el número (8 caracteres, p. ej. <b>#A1B2C3D4</b>) o el correo con el que compraste.'
+                    : 'Claro, dime el <b>número de pedido</b> (p. ej. #A1B2C3D4) o el <b>correo</b> con el que compraste y te digo el estado, el código de recogida y dónde recogerlo.',
+                chips: ['Mis pedidos', 'Devoluciones', 'Contactar soporte']
+            };
+        }
+        function botAnswerCompare() {
+            const list = (BOT.ctx.lastProducts || []).slice(0, 3);
+            if (list.length < 2) return { html: 'Dime primero qué productos quieres comparar (por ejemplo «compara auriculares y altavoces») y te pongo precio, categoría y descuento uno al lado del otro.', chips: ['Buscar producto'] };
+            const rows = list.map(p => `<tr class="border-t border-gray-100"><td class="py-1 pr-1 text-[12px]">${escapeHtml(p.title)}</td><td class="py-1 px-1 text-[12px] text-right font-bold">${fmtMoney(effectivePrice(p))}</td><td class="py-1 pl-1 text-[12px] text-right text-red-600">${(Number(p.discountPercent) || 0) ? '-' + p.discountPercent + '%' : '—'}</td></tr>`).join('');
+            const best = list.slice().sort((a, b) => effectivePrice(a) - effectivePrice(b))[0];
+            return { html: `<b>Comparativa</b><table class="w-full mt-1"><tr class="text-[10px] uppercase text-gray-400"><td>Producto</td><td class="text-right">Precio</td><td class="text-right">Dto.</td></tr>${rows}</table><div class="mt-1.5 text-[12px]">El más económico es <b>${escapeHtml(best.title)}</b> (${fmtMoney(effectivePrice(best))}).</div>`, chips: ['Ver el más barato', 'Ofertas del día'] };
+        }
+        function botAnswerCheaper() {
+            const base = (BOT.ctx.lastProducts || [])[0];
+            if (!base) return botAnswerSearch('barato', (state.products || []).slice().sort((a, b) => effectivePrice(a) - effectivePrice(b)).slice(0, 3));
+            const cap = effectivePrice(base);
+            const alts = (state.products || []).filter(p => p.id !== base.id && (p.category === base.category) && effectivePrice(p) < cap)
+                .sort((a, b) => effectivePrice(a) - effectivePrice(b)).slice(0, 3);
+            if (!alts.length) return { html: `No hay nada más barato que <b>${escapeHtml(base.title)}</b> (${fmtMoney(cap)}) en su categoría. Es de lo mejor en relación calidad/precio.`, chips: ['Ofertas del día', 'Ver categorías'] };
+            BOT.ctx.lastProducts = alts;
+            return { html: `Alternativas más baratas que <b>${escapeHtml(base.title)}</b> (${fmtMoney(cap)}):<br>` + alts.map(botCard).join(''), chips: ['Compáralos', 'Ofertas del día'] };
+        }
+        function botAnswerCoupons() {
+            const list = Object.entries(getPromos ? getPromos() : {}).slice(0, 4);
+            if (!list.length) return { html: 'Ahora mismo no hay cupones activos, pero sí <b>ofertas del día</b> con hasta un 70% de descuento.', chips: ['Ofertas del día'] };
+            const rows = list.map(([code, c]) => {
+                const pct = Math.round(Number(c.value) || 0);
+                const used = (typeof isCouponUsed === 'function' && isCouponUsed(code));
+                return `<div class="flex items-center justify-between gap-2 mt-1 bg-gray-50 rounded-lg px-2 py-1.5"><span><b class="font-mono text-[12px]">${escapeHtml(code)}</b> · ${c.type === 'pct' ? '-' + pct + '%' : 'envío gratis'}${used ? ' <span class="text-[10px] text-gray-400">(usado)</span>' : ''}</span><button type="button" onclick="applyCoupon('${escapeHtml(code)}')" class="text-[11px] bg-fija-900 text-white px-2 py-1 rounded-md shrink-0">Aplicar</button></div>`;
+            }).join('');
+            return { html: `<b>Cupones disponibles</b>${rows}<div class="mt-1.5 text-[11px] text-gray-500">Se aplican en la cesta. Un uso por cuenta.</div>`, chips: ['Ir a la cesta', 'Ofertas del día'] };
+        }
+        function botAnswerCategories() {
+            const cats = [...new Set((state.products || []).map(p => p.category).filter(Boolean))];
+            if (!cats.length) return { html: 'El catálogo está cargando, prueba en un momento.', chips: ['Ofertas del día'] };
+            const rows = cats.slice(0, 12).map(c => {
+                const n = (state.products || []).filter(p => p.category === c).length;
+                return `<button type="button" onclick="chatbotQuick('buscar ${escapeHtml(c)}')" class="text-left bg-gray-50 hover:bg-gray-100 border border-gray-100 rounded-lg px-2 py-1.5 text-[12px]"><b>${escapeHtml(c)}</b> <span class="text-gray-400">(${n})</span></button>`;
+            }).join('');
+            return { html: `<b>Categorías</b><div class="grid grid-cols-2 gap-1 mt-1">${rows}</div>`, chips: ['Ofertas del día', 'Buscar producto'] };
+        }
+        function botAnswerStores() {
+            const sellers = [...new Set((state.products || []).map(p => p.sellerName).filter(Boolean))];
+            if (!sellers.length) return { html: 'Todavía no hay tiendas publicadas.', chips: ['Ofertas del día'] };
+            const rows = sellers.slice(0, 5).map(s => {
+                const prods = (state.products || []).filter(p => p.sellerName === s);
+                const prof = (state.profiles || []).find(x => (x.companyName || x.username) === s) || (state.profiles || []).find(x => x.userId === (prods[0] || {}).sellerId) || {};
+                return `<button type="button" onclick="openSellerStore('${escapeHtml((prods[0] || {}).sellerId || '')}')" class="block w-full text-left mt-1 bg-gray-50 hover:bg-gray-100 rounded-lg px-2 py-1.5 text-[12px]"><b>${escapeHtml(s)}</b><span class="block text-[11px] text-gray-500">${escapeHtml(prof.address || 'Punto de recogida')} · ${prods.length} prod.</span></button>`;
+            }).join('');
+            return { html: `<b>Tiendas y puntos de recogida</b>${rows}`, chips: ['Recogida', 'Ofertas del día'] };
+        }
+        window.botTicketOpen = () => {
+            botPush('bot', 'Cuéntame el caso y lo registro para el equipo de soporte. Te contestamos en menos de 24 h.');
+            botPush('bot', `<div class="space-y-1.5">
+                <input id="bot-tk-email" type="email" placeholder="Tu correo" value="${escapeHtml((state.profile || {}).email || '')}" class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs">
+                <textarea id="bot-tk-msg" rows="2" placeholder="Describe tu problema..." class="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs"></textarea>
+                <button type="button" onclick="botTicketSend()" class="w-full bg-fija-900 text-white text-xs font-semibold py-2 rounded-lg">Enviar a soporte</button>
+                <div class="text-[10px] text-gray-400">También puedes escribir a ${escapeHtml(botFaqText().mail)}</div>
+            </div>`);
+        };
+        window.botTicketSend = async () => {
+            const email = ((document.getElementById('bot-tk-email') || {}).value || '').trim();
+            const msg = ((document.getElementById('bot-tk-msg') || {}).value || '').trim();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { botPush('bot', 'Necesito un correo válido para poder contestarte.'); return; }
+            if (msg.length < 8) { botPush('bot', 'Cuéntame un poco más (al menos una frase) para poder ayudarte.'); return; }
+            const t = await submitTicketToCloud('soporte', { email: email, subject: 'Consulta desde el asistente', message: msg.slice(0, 2000), source: 'chatbot' });
+            if (!t) { botPush('bot', 'No he podido registrarlo. Escríbenos a ' + escapeHtml(botFaqText().mail) + '.'); return; }
+            const box = document.getElementById('bot-tk-msg'); if (box) box.value = '';
+            botPush('bot', `<i class="fa-solid fa-circle-check" style="color:#059669"></i> Registrado con referencia <b>${escapeHtml(String(t.id).slice(0, 6).toUpperCase())}</b>. Te escribimos a <b>${escapeHtml(email)}</b> en menos de 24 h.`);
+        };
+        function botLocal(q) {
+            const tokens = botTokens(q);
+            const t = botNorm(q);
+            const faq = botFaqText();
+            const intents = [];
+            const add = (id, score, run) => { if (score > 0) intents.push({ id: id, score: score, run: run }); };
+            add('order', botScore(tokens, ['pedido', 'rastrear', 'seguimiento', 'orden', 'estado', 'recogido', 'listo']), () => botAnswerOrder(q));
+            add('deals', botScore(tokens, ['oferta', 'descuento', 'rebaja', 'chollo']), () => botAnswerDeals());
+            add('compare', botScore(tokens, ['comparar', 'comparativa', 'diferencia', 'versus']), () => botAnswerCompare());
+            if ((BOT.ctx.lastProducts || []).length && /barat|economic|asequible/.test(t)) add('cheaper', 1.3, () => botAnswerCheaper());
+            add('coupon', botScore(tokens, ['cupon', 'voucher', 'descuento']), () => botAnswerCoupons());
+            add('categories', botScore(tokens, ['categoria', 'categorias', 'seccion', 'catalogo']), () => botAnswerCategories());
+            add('stores', botScore(tokens, ['tienda', 'vendedor', 'comercio', 'establecimiento']), () => botAnswerStores());
+            add('returns', botScore(tokens, ['devoluciones', 'reembolso', 'cambio', 'garantia']), () => ({
+                html: '<b>Devoluciones y garantía</b><br>Tienes <b>30 días</b> desde la recogida para devolver cualquier producto en su embalaje original. El reembolso se emite en <b>24–48 h</b> tras verificarlo (3–5 días laborables según el banco). Los productos tienen <b>2 años de garantía legal</b>.',
+                chips: ['Rastrear pedido', 'Contactar soporte']
+            }));
+            add('pickup', botScore(tokens, ['recogida', 'click', 'collect', 'plazo', 'tarda', 'punto']), () => ({
+                html: '<b>Click &amp; Collect</b><br>Compras online y recoges <b>gratis</b> en el punto del vendedor. Te avisamos cuando esté listo (normalmente <b>24–48 h</b>) y tienes <b>7 días</b> para retirarlo con tu código QR. No hay envío a domicilio.',
+                chips: ['Rastrear pedido', 'Puntos de recogida']
+            }));
+            add('payment', botScore(tokens, ['pago', 'factura', 'bizum', 'tarjeta']), () => ({
+                html: '<b>Pagos</b><br>Tarjeta (Visa/Mastercard), Bizum y PayPal. Todo cifrado; el vendedor nunca ve los datos de tu tarjeta. Puedes pedir <b>factura</b> desde el detalle de tu pedido.',
+                chips: ['Rastrear pedido', 'Contactar soporte']
+            }));
+            add('account', botScore(tokens, ['cuenta', 'contrasena', 'registro', 'registrarme', 'login', 'acceder']), () => ({
+                html: '<b>Tu cuenta</b><br>Para comprar necesitas cuenta (es gratis): pulsa «Acceder» arriba a la derecha. Si olvidaste la contraseña, usa «¿Olvidaste tu contraseña?». Desde <b>Mi cuenta</b> puedes ver pedidos, direcciones y exportar tus datos.',
+                chips: ['Rastrear pedido', 'Contactar soporte']
+            }));
+            add('shipping', botScore(tokens, ['envio', 'domicilio', 'mensajeria', 'enviar']), () => ({
+                html: 'En FIJA <b>no hay envío a domicilio</b>: es 100% Click &amp; Collect. Así el precio baja y el producto no viaja. Recoges en el punto del vendedor con tu QR.',
+                chips: ['Recogida', 'Puntos de recogida']
+            }));
+            add('seller', botScore(tokens, ['vender', 'vendedor', 'comision', 'alta']), () => ({
+                html: '<b>Vender en FIJA</b><br>Regístrate, verifica tu identidad y publica tu catálogo. Comisión única del <b>4,7%</b> por venta, sin cuotas. Cobras al confirmar la recogida.',
+                chips: ['Contactar soporte']
+            }));
+            add('hours', botScore(tokens, ['horario', 'abierto', 'atienden', 'telefono']), () => ({
+                html: `Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. WhatsApp <b>${faq.wa}</b> · ${escapeHtml(faq.mail)}. Yo estoy disponible <b>24/7</b>.`,
+                chips: ['Contactar soporte', 'Ofertas del día']
+            }));
+            add('human', botScore(tokens, ['humano', 'persona', 'agente', 'soporte', 'contactar', 'whatsapp', 'reclamacion']), () => ({
+                html: `Te paso con una persona: <i class="fa-brands fa-whatsapp" style="color:#25D366"></i> WhatsApp <b>${faq.wa}</b> o correo <b>${escapeHtml(faq.mail)}</b>.<br><button type="button" onclick="botTicketOpen()" class="mt-1.5 text-xs bg-fija-900 text-white px-3 py-1.5 rounded-lg">Abrir incidencia aquí</button>`,
+                chips: ['Hablar con una persona', 'Rastrear pedido']
+            }));
+            if (/que (puedes|sabes) hacer|tus funciones|para que sirves|en que me puedes ayudar|que sabes/.test(t)) add('help', 1.7, () => ({
+                html: '<b>Esto es lo que sé hacer</b><br>· Buscar productos y filtrar por precio o categoría<br>· Rastrear pedidos y darte el código de recogida<br>· Enseñarte las ofertas del día y los cupones<br>· Comparar productos o buscar algo más barato<br>· Resolver dudas de recogida, pagos y devoluciones<br>· Abrir una incidencia para soporte<br><br>Pregúntame como quieras, entiendo erratas y acentos.',
+                chips: ['Ofertas del día', 'Rastrear pedido', 'Buscar producto']
+            }));
+            if (/^(hola|buenas|hey|buenos dias|buenas tardes|que tal)\b/.test(t) && tokens.length <= 4) add('greet', 1.6, () => ({
+                html: state.profile ? `¡Hola de nuevo, <b>${escapeHtml(state.profile.username || '')}</b>! ¿Buscas algo en concreto, quieres ver las <b>ofertas de hoy</b> o rastrear un pedido?` : '¡Hola! Soy el asistente de FIJA. Puedo buscarte productos, decirte las ofertas del día, rastrear tu pedido o pasarte con una persona. ¿Qué necesitas?',
+                chips: ['Ofertas del día', 'Rastrear pedido', 'Buscar producto']
+            }));
+            if (/^(muchas )?gracias\b|^(genial|perfecto|ok|vale)\b/.test(t) && tokens.length <= 4) add('thanks', 1.5, () => ({
+                html: '¡A mandar! Si necesitas algo más, aquí estoy. <i class="fa-solid fa-hand-peace" style="color:#f5b301"></i>',
+                chips: ['Ofertas del día', 'Buscar producto']
+            }));
+            intents.sort((a, b) => b.score - a.score);
+            const top = intents[0];
+            const prodHits = botSearch(q, { limit: 4 });
+            // Presupuesto sin resultados: ofrece lo más ajustado en vez de rendirse
+            const entQ = botEntities(q);
+            if (!prodHits.length && (entQ.priceMax != null || entQ.priceMin != null)) {
+                const loose = botSearch(String(q).replace(/\d+(?:[.,]\d+)?/g, ' '), { limit: 3 });
+                if (loose.length) {
+                    const cheapest = loose.slice().sort((a, b) => effectivePrice(a) - effectivePrice(b));
+                    return {
+                        html: `<b>No tengo nada${entQ.priceMax != null ? ' por menos de ' + fmtMoney(entQ.priceMax) : ''}${entQ.priceMin != null ? ' desde ' + fmtMoney(entQ.priceMin) : ''}.</b> Lo más ajustado:<br>` + cheapest.map(botCard).join(''),
+                        chips: ['Más barato', 'Ofertas del día', 'Ver categorías'],
+                        score: 1.0
+                    };
+                }
+                return { html: 'Con ese presupuesto no encuentro nada en el catálogo. Sube un poco el límite o mira las <b>ofertas del día</b>, que llegan hasta el 70%.', chips: ['Ofertas del día', 'Ver categorías'], score: 1.0 };
+            }
+            const productScore = prodHits.length ? Math.min(1.9, 0.9 + prodHits.length * 0.15) : 0;
+            // Los productos ganan a los temas genéricos cuando la consulta es concreta
+            if (prodHits.length && (!top || top.score < 1.05 || ['stores', 'greet', 'thanks', 'help', 'categories'].indexOf(top.id) >= 0)) {
+                BOT.ctx.lastProducts = prodHits;
+                BOT.ctx.lastIntent = 'search';
+                return Object.assign(botAnswerSearch(q, prodHits), { score: Math.max(productScore, top ? top.score : 0) });
+            }
+            if (top && top.score >= 0.6) {
+                const r = top.run() || {};
+                BOT.ctx.lastIntent = top.id;
+                if (top.id === 'search' && r.products) BOT.ctx.lastProducts = r.products;
+                return Object.assign({ chips: ['Ofertas del día', 'Rastrear pedido', 'Contactar soporte'] }, r, { score: top.score });
+            }
+            // Seguimiento: «el segundo», «más barato», «compáralos», «y cuánto cuesta»
+            if ((BOT.ctx.lastProducts || []).length) {
+                const m = t.match(/(?:el|la|los)? ?(?:primero|segundo|tercero|1|2|3)/);
+                if (/(comparar|comparalos|diferencias)/.test(t)) return Object.assign(botAnswerCompare(), { score: 1.2 });
+                if (/(mas barato|economico|barat)/.test(t)) return Object.assign(botAnswerCheaper(), { score: 1.2 });
+                if (m) {
+                    const idx = /primer|^1| 1/.test(m[0]) ? 0 : /segun|^2| 2/.test(m[0]) ? 1 : 2;
+                    const p = BOT.ctx.lastProducts[idx];
+                    if (p) return { html: `<b>${escapeHtml(p.title)}</b><br>${escapeHtml((p.description || '').slice(0, 160))}<br>Precio: <b>${fmtMoney(effectivePrice(p))}</b>${(Number(p.discountPercent) || 0) ? ` <span class="text-red-600">(-${p.discountPercent}%)</span>` : ''}`, chips: ['Compáralos', 'Más barato'], score: 1.1 };
+                }
+            }
+            return {
+                html: 'No te he entendido del todo <i class="fa-solid fa-circle-question"></i> Puedo ayudarte con <b>productos</b>, <b>pedidos</b>, <b>ofertas</b>, <b>cupones</b>, <b>recogida</b>, <b>pagos</b> o <b>devoluciones</b>. Si prefieres, te paso con una persona.',
+                chips: ['Productos', 'Ofertas del día', 'Rastrear pedido', 'Contactar soporte'],
+                score: 0
+            };
+        }
+        // --- Capa IA opcional (modelo pequeño con contexto de la tienda) ---
+        function botAiCfg() {
+            const s = storeSettings() || {};
+            const key = String(s.chatAiKey || '').trim();
+            return {
+                enabled: !!key && s.chatAiEnabled !== false,
+                key: key,
+                url: String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions',
+                model: String(s.chatAiModel || '').trim() || 'llama-3.1-8b-instant',
+                extra: String(s.chatAiPrompt || '').trim()
+            };
+        }
+        window.botAiCfg = botAiCfg;
+        function botAiSystem(q) {
+            const s = storeSettings() || {};
+            const faq = botFaqText();
+            const rel = (window.__botAiProducts || []).slice(0, 8);
+            const cats = [...new Set((state.products || []).map(p => p.category).filter(Boolean))].slice(0, 14);
+            const deals = botDealTop(3);
+            const mine = state.profile ? (state.orders || []).filter(o => o.buyerUid === state.profile.userId || (o.buyerEmail || '') === state.profile.email).slice(0, 2) : [];
+            const ordLines = mine.map(o => `#${String(o.id).slice(0, 8).toUpperCase()} estado ${o.status} total ${fmtMoney(o.total || 0)}${o.pickupCode ? ' código ' + o.pickupCode : ''}`).join('; ');
+            return [
+                'Eres el asistente virtual de ' + (s.storeName || 'FIJA') + ', un marketplace español de Click & Collect (compra online, recogida en tienda).',
+                'Hablas español de España, cercano y breve: máximo 80 palabras. Nada de HTML; usa **negrita** y guiones si hace falta.',
+                'Nunca inventes precios, stock, plazos ni pedidos: usa solo los datos de este mensaje. Si falta el dato, dilo y ofrece soporte.',
+                '',
+                'DATOS DE LA TIENDA',
+                '- Recogida gratis en el punto del vendedor, listo en 24-48 h, 7 días para retirar con código QR.',
+                '- No hay envío a domicilio. Pagos: tarjeta, Bizum, PayPal. Devoluciones: 30 días, reembolso 24-48 h. Garantía legal 2 años.',
+                '- Comisión de vendedor 4,7%. Soporte: ' + faq.mail + ' · WhatsApp ' + faq.wa + ' · L-S 9:00-21:00.',
+                '- Categorías: ' + (cats.join(', ') || 'sin datos') + '.',
+                '',
+                'PRODUCTOS RELACIONADOS CON LA PREGUNTA O DESTACADOS HOY (usa el nombre exacto y su precio)',
+                rel.length ? rel.map(p => '- ' + p.title + ' | ' + fmtMoney(effectivePrice(p)) + (Number(p.discountPercent) ? ' (-' + p.discountPercent + '%)' : '') + ' | ' + (p.category || '') + ' | ' + (p.sellerName || '')).join('\n') : '- (sin coincidencias en el catálogo)',
+                '',
+                'OFERTAS DEL DÍA',
+                deals.length ? deals.map(p => '- ' + p.title + ' -' + p.discountPercent + '% → ' + fmtMoney(effectivePrice(p))).join('\n') : '- hoy sin ofertas',
+                '',
+                'PEDIDOS DEL USUARIO',
+                ordLines || '- el usuario no tiene pedidos o no ha iniciado sesión',
+                '',
+                'El motor local ya ha intentado responder y no ha bastado. Responde solo a lo que se pregunta, sin repetir el saludo.',
+                cfg_extra_placeholder()
+            ].join('\n');
+            function cfg_extra_placeholder() { return botAiCfg().extra ? '\nINSTRUCCIONES EXTRA DEL DUEÑO: ' + botAiCfg().extra : ''; }
+        }
+        function botAiHtml(text) {
+            let out = escapeHtml(String(text || '').trim());
+            out = out.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+            out = out.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+            out = out.replace(/^[-·]\s?/gm, '· ');
+            return out;
+        }
+        async function botAiAsk(q) {
+            const cfg = botAiCfg();
+            if (!cfg.enabled) return null;
+            window.__botAiProducts = botSearch(q, { limit: 8 });
+            if (!window.__botAiProducts.length) window.__botAiProducts = botDealTop(8);
+            if (!window.__botAiProducts.length) window.__botAiProducts = (state.products || []).slice(0, 8);
+            const msgs = [{ role: 'system', content: botAiSystem(q) }]
+                .concat(BOT.ctx.turns.slice(-8).map(m => ({ role: m.role, content: String(m.content || '').slice(0, 500) })))
+                .concat([{ role: 'user', content: String(q).slice(0, 600) }]);
+            const ctrl = new AbortController();
+            const tmr = setTimeout(() => ctrl.abort(), 15000);
+            try {
+                const res = await fetch(cfg.url, {
+                    method: 'POST', signal: ctrl.signal,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+                    body: JSON.stringify({ model: cfg.model, messages: msgs, temperature: 0.35, max_tokens: 400 })
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 120));
+                const data = await res.json();
+                const txt = (((data.choices || [])[0] || {}).message || {}).content || '';
+                if (!txt.trim()) throw new Error('respuesta vacía');
+                return botAiHtml(txt);
+            } catch (e) {
+                console.warn('chatbot IA:', e && e.message);
+                return null;
+            } finally { clearTimeout(tmr); }
+        }
+        async function botRespond(q) {
+            const local = botLocal(q);
+            BOT.ctx.lastQuery = q;
+            BOT.ctx.turns.push({ role: 'user', content: q });
+            let html = local.html;
+            if (local.score < 0.85 && botAiCfg().enabled) {
+                const ai = await botAiAsk(q);
+                if (ai) html = ai;
+            }
+            BOT.ctx.turns.push({ role: 'assistant', content: String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 400) });
+            if (BOT.ctx.turns.length > 16) BOT.ctx.turns = BOT.ctx.turns.slice(-16);
+            return { html: html, chips: local.chips };
+        }
         window.toggleChatbot = () => {
             const p = document.getElementById('chatbot-panel');
             if (!p) return;
@@ -5842,9 +6311,13 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const fab = document.getElementById('chatbot-fab');
             if (fab) fab.classList.toggle('cb-hidden', open);
             if (open) {
+                const st = document.getElementById('chatbot-status');
+                if (st) st.innerHTML = botAiCfg().enabled ? '<i class="fa-solid fa-bolt"></i> IA conectada · 24/7' : 'Responde al instante · 24/7';
                 renderChatChips();
-                if (!document.getElementById('chatbot-msgs').children.length) { botPush('bot', '¡Hola! Soy el asistente de FIJA. Puedo ayudarte con pedidos, ofertas del día, devoluciones, recogidas y más. ¿Qué necesitas?'); }
-                setTimeout(() => { try { document.getElementById('chatbot-input').focus(); } catch(e){} }, 150);
+                if (!document.getElementById('chatbot-msgs').children.length) {
+                    botPush('bot', '¡Hola! Soy el asistente de FIJA. Puedo <b>buscar productos</b>, decirte las <b>ofertas del día</b>, <b>rastrear tu pedido</b>, comparar precios o abrir una incidencia para soporte. ¿Qué necesitas?');
+                }
+                setTimeout(() => { try { document.getElementById('chatbot-input').focus(); } catch (e) {} }, 150);
             }
         };
         document.addEventListener('keydown', e => {
@@ -5853,110 +6326,49 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         function botPush(who, html) {
             const box = document.getElementById('chatbot-msgs'); if (!box) return;
             const el = document.createElement('div');
+            if (who === 'typing') {
+                el.id = 'chatbot-typing';
+                el.className = 'flex items-start gap-2';
+                el.innerHTML = '<div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 shadow-sm"><span class="bot-dots"><i></i><i></i><i></i></span></div>';
+                box.appendChild(el); box.scrollTop = box.scrollHeight; return;
+            }
             el.className = who === 'bot' ? 'flex items-start gap-2' : 'flex justify-end';
             el.innerHTML = who === 'bot'
                 ? `<div class="max-w-[85%] bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 text-sm shadow-sm">${html}</div>`
                 : `<div class="max-w-[85%] bg-fija-900 text-white rounded-2xl rounded-tr-sm px-3 py-2 text-sm">${html}</div>`;
             box.appendChild(el); box.scrollTop = box.scrollHeight;
         }
+        function botTyping(on) {
+            if (on) { if (!document.getElementById('chatbot-typing')) botPush('typing', ''); }
+            else { const el = document.getElementById('chatbot-typing'); if (el) el.remove(); }
+        }
         function renderChatChips(list) {
+            const box = document.getElementById('chatbot-chips'); if (!box) return;
             const chips = list || ['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Recogida', 'Buscar producto'];
-            document.getElementById('chatbot-chips').innerHTML = chips.map(c => `<button type="button" onclick="chatbotQuick('${c}')" class="text-[11px] border border-fija-900/30 text-fija-900 rounded-full px-2.5 py-1 hover:bg-fija-50">${c}</button>`).join('');
+            box.innerHTML = chips.map(c => `<button type="button" data-q="${escapeHtml(c)}" onclick="chatbotQuick(this.dataset.q)" class="text-[11px] border border-fija-900/30 text-fija-900 rounded-full px-2.5 py-1 hover:bg-fija-50">${escapeHtml(c)}</button>`).join('');
         }
-        window.chatbotQuick = (t) => { document.getElementById('chatbot-input').value = t; chatbotSend(); };
-        window.chatbotSend = () => {
+        window.chatbotQuick = (t) => {
+            const map = { 'Ver categorías': 'categorías', 'Ver categorías ': 'categorías', 'Más barato': 'algo más barato', 'Compáralos': 'compáralos', 'Todo el catálogo': 'catálogo', 'Mis pedidos': 'mi pedido', 'Ir a la cesta': 'cupones', 'Puntos de recogida': 'puntos de recogida', 'Hablar con una persona': 'hablar con una persona', 'Productos': 'qué puedes hacer', 'Recogida': 'cómo funciona la recogida', 'Contactar soporte': 'contactar con soporte', 'Rastrear pedido': 'rastrear mi pedido', 'Devoluciones': 'devoluciones', 'Buscar producto': 'qué productos tienes', 'Ofertas del día': 'ofertas del día', 'Cupones': 'cupones' };
+            const q = map[t] || t;
             const inp = document.getElementById('chatbot-input');
-            const q = (inp.value || '').trim(); if (!q) return;
-            inp.value = '';
-            botPush('user', escapeHtml(q));
-            setTimeout(() => { botPush('bot', botReply(q)); }, 350);
+            if (inp) inp.value = q;
+            chatbotSend();
         };
-        function botFindProducts(q) {
-            const words = q.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !['para','como','donde','quiero','buscar','producto','productos','tienes','cuesta','precio'].includes(w));
-            return (state.products || []).filter(p => words.some(w => (p.title || '').toLowerCase().includes(w) || (p.category || '').toLowerCase().includes(w))).slice(0, 3);
-        }
-        function botDealTop(n) {
-            return (state.products || []).filter(p => (Number(p.discountPercent) || 0) > 0 && dailyDiscountFor(p) > 0)
-                .sort((a, b) => dailyDiscountFor(b) - dailyDiscountFor(a)).slice(0, n);
-        }
-        function botOrderLookup(q) {
-            const m = q.match(/#?([0-9a-f]{8,}|[A-Z0-9]{8,})/i);
-            const mailM = q.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i);
-            let o = null;
-            if (m) o = (state.orders || []).find(x => (x.id || '').toLowerCase().replace(/-/g, '').startsWith(m[1].toLowerCase().replace(/-/g, '')));
-            if (!o && mailM) o = (state.orders || []).filter(x => (x.buyerEmail || '').toLowerCase() === mailM[0].toLowerCase()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
-            return o;
-        }
-        function botReply(q) {
-            const t = q.toLowerCase();
-            const has = (...ws) => ws.some(w => t.includes(w));
-            // Pedido / rastreo
-            if (has('pedido', 'rastrear', 'rastreo', 'seguimiento', 'orden', 'envío de mi compra', 'donde esta mi pedido', 'dónde está mi pedido')) {
-                const o = botOrderLookup(q);
-                if (o) {
-                    const st = { pending: 'Confirmado', preparing: 'En preparación', ready: 'Listo para recoger', collected: 'Recogido', cancelled: 'Cancelado' }[o.status] || o.status;
-                    const items = (o.items || []).map(i => escapeHtml(i.title)).join(', ');
-                    return `<b>Pedido ${(o.id || '').slice(0, 8).toUpperCase()}</b><br>Estado: <b>${st}</b><br>Total: <b>${fmtMoney(o.total != null ? o.total : 0)}</b><br>Artículos: ${items}<br><button type="button" onclick="toggleChatbot();window.openOrderTracking && openOrderTracking('${o.id}')" class="mt-1 text-xs bg-fija-900 text-white px-3 py-1.5 rounded-lg">Ver seguimiento</button>`;
-                }
-                renderChatChips(['Rastrear pedido', 'Devoluciones']);
-                return 'Claro, puedo ayudarte a rastrear tu pedido. Dime el <b>número de pedido</b> (p. ej. #A1B2C3D4) o el <b>correo</b> con el que compraste.';
-            }
-            // Ofertas del día
-            if (has('oferta', 'descuento', 'rebaja', 'promoción', 'promo')) {
-                const top = botDealTop(3);
-                if (!top.length) return 'Hoy no hay ofertas destacadas, ¡pero vuelve mañana! Cada día renovamos <b>~25% del catálogo</b> con descuentos de hasta el <b>70%</b>.';
-                renderChatChips(['Buscar producto', 'Cupones']);
-                return '<i class="fa-solid fa-fire" style="color:#ea580c"></i> <b>Ofertas de hoy</b> (renovadas cada día, hasta -70%):<br>' + top.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · <span class="text-red-600 font-bold">-${dailyDiscountFor(p)}%</span> · ${fmtMoney(effectivePrice(p))}</button>`).join('');
-            }
-            // Buscar producto / precio
-            if (has('busca', 'buscar', 'tienes', 'cuesta', 'precio de', 'encontrar', 'catálogo', 'catalogo')) {
-                const ps = botFindProducts(q);
-                if (ps.length) {
-                    renderChatChips(['Ofertas del día', 'Recogida']);
-                    return 'Esto es lo que encontré:<br>' + ps.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · ${fmtMoney(effectivePrice(p))}${(Number(p.discountPercent) || 0) > 0 ? ` <span class="text-red-600 font-bold">-${p.discountPercent}%</span>` : ''}</button>`).join('') + '<br>¿Quieres que te ayude con algo más?';
-                }
-                return 'Escribe el nombre del producto que buscas (p. ej. «auriculares», «zapatillas», «lámpara») y te lo encuentro.';
-            }
-            // Devoluciones
-            if (has('devol', 'devolver', 'retorno', 'reembolso', 'arrepent')) {
-                renderChatChips(['Rastrear pedido', 'Contactar soporte']);
-                return '<b>Devoluciones</b>: tienes <b>30 días</b> desde la recogida para devolver cualquier producto en su embalaje original. El reembolso se procesa en <b>3–5 días laborables</b> tras recibir el artículo. Puedes gestionarlo desde «Mis pedidos» o escribirnos por WhatsApp.';
-            }
-            // Recogida / envío
-            if (has('recog', 'envío', 'envio', 'entrega', 'click', 'collect', 'tienda')) {
-                return '<b>Click & Collect</b>: compra online y recoge gratis en el punto FIJA del vendedor. Recibirás un aviso cuando esté listo (normalmente <b>24–48 h</b>). Tienes <b>7 días</b> para recogerlo llevando tu código de pedido.';
-            }
-            // Pago
-            if (has('pago', 'tarjeta', 'bizum', 'paypal', 'factura')) {
-                return '<b>Métodos de pago</b>: tarjeta (Visa/Mastercard), Bizum y PayPal. Todos los pagos son seguros y puedes solicitar factura desde tu pedido.';
-            }
-            // Cupones
-            if (has('cupón', 'cupon', 'código', 'codigo', 'voucher')) {
-                const act = Object.entries(state.coupons || {}).filter(([k, c]) => c && c.active !== false).slice(0, 3);
-                return (act.length ? 'Cupones activos ahora mismo:<br>' + act.map(([k, c]) => `<b>${k}</b> · -${Math.round((c.pct || c.percent || 10))}%`).join('<br>') : 'Ahora mismo no hay cupones activos, pero sí <b>ofertas del día</b> en el catálogo.') + '<br>Copia el código y pégalo en la cesta.';
-            }
-            // Horario
-            if (has('horario', 'abierto', 'hora', 'atienden')) {
-                return 'Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. El asistente (yo <i class="fa-solid fa-robot"></i>) estamos 24/7.';
-            }
-            // Contacto / soporte humano
-            if (has('humano', 'persona', 'agente', 'soporte', 'ayuda', 'contactar', 'teléfono', 'telefono', 'whatsapp')) {
-                renderChatChips(['Contactar soporte']);
-                return 'Puedes hablar con una persona: <i class="fa-brands fa-whatsapp" style="color:#25D366"></i> WhatsApp <b>633 616 054</b> o usar el <b>formulario de soporte</b> y te responde el equipo en menos de 24 h.';
-            }
-            // Web / presupuesto (el caso del dueño)
-            if (has('presupuesto', 'web como', 'página web', 'pagina web', 'crear web', 'hacer web', 'tienda online como')) {
-                return '¡Genial! Escríbenos por WhatsApp y te damos presupuesto para una web como esta:<br><a href="https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?') + '" target="_blank" class="inline-block mt-1 bg-green-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Abrir WhatsApp</a>';
-            }
-            // Saludo
-            if (has('hola', 'buenas', 'hey', 'buenos días', 'buenas tardes')) {
-                renderChatChips(['Ofertas del día', 'Rastrear pedido', 'Devoluciones']);
-                return '¡Hola! ¿En qué puedo ayudarte? Puedo buscarte productos, decirte las ofertas del día o rastrear tu pedido.';
-            }
-            // Fallback
-            renderChatChips(['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Contactar soporte']);
-            return 'No estoy seguro de haberlo entendido <i class="fa-solid fa-circle-question"></i> Puedo ayudarte con: <b>ofertas del día</b>, <b>rastrear un pedido</b>, <b>devoluciones</b>, <b>recogida Click & Collect</b>, <b>pagos</b>, <b>buscar productos</b> o ponerte en contacto con soporte.';
-        }
+        window.chatbotSend = async () => {
+            if (BOT.busy) return;
+            const inp = document.getElementById('chatbot-input');
+            const q = ((inp && inp.value) || '').trim(); if (!q) return;
+            if (inp) inp.value = '';
+            botPush('user', escapeHtml(q));
+            BOT.busy = true; botTyping(true);
+            let out;
+            try { out = await botRespond(q); }
+            catch (e) { console.warn(e); out = { html: 'Se me ha ido el hilo. ¿Puedes repetirlo?', chips: ['Ofertas del día', 'Rastrear pedido'] }; }
+            botTyping(false);
+            botPush('bot', out.html);
+            if (out.chips) renderChatChips(out.chips);
+            BOT.busy = false;
+        };
 
         window.openWhatsAppHelp = () => window.open('https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?'), '_blank');
         window.openLegal = (which) => { openInfoModal(which || 'terminos'); };
@@ -6152,7 +6564,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             return String(tpl || '')
                 .replace(/\{\{\s*email\s*\}\}/gi, to || '')
                 .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
-                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'jchenw02@gmail.com')
                 .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
         }
         // Cabecera común de los correos: logo original de FIJA sobre fondo blanco
@@ -6168,7 +6580,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         function welcomeEmailHtml(to) {
             const s = storeSettings();
             const store = s.storeName || 'FIJA';
-            const support = s.supportEmail || 'soporte@fija.demo';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
             const body = welcomeFill(s.welcomeMessage || WELCOME_TEXT_DEFAULT, to)
                 .split('\n')
                 .map(l => l.trim() === '' ? '<div style="height:10px"></div>'
@@ -6275,7 +6687,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 .replace(/\{\{\s*fecha\s*\}\}/gi, new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES'))
                 .replace(/\{\{\s*email\s*\}\}/gi, o.buyerEmail || (state.profile || {}).email || '')
                 .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
-                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'jchenw02@gmail.com')
                 .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
         }
         function orderPickupAddress(o) {
@@ -6288,7 +6700,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
         function orderEmailHtml(order) {
             const s = storeSettings();
             const store = s.storeName || 'FIJA';
-            const support = s.supportEmail || 'soporte@fija.demo';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
             const o = order || {};
             const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
             const addr = orderPickupAddress(o);
@@ -10066,7 +10478,7 @@ window.__LOTE6_INFRA_OK = true;
 /* <<<FIJA_LOTE6_START>>> */
 // ===== LOTE 6/7/8 — REGISTROS GENERADOS =====
 Object.assign(LISTING_DEFS, {"deals":{"key":"deals","title":"Ofertas","subtitle":"Explora todas las ofertas activas","icon":"fa-tags","kind":"deal","min":5},"todaysDeals":{"key":"todaysDeals","title":"Ofertas del día","subtitle":"Las mejores bajadas de hoy","icon":"fa-bolt","kind":"deal","min":10},"lightning":{"key":"lightning","title":"Ofertas relámpago","subtitle":"Descuentos por tiempo limitado","icon":"fa-lightning","kind":"lightning"},"outlet":{"key":"outlet","title":"Outlet","subtitle":"Liquidación de stock","icon":"fa-arrow-down","kind":"outlet","min":40},"clearance":{"key":"clearance","title":"Liquidación","subtitle":"Últimas unidades con gran descuento","icon":"fa-percent","kind":"deal","min":35},"newArrivals":{"key":"newArrivals","title":"Novedades","subtitle":"Lo último en la tienda","icon":"fa-sparkles","kind":"new"},"bestsellers":{"key":"bestsellers","title":"Más vendidos","subtitle":"Los favoritos de los compradores","icon":"fa-fire","kind":"bestseller","sort":"bestseller"},"topRated":{"key":"topRated","title":"Mejor valorados","subtitle":"Productos con mejores reseñas","icon":"fa-star","kind":"rated","sort":"rating"},"trending":{"key":"trending","title":"Tendencias","subtitle":"Lo que está de moda ahora","icon":"fa-chart-line","kind":"trending"},"priceDrops":{"key":"priceDrops","title":"Bajadas de precio","subtitle":"Productos que acaban de bajar","icon":"fa-arrow-trend-down","kind":"priceDrop"},"giftIdeas":{"key":"giftIdeas","title":"Ideas de regalo","subtitle":"Para todas las ocasiones","icon":"fa-gift","kind":"gift"},"under10":{"key":"under10","title":"Menos de 10 €","subtitle":"Mini precio, gran utilidad","icon":"fa-coins","kind":"under","max":10},"under25":{"key":"under25","title":"Menos de 25 €","subtitle":"Buenas compras por poco","icon":"fa-coins","kind":"under","max":25},"under50":{"key":"under50","title":"Menos de 50 €","subtitle":"Calidad accesible","icon":"fa-coins","kind":"under","max":50},"under100":{"key":"under100","title":"Menos de 100 €","subtitle":"Lo esencial al mejor precio","icon":"fa-coins","kind":"under","max":100},"premium":{"key":"premium","title":"Selección Premium","subtitle":"Lo mejor de FIJA","icon":"fa-gem","kind":"rated","sort":"rating"},"budget":{"key":"budget","title":"Compras inteligentes","subtitle":"Ahorra sin perder calidad","icon":"fa-piggy-bank","kind":"under","max":30},"allProducts":{"key":"allProducts","title":"Todos los productos","subtitle":"Catálogo completo","icon":"fa-border-all","kind":"all"},"soldByFija":{"key":"soldByFija","title":"Vendido por FIJA","subtitle":"Productos propios verificados","icon":"fa-shield","kind":"verified"},"collections":{"key":"collections","title":"Colecciones","subtitle":"Curaduría FIJA","icon":"fa-layer-group","kind":"all"},"lookbook":{"key":"lookbook","title":"Lookbook","subtitle":"Inspiración de compra","icon":"fa-book-open","kind":"all"},"byRoom":{"key":"byRoom","title":"Por estancia","subtitle":"Hogar por ambientes","icon":"fa-couch","kind":"all"},"byStyle":{"key":"byStyle","title":"Por estilo","subtitle":"Encuentra tu estética","icon":"fa-palette","kind":"all"},"byOccasion":{"key":"byOccasion","title":"Por ocasión","subtitle":"Para cada momento","icon":"fa-calendar-day","kind":"all"},"topBrands":{"key":"topBrands","title":"Marcas destacadas","subtitle":"Las preferidas","icon":"fa-certificate","kind":"all"},"customerReviews":{"key":"customerReviews","title":"Reseñas de clientes","subtitle":"Opiniones reales","icon":"fa-comments","kind":"rated","sort":"rating"},"dealsCalendar":{"key":"dealsCalendar","title":"Calendario de ofertas","subtitle":"No te pierdas ninguna","icon":"fa-calendar","kind":"deal","min":5},"blackFriday":{"key":"blackFriday","title":"Black Friday","subtitle":"La semana de las mejores ofertas","icon":"fa-tag","kind":"deal","min":20},"cyberMonday":{"key":"cyberMonday","title":"Ciber Lunes","subtitle":"Tecnología en oferta","icon":"fa-laptop","kind":"deal","min":15},"fijaDay":{"key":"fijaDay","title":"FIJA Day","subtitle":"Nuestro evento exclusivo","icon":"fa-calendar-star","kind":"deal","min":20},"backToSchool":{"key":"backToSchool","title":"Vuelta al cole","subtitle":"Todo para el nuevo curso","icon":"fa-school","kind":"all"},"summerSale":{"key":"summerSale","title":"Rebajas de verano","subtitle":"Sol y descuentos","icon":"fa-sun","kind":"deal","min":15},"winterSale":{"key":"winterSale","title":"Rebajas de invierno","subtitle":"Abrígate con ofertas","icon":"fa-snowflake","kind":"deal","min":15},"flashSale":{"key":"flashSale","title":"Venta flash","subtitle":"Horas de descuento extremo","icon":"fa-bolt","kind":"lightning"},"weekendDeal":{"key":"weekendDeal","title":"Oferta de fin de semana","subtitle":"Relájate y ahorra","icon":"fa-mug-hot","kind":"deal","min":10},"dailyPick":{"key":"dailyPick","title":"Selección del día","subtitle":"Nuestra recomendación diaria","icon":"fa-check","kind":"rated","sort":"rating"},"editorPicks":{"key":"editorPicks","title":"Elección del editor","subtitle":"Lo que nos gusta","icon":"fa-pen-nib","kind":"rated","sort":"rating"},"customerFavorites":{"key":"customerFavorites","title":"Favoritos de clientes","subtitle":"Los más amados","icon":"fa-heart","kind":"bestseller","sort":"bestseller"},"newReleases":{"key":"newReleases","title":"Estrenos","subtitle":"Recién llegados","icon":"fa-drum","kind":"new"},"preOrders":{"key":"preOrders","title":"Reservas","subtitle":"Reserva antes de salir","icon":"fa-hourglass-half","kind":"new"},"fijaPlus":{"key":"fijaPlus","title":"FIJA+","subtitle":"Ventajas para miembros","icon":"fa-crown","kind":"all"},"business":{"key":"business","title":"FIJA Business","subtitle":"Compras para empresas","icon":"fa-building","kind":"all"},"registry":{"key":"registry","title":"Listas de regalo","subtitle":"Crea tu lista","icon":"fa-clipboard-list","kind":"all"},"pickupInfo":{"key":"pickupInfo","title":"Puntos de recogida","subtitle":"Dónde recoger","icon":"fa-location-dot","kind":"all"},"accessibilityHub":{"key":"accessibilityHub","title":"Accesibilidad","subtitle":"Opciones para todos","icon":"fa-universal-access","kind":"all"},"Electrónica":{"key":"Electrónica","title":"Electrónica","subtitle":"Comprar en Electrónica","icon":"fa-shapes","kind":"category"},"Moda":{"key":"Moda","title":"Moda","subtitle":"Comprar en Moda","icon":"fa-shapes","kind":"category"},"Deportes":{"key":"Deportes","title":"Deportes","subtitle":"Comprar en Deportes","icon":"fa-shapes","kind":"category"},"Hogar":{"key":"Hogar","title":"Hogar","subtitle":"Comprar en Hogar","icon":"fa-shapes","kind":"category"},"Belleza":{"key":"Belleza","title":"Belleza","subtitle":"Comprar en Belleza","icon":"fa-shapes","kind":"category"},"Juguetes":{"key":"Juguetes","title":"Juguetes","subtitle":"Comprar en Juguetes","icon":"fa-shapes","kind":"category"},"Libros":{"key":"Libros","title":"Libros","subtitle":"Comprar en Libros","icon":"fa-shapes","kind":"category"},"Cocina":{"key":"Cocina","title":"Cocina","subtitle":"Comprar en Cocina","icon":"fa-shapes","kind":"category"},"Jardín":{"key":"Jardín","title":"Jardín","subtitle":"Comprar en Jardín","icon":"fa-shapes","kind":"category"},"Bebés":{"key":"Bebés","title":"Bebés","subtitle":"Comprar en Bebés","icon":"fa-shapes","kind":"category"},"Automóvil":{"key":"Automóvil","title":"Automóvil","subtitle":"Comprar en Automóvil","icon":"fa-shapes","kind":"category"},"Mascotas":{"key":"Mascotas","title":"Mascotas","subtitle":"Comprar en Mascotas","icon":"fa-shapes","kind":"category"},"Salud":{"key":"Salud","title":"Salud","subtitle":"Comprar en Salud","icon":"fa-shapes","kind":"category"},"Oficina":{"key":"Oficina","title":"Oficina","subtitle":"Comprar en Oficina","icon":"fa-shapes","kind":"category"},"FIJABrand":{"key":"FIJA","title":"FIJA","subtitle":"Productos de FIJA","icon":"fa-certificate","kind":"brand"},"NovaTechBrand":{"key":"NovaTech","title":"NovaTech","subtitle":"Productos de NovaTech","icon":"fa-certificate","kind":"brand"},"CasaLuzBrand":{"key":"CasaLuz","title":"CasaLuz","subtitle":"Productos de CasaLuz","icon":"fa-certificate","kind":"brand"},"SportProBrand":{"key":"SportPro","title":"SportPro","subtitle":"Productos de SportPro","icon":"fa-certificate","kind":"brand"},"BioVidaBrand":{"key":"BioVida","title":"BioVida","subtitle":"Productos de BioVida","icon":"fa-certificate","kind":"brand"}});
-Object.assign(INFO_PAGES, {"helpCenter":{"title":"Centro de ayuda","html":"<p>Encuentra respuestas rápidas sobre pedidos, recogida y pagos.</p><p>Usa la búsqueda para localizar el tema exacto.</p>"},"trackOrder":{"title":"Seguir mi pedido","html":"<p>Consulta el estado de tus pedidos en Mi Cuenta.</p><p>Recibirás un código QR de recogida al confirmar.</p>"},"returnsPolicy":{"title":"Política de devoluciones","html":"<p>Tienes 30 días para devolver productos en buen estado.</p><p>El reembolso se procesa al verificar la recogida.</p>"},"refundTimes":{"title":"Tiempos de reembolso","html":"<p>El reembolso se emite en 24-48h tras la devolución.</p><p>Depende de tu método de pago.</p>"},"replaceItem":{"title":"Sustitución de artículo","html":"<p>Si llega defectuoso, solicita sustitución desde el pedido.</p>"},"contactUs":{"title":"Contacto","html":"<p>Escribe a soporte@fija.com o usa el chat en vivo.</p>"},"faq":{"title":"Preguntas frecuentes","html":"<p>¿Cómo recogo? En el punto del vendedor con tu QR.</p><p>¿Envían a casa? No, FIJA es solo Click & Collect.</p>"},"safety":{"title":"Seguridad","html":"<p>Tus pagos están cifrados y protegidos.</p>"},"reportAbuse":{"title":"Reportar abuso","html":"<p>Denuncia productos o conductas inadecuadas.</p>"},"privacy":{"title":"Privacidad","html":"<p>Tus datos se usan solo para tu compra y recogida.</p>"},"cookies":{"title":"Cookies","html":"<p>Usamos cookies para mejorar tu experiencia.</p>"},"terms":{"title":"Términos y condiciones","html":"<p>Lee las condiciones de uso del marketplace.</p>"},"accessibility":{"title":"Accesibilidad","html":"<p>Modo contraste, texto grande y navegación por teclado.</p>"},"sitemap":{"title":"Mapa del sitio","html":"<p>Explora todas las secciones de FIJA.</p>"},"careers":{"title":"Empleo","html":"<p>Únete al equipo FIJA.</p>"},"aboutUs":{"title":"Sobre FIJA","html":"<p>Marketplace de recogida en tienda, con identidad propia.</p>"},"press":{"title":"Prensa","html":"<p>Notas de prensa y medios.</p>"},"sustainability":{"title":"Sostenibilidad","html":"<p>Recogida local para reducir envíos.</p>"},"communityGuidelines":{"title":"Normas de la comunidad","html":"<p>Respeta a compradores y vendedores.</p>"},"giftCards":{"title":"Tarjetas regalo","html":"<p>Regala saldo FIJA a quien quieras.</p>"},"corporate":{"title":"FIJA para empresas","html":"<p>Programa de compras corporativas.</p>"},"affiliates":{"title":"Afiliados","html":"<p>Gana comisiones recomendando FIJA.</p>"},"partners":{"title":"Socios","html":"<p>Colaboraciones y puntos de recogida.</p>"},"developers":{"title":"Desarrolladores","html":"<p>API y documentación técnica.</p>"},"apiDocs":{"title":"Documentación API","html":"<p>Integra tu catálogo grande con FIJA.</p>"},"status":{"title":"Estado del servicio","html":"<p>Sin incidencias conocidas.</p>"},"serviceStatus":{"title":"Estado de servicios","html":"<p>Monitorización en tiempo real.</p>"},"supportHistory":{"title":"Historial de soporte","html":"<p>Revisa tus solicitudes anteriores.</p>"},"escalation":{"title":"Escalar caso","html":"<p>Sube tu incidencia a un agente senior.</p>"},"ticketForm":{"title":"Abrir incidencia","html":"<p>Cuéntanos tu problema y te ayudamos.</p>"},"liveHelp":{"title":"Ayuda en vivo","html":"<p>Chat con un agente ahora mismo.</p>"},"quickHelp":{"title":"Ayuda rápida","html":"<p>Respuestas en menos de un minuto.</p>"},"clickCollect":{"title":"Click & Collect","html":"<p>Compra online y recoge en el punto del vendedor.</p>"},"pickupPoints":{"title":"Puntos de recogida","html":"<p>Verifica la dirección antes de pagar.</p>"},"qrCodeHelp":{"title":"Ayuda con el QR","html":"<p>El código se escanea en el punto de recogida.</p>"},"paymentMethods":{"title":"Métodos de pago","html":"<p>Tarjeta, Bizum y pago en el punto.</p>"},"installments":{"title":"Pago fraccionado","html":"<p>Próximamente para compras grandes.</p><p>Dividirás el pago en cuotas sin intereses.</p>"},"wallet":{"title":"Monedero FIJA","html":"<p>Saldo disponible para futuras compras.</p>"},"giftWrap":{"title":"Envuelto de regalo","html":"<p>Opción de envoltorio disponible en el carrito.</p>"},"giftMessage":{"title":"Mensaje de regalo","html":"<p>Añade una nota personalizada.</p>"},"orderChanges":{"title":"Cambiar pedido","html":"<p>Modifica antes de la recogida.</p>"},"cancelOrder":{"title":"Cancelar pedido","html":"<p>Cancela desde Mi Cuenta.</p>"},"modifyAddress":{"title":"Cambiar datos","html":"<p>Actualiza tu perfil en cualquier momento.</p>"},"notifications":{"title":"Notificaciones","html":"<p>Alertas de precio, stock y pedidos.</p>"},"priceAlerts":{"title":"Alertas de precio","html":"<p>Te avisamos cuando baje.</p>"},"stockAlerts":{"title":"Alertas de stock","html":"<p>Te avisamos si vuelve a haber.</p>"},"availability":{"title":"Disponibilidad","html":"<p>Consulta unidades en tiempo real.</p>"},"preorder":{"title":"Reservas","html":"<p>Reserva productos antes de salir.</p>"},"accountSecurity":{"title":"Seguridad de cuenta","html":"<p>Protege tu acceso con una contraseña fuerte.</p>"},"passwordHelp":{"title":"Recuperar contraseña","html":"<p>Usa \"olvidé mi contraseña\" en el acceso.</p>"},"twoFactor":{"title":"Verificación en dos pasos","html":"<p>Capa extra de seguridad.</p>"},"loginHelp":{"title":"Ayuda de acceso","html":"<p>Problemas para entrar resueltos aquí.</p>"},"profileEdit":{"title":"Editar perfil","html":"<p>Cambia foto y nombre de usuario.</p>"},"dataExport":{"title":"Exportar mis datos","html":"<p>Descarga tus datos en JSON.</p>"},"deleteAccount":{"title":"Eliminar cuenta","html":"<p>Borra tu cuenta y datos asociados.</p>"},"closure":{"title":"Cierre de cuenta","html":"<p>Proceso de baja definitiva.</p>"},"sessions":{"title":"Sesiones","html":"<p>Dispositivos con tu sesión activa.</p>"},"devices":{"title":"Dispositivos","html":"<p>Gestiona dónde has iniciado sesión.</p>"},"sellOnFija":{"title":"Vende en FIJA","html":"<p>Regístrate como vendedor con tu CIF/IVA.</p>"},"sellerFees":{"title":"Comisiones","html":"<p>La comisión de venta es del 4,7%.</p>"},"sellerVerification":{"title":"Verificación de vendedor","html":"<p>Validamos CIF e identidad.</p>"},"sellerDashboard":{"title":"Panel de vendedor","html":"<p>Gestiona tu catálogo y ventas.</p>"},"sellerPayouts":{"title":"Pagos al vendedor","html":"<p>Ingresos netos tras comisión.</p>"},"sellerPerformance":{"title":"Rendimiento","html":"<p>Métricas de tu tienda.</p>"},"sellerPolicy":{"title":"Política de vendedores","html":"<p>Normas de calidad y cumplimiento.</p>"},"prohibitedItems":{"title":"Artículos prohibidos","html":"<p>Lista de productos no permitidos.</p>"},"categoryApproval":{"title":"Aprobación de categoría","html":"<p>Algunas categorías requieren validación.</p>"},"brandRegistry":{"title":"Registro de marca","html":"<p>Protege tu marca en FIJA.</p>"},"ads":{"title":"Publicidad","html":"<p>Destaca tus productos.</p>"},"promotions":{"title":"Promociones","html":"<p>Crea campañas en el marketplace.</p>"},"couponsSeller":{"title":"Cupones de vendedor","html":"<p>Genera cupones promocionales.</p>"},"reportsSeller":{"title":"Informes","html":"<p>Ventas, conversión y devoluciones.</p>"},"apiSeller":{"title":"API de vendedor","html":"<p>Para catálogos grandes.</p>"},"integrationsSeller":{"title":"Integraciones","html":"<p>Conecta tu ERP.</p>"},"taxesSeller":{"title":"Impuestos","html":"<p>IVA y facturación.</p>"},"invoicesSeller":{"title":"Facturas","html":"<p>Descarga tus facturas.</p>"},"disputesSeller":{"title":"Disputas","html":"<p>Centro de conflictos.</p>"},"reviewsSeller":{"title":"Reseñas","html":"<p>Gestiona opiniones de clientes.</p>"},"messagesSeller":{"title":"Mensajes","html":"<p>Buzón de consultas.</p>"},"trainingSeller":{"title":"Formación","html":"<p>Aprende a vender mejor.</p>"},"goalsSeller":{"title":"Objetivos","html":"<p>Define metas de venta.</p>"},"calendarSeller":{"title":"Calendario","html":"<p>Disponibilidad de recogida.</p>"},"bulkSeller":{"title":"Edición masiva","html":"<p>Sube productos por hoja.</p>"},"exportSeller":{"title":"Exportar","html":"<p>CSV o JSON de tus datos.</p>"},"seoSeller":{"title":"SEO","html":"<p>Optimiza tus fichas.</p>"},"shippingSeller":{"title":"Recogida","html":"<p>FIJA es Click & Collect.</p>"},"discountsSeller":{"title":"Descuentos","html":"<p>Ofertas sobre tus productos.</p>"},"qualitySeller":{"title":"Calidad","html":"<p>Panel de cumplimiento.</p>"},"logisticsSeller":{"title":"Logística","html":"<p>Preparación de recogida.</p>"},"labelsSeller":{"title":"Etiquetas","html":"<p>Genera QR de recogida.</p>"},"returnsSeller":{"title":"Devoluciones","html":"<p>Gestiona devoluciones.</p>"},"refundsSeller":{"title":"Reembolsos","html":"<p>Notas de crédito.</p>"},"questionsSeller":{"title":"Preguntas","html":"<p>Responde a compradores.</p>"},"campaignsSeller":{"title":"Campañas","html":"<p>Lanza promociones.</p>"},"audienceSeller":{"title":"Audiencia","html":"<p>Conoce a tus compradores.</p>"},"insightsSeller":{"title":"Análisis","html":"<p>Tendencias de tu categoría.</p>"},"communitySeller":{"title":"Comunidad","html":"<p>Vendedores FIJA.</p>"},"liveSeller":{"title":"Venta en directo","html":"<p>Emite desde tu tienda.</p>"},"widgetsSeller":{"title":"Widgets","html":"<p>Inserta tus productos en tu web.</p>"},"toolsSeller":{"title":"Herramientas","html":"<p>Utilidades avanzadas.</p>"},"badgesSeller":{"title":"Insignias","html":"<p>Reconocimientos de tienda.</p>"},"rankSeller":{"title":"Ranking","html":"<p>Tu posición como vendedor.</p>"},"teamSeller":{"title":"Equipo","html":"<p>Invita colaboradores.</p>"},"feedbackSeller":{"title":"Feedback","html":"<p>Soporte prioritario.</p>"},"electronicsHelp":{"title":"Ayuda Electrónica","html":"<p>Garantía y devolución de electrónica.</p>"},"fashionHelp":{"title":"Ayuda Moda","html":"<p>Tallas y cambios de ropa.</p>"},"homeHelp":{"title":"Ayuda Hogar","html":"<p>Cuidado de productos del hogar.</p>"},"sportsHelp":{"title":"Ayuda Deportes","html":"<p>Uso y mantenimiento deportivo.</p>"},"groceriesHelp":{"title":"Ayuda Alimentación","html":"<p>Conservación de alimentos.</p>"},"toysHelp":{"title":"Ayuda Juguetes","html":"<p>Seguridad infantil.</p>"},"booksHelp":{"title":"Ayuda Libros","html":"<p>Devolución de libros.</p>"},"beautyHelp":{"title":"Ayuda Belleza","html":"<p>Cosmética y caducidad.</p>"},"autoHelp":{"title":"Ayuda Automóvil","html":"<p>Accesorios de coche.</p>"},"gardenHelp":{"title":"Ayuda Jardín","html":"<p>Cuidado de plantas.</p>"},"babyHelp":{"title":"Ayuda Bebés","html":"<p>Productos para el bebé.</p>"},"petsHelp":{"title":"Ayuda Mascotas","html":"<p>Alimentación y cuidado.</p>"},"pricePolicy":{"title":"Política de precios","html":"<p>Precios justos y transparentes.</p>"},"authenticity":{"title":"Autenticidad","html":"<p>Productos verificados.</p>"},"warranty":{"title":"Garantía","html":"<p>Garantía legal de 2 años.</p>"},"dataRequest":{"title":"Solicitud de datos","html":"<p>Accede a tus datos personales.</p>"},"imprint":{"title":"Aviso legal","html":"<p>Datos del titular.</p>"},"legal":{"title":"Aviso legal","html":"<p>Información legal de FIJA.</p>"},"taxInfo":{"title":"Información fiscal","html":"<p>IVA aplicable.</p>"},"invoicing":{"title":"Facturación","html":"<p>Solicita tu factura.</p>"},"complaints":{"title":"Reclamaciones","html":"<p>Presenta una reclamación.</p>"},"paymentSecurity":{"title":"Seguridad de pago","html":"<p>Cifrado de extremo a extremo.</p>"}});
+Object.assign(INFO_PAGES, {"helpCenter":{"title":"Centro de ayuda","html":"<p>Encuentra respuestas rápidas sobre pedidos, recogida y pagos.</p><p>Usa la búsqueda para localizar el tema exacto.</p>"},"trackOrder":{"title":"Seguir mi pedido","html":"<p>Consulta el estado de tus pedidos en Mi Cuenta.</p><p>Recibirás un código QR de recogida al confirmar.</p>"},"returnsPolicy":{"title":"Política de devoluciones","html":"<p>Tienes 30 días para devolver productos en buen estado.</p><p>El reembolso se procesa al verificar la recogida.</p>"},"refundTimes":{"title":"Tiempos de reembolso","html":"<p>El reembolso se emite en 24-48h tras la devolución.</p><p>Depende de tu método de pago.</p>"},"replaceItem":{"title":"Sustitución de artículo","html":"<p>Si llega defectuoso, solicita sustitución desde el pedido.</p>"},"contactUs":{"title":"Contacto","html":"<p>Escribe a jchenw02@gmail.com o usa el chat en vivo.</p>"},"faq":{"title":"Preguntas frecuentes","html":"<p>¿Cómo recogo? En el punto del vendedor con tu QR.</p><p>¿Envían a casa? No, FIJA es solo Click & Collect.</p>"},"safety":{"title":"Seguridad","html":"<p>Tus pagos están cifrados y protegidos.</p>"},"reportAbuse":{"title":"Reportar abuso","html":"<p>Denuncia productos o conductas inadecuadas.</p>"},"privacy":{"title":"Privacidad","html":"<p>Tus datos se usan solo para tu compra y recogida.</p>"},"cookies":{"title":"Cookies","html":"<p>Usamos cookies para mejorar tu experiencia.</p>"},"terms":{"title":"Términos y condiciones","html":"<p>Lee las condiciones de uso del marketplace.</p>"},"accessibility":{"title":"Accesibilidad","html":"<p>Modo contraste, texto grande y navegación por teclado.</p>"},"sitemap":{"title":"Mapa del sitio","html":"<p>Explora todas las secciones de FIJA.</p>"},"careers":{"title":"Empleo","html":"<p>Únete al equipo FIJA.</p>"},"aboutUs":{"title":"Sobre FIJA","html":"<p>Marketplace de recogida en tienda, con identidad propia.</p>"},"press":{"title":"Prensa","html":"<p>Notas de prensa y medios.</p>"},"sustainability":{"title":"Sostenibilidad","html":"<p>Recogida local para reducir envíos.</p>"},"communityGuidelines":{"title":"Normas de la comunidad","html":"<p>Respeta a compradores y vendedores.</p>"},"giftCards":{"title":"Tarjetas regalo","html":"<p>Regala saldo FIJA a quien quieras.</p>"},"corporate":{"title":"FIJA para empresas","html":"<p>Programa de compras corporativas.</p>"},"affiliates":{"title":"Afiliados","html":"<p>Gana comisiones recomendando FIJA.</p>"},"partners":{"title":"Socios","html":"<p>Colaboraciones y puntos de recogida.</p>"},"developers":{"title":"Desarrolladores","html":"<p>API y documentación técnica.</p>"},"apiDocs":{"title":"Documentación API","html":"<p>Integra tu catálogo grande con FIJA.</p>"},"status":{"title":"Estado del servicio","html":"<p>Sin incidencias conocidas.</p>"},"serviceStatus":{"title":"Estado de servicios","html":"<p>Monitorización en tiempo real.</p>"},"supportHistory":{"title":"Historial de soporte","html":"<p>Revisa tus solicitudes anteriores.</p>"},"escalation":{"title":"Escalar caso","html":"<p>Sube tu incidencia a un agente senior.</p>"},"ticketForm":{"title":"Abrir incidencia","html":"<p>Cuéntanos tu problema y te ayudamos.</p>"},"liveHelp":{"title":"Ayuda en vivo","html":"<p>Chat con un agente ahora mismo.</p>"},"quickHelp":{"title":"Ayuda rápida","html":"<p>Respuestas en menos de un minuto.</p>"},"clickCollect":{"title":"Click & Collect","html":"<p>Compra online y recoge en el punto del vendedor.</p>"},"pickupPoints":{"title":"Puntos de recogida","html":"<p>Verifica la dirección antes de pagar.</p>"},"qrCodeHelp":{"title":"Ayuda con el QR","html":"<p>El código se escanea en el punto de recogida.</p>"},"paymentMethods":{"title":"Métodos de pago","html":"<p>Tarjeta, Bizum y pago en el punto.</p>"},"installments":{"title":"Pago fraccionado","html":"<p>Próximamente para compras grandes.</p><p>Dividirás el pago en cuotas sin intereses.</p>"},"wallet":{"title":"Monedero FIJA","html":"<p>Saldo disponible para futuras compras.</p>"},"giftWrap":{"title":"Envuelto de regalo","html":"<p>Opción de envoltorio disponible en el carrito.</p>"},"giftMessage":{"title":"Mensaje de regalo","html":"<p>Añade una nota personalizada.</p>"},"orderChanges":{"title":"Cambiar pedido","html":"<p>Modifica antes de la recogida.</p>"},"cancelOrder":{"title":"Cancelar pedido","html":"<p>Cancela desde Mi Cuenta.</p>"},"modifyAddress":{"title":"Cambiar datos","html":"<p>Actualiza tu perfil en cualquier momento.</p>"},"notifications":{"title":"Notificaciones","html":"<p>Alertas de precio, stock y pedidos.</p>"},"priceAlerts":{"title":"Alertas de precio","html":"<p>Te avisamos cuando baje.</p>"},"stockAlerts":{"title":"Alertas de stock","html":"<p>Te avisamos si vuelve a haber.</p>"},"availability":{"title":"Disponibilidad","html":"<p>Consulta unidades en tiempo real.</p>"},"preorder":{"title":"Reservas","html":"<p>Reserva productos antes de salir.</p>"},"accountSecurity":{"title":"Seguridad de cuenta","html":"<p>Protege tu acceso con una contraseña fuerte.</p>"},"passwordHelp":{"title":"Recuperar contraseña","html":"<p>Usa \"olvidé mi contraseña\" en el acceso.</p>"},"twoFactor":{"title":"Verificación en dos pasos","html":"<p>Capa extra de seguridad.</p>"},"loginHelp":{"title":"Ayuda de acceso","html":"<p>Problemas para entrar resueltos aquí.</p>"},"profileEdit":{"title":"Editar perfil","html":"<p>Cambia foto y nombre de usuario.</p>"},"dataExport":{"title":"Exportar mis datos","html":"<p>Descarga tus datos en JSON.</p>"},"deleteAccount":{"title":"Eliminar cuenta","html":"<p>Borra tu cuenta y datos asociados.</p>"},"closure":{"title":"Cierre de cuenta","html":"<p>Proceso de baja definitiva.</p>"},"sessions":{"title":"Sesiones","html":"<p>Dispositivos con tu sesión activa.</p>"},"devices":{"title":"Dispositivos","html":"<p>Gestiona dónde has iniciado sesión.</p>"},"sellOnFija":{"title":"Vende en FIJA","html":"<p>Regístrate como vendedor con tu CIF/IVA.</p>"},"sellerFees":{"title":"Comisiones","html":"<p>La comisión de venta es del 4,7%.</p>"},"sellerVerification":{"title":"Verificación de vendedor","html":"<p>Validamos CIF e identidad.</p>"},"sellerDashboard":{"title":"Panel de vendedor","html":"<p>Gestiona tu catálogo y ventas.</p>"},"sellerPayouts":{"title":"Pagos al vendedor","html":"<p>Ingresos netos tras comisión.</p>"},"sellerPerformance":{"title":"Rendimiento","html":"<p>Métricas de tu tienda.</p>"},"sellerPolicy":{"title":"Política de vendedores","html":"<p>Normas de calidad y cumplimiento.</p>"},"prohibitedItems":{"title":"Artículos prohibidos","html":"<p>Lista de productos no permitidos.</p>"},"categoryApproval":{"title":"Aprobación de categoría","html":"<p>Algunas categorías requieren validación.</p>"},"brandRegistry":{"title":"Registro de marca","html":"<p>Protege tu marca en FIJA.</p>"},"ads":{"title":"Publicidad","html":"<p>Destaca tus productos.</p>"},"promotions":{"title":"Promociones","html":"<p>Crea campañas en el marketplace.</p>"},"couponsSeller":{"title":"Cupones de vendedor","html":"<p>Genera cupones promocionales.</p>"},"reportsSeller":{"title":"Informes","html":"<p>Ventas, conversión y devoluciones.</p>"},"apiSeller":{"title":"API de vendedor","html":"<p>Para catálogos grandes.</p>"},"integrationsSeller":{"title":"Integraciones","html":"<p>Conecta tu ERP.</p>"},"taxesSeller":{"title":"Impuestos","html":"<p>IVA y facturación.</p>"},"invoicesSeller":{"title":"Facturas","html":"<p>Descarga tus facturas.</p>"},"disputesSeller":{"title":"Disputas","html":"<p>Centro de conflictos.</p>"},"reviewsSeller":{"title":"Reseñas","html":"<p>Gestiona opiniones de clientes.</p>"},"messagesSeller":{"title":"Mensajes","html":"<p>Buzón de consultas.</p>"},"trainingSeller":{"title":"Formación","html":"<p>Aprende a vender mejor.</p>"},"goalsSeller":{"title":"Objetivos","html":"<p>Define metas de venta.</p>"},"calendarSeller":{"title":"Calendario","html":"<p>Disponibilidad de recogida.</p>"},"bulkSeller":{"title":"Edición masiva","html":"<p>Sube productos por hoja.</p>"},"exportSeller":{"title":"Exportar","html":"<p>CSV o JSON de tus datos.</p>"},"seoSeller":{"title":"SEO","html":"<p>Optimiza tus fichas.</p>"},"shippingSeller":{"title":"Recogida","html":"<p>FIJA es Click & Collect.</p>"},"discountsSeller":{"title":"Descuentos","html":"<p>Ofertas sobre tus productos.</p>"},"qualitySeller":{"title":"Calidad","html":"<p>Panel de cumplimiento.</p>"},"logisticsSeller":{"title":"Logística","html":"<p>Preparación de recogida.</p>"},"labelsSeller":{"title":"Etiquetas","html":"<p>Genera QR de recogida.</p>"},"returnsSeller":{"title":"Devoluciones","html":"<p>Gestiona devoluciones.</p>"},"refundsSeller":{"title":"Reembolsos","html":"<p>Notas de crédito.</p>"},"questionsSeller":{"title":"Preguntas","html":"<p>Responde a compradores.</p>"},"campaignsSeller":{"title":"Campañas","html":"<p>Lanza promociones.</p>"},"audienceSeller":{"title":"Audiencia","html":"<p>Conoce a tus compradores.</p>"},"insightsSeller":{"title":"Análisis","html":"<p>Tendencias de tu categoría.</p>"},"communitySeller":{"title":"Comunidad","html":"<p>Vendedores FIJA.</p>"},"liveSeller":{"title":"Venta en directo","html":"<p>Emite desde tu tienda.</p>"},"widgetsSeller":{"title":"Widgets","html":"<p>Inserta tus productos en tu web.</p>"},"toolsSeller":{"title":"Herramientas","html":"<p>Utilidades avanzadas.</p>"},"badgesSeller":{"title":"Insignias","html":"<p>Reconocimientos de tienda.</p>"},"rankSeller":{"title":"Ranking","html":"<p>Tu posición como vendedor.</p>"},"teamSeller":{"title":"Equipo","html":"<p>Invita colaboradores.</p>"},"feedbackSeller":{"title":"Feedback","html":"<p>Soporte prioritario.</p>"},"electronicsHelp":{"title":"Ayuda Electrónica","html":"<p>Garantía y devolución de electrónica.</p>"},"fashionHelp":{"title":"Ayuda Moda","html":"<p>Tallas y cambios de ropa.</p>"},"homeHelp":{"title":"Ayuda Hogar","html":"<p>Cuidado de productos del hogar.</p>"},"sportsHelp":{"title":"Ayuda Deportes","html":"<p>Uso y mantenimiento deportivo.</p>"},"groceriesHelp":{"title":"Ayuda Alimentación","html":"<p>Conservación de alimentos.</p>"},"toysHelp":{"title":"Ayuda Juguetes","html":"<p>Seguridad infantil.</p>"},"booksHelp":{"title":"Ayuda Libros","html":"<p>Devolución de libros.</p>"},"beautyHelp":{"title":"Ayuda Belleza","html":"<p>Cosmética y caducidad.</p>"},"autoHelp":{"title":"Ayuda Automóvil","html":"<p>Accesorios de coche.</p>"},"gardenHelp":{"title":"Ayuda Jardín","html":"<p>Cuidado de plantas.</p>"},"babyHelp":{"title":"Ayuda Bebés","html":"<p>Productos para el bebé.</p>"},"petsHelp":{"title":"Ayuda Mascotas","html":"<p>Alimentación y cuidado.</p>"},"pricePolicy":{"title":"Política de precios","html":"<p>Precios justos y transparentes.</p>"},"authenticity":{"title":"Autenticidad","html":"<p>Productos verificados.</p>"},"warranty":{"title":"Garantía","html":"<p>Garantía legal de 2 años.</p>"},"dataRequest":{"title":"Solicitud de datos","html":"<p>Accede a tus datos personales.</p>"},"imprint":{"title":"Aviso legal","html":"<p>Datos del titular.</p>"},"legal":{"title":"Aviso legal","html":"<p>Información legal de FIJA.</p>"},"taxInfo":{"title":"Información fiscal","html":"<p>IVA aplicable.</p>"},"invoicing":{"title":"Facturación","html":"<p>Solicita tu factura.</p>"},"complaints":{"title":"Reclamaciones","html":"<p>Presenta una reclamación.</p>"},"paymentSecurity":{"title":"Seguridad de pago","html":"<p>Cifrado de extremo a extremo.</p>"}});
 Object.assign(SHELLER_PAGES, {"overview":{"title":"Resumen","subtitle":"Tu tienda en un vistazo","section":"overview","icon":"fa-gauge-high"},"products":{"title":"Mis productos","subtitle":"Gestiona tu catálogo","section":"products","icon":"fa-box"},"inventory":{"title":"Inventario","subtitle":"Unidades y disponibilidad","section":"inventory","icon":"fa-warehouse"},"addProduct":{"title":"Añadir producto","subtitle":"Publica un nuevo artículo","section":"products","icon":"fa-plus"},"editProduct":{"title":"Editar producto","subtitle":"Modifica fichas existentes","section":"products","icon":"fa-pen"},"bulkEdit":{"title":"Edición masiva","subtitle":"Actualiza varios a la vez","section":"bulk","icon":"fa-table"},"orders":{"title":"Pedidos","subtitle":"Gestiona tus ventas","section":"orders","icon":"fa-receipt"},"orderManager":{"title":"Gestor de pedidos","subtitle":"Estado y recogidas","section":"orders","icon":"fa-list-check"},"payouts":{"title":"Pagos","subtitle":"Ingresos y comisiones","section":"payouts","icon":"fa-sack-dollar"},"payoutHistory":{"title":"Historial de pagos","subtitle":"Movimientos de cuenta","section":"payouts","icon":"fa-clock-rotate-left"},"taxes":{"title":"Impuestos","subtitle":"IVA y fiscalidad","section":"taxes","icon":"fa-file-invoice-dollar"},"invoices":{"title":"Facturas","subtitle":"Descarga tus facturas","section":"invoices","icon":"fa-file-invoice"},"performance":{"title":"Rendimiento","subtitle":"Tus productos top","section":"performance","icon":"fa-chart-line"},"analytics":{"title":"Analíticas","subtitle":"Métricas en tiempo real","section":"analytics","icon":"fa-chart-pie"},"insights":{"title":"Análisis","subtitle":"Tendencias de categoría","section":"insights","icon":"fa-lightbulb"},"reviews":{"title":"Reseñas","subtitle":"Opiniones de clientes","section":"reviews","icon":"fa-star"},"questions":{"title":"Preguntas","subtitle":"Consultas de compradores","section":"questions","icon":"fa-circle-question"},"messages":{"title":"Mensajes","subtitle":"Buzón de clientes","section":"messages","icon":"fa-envelope"},"feedback":{"title":"Feedback","subtitle":"Soporte prioritario","section":"feedback","icon":"fa-comment-dots"},"settings":{"title":"Ajustes","subtitle":"Configuración de tienda","section":"settings","icon":"fa-gear"},"profileSeller":{"title":"Perfil de tienda","subtitle":"Datos públicos","section":"settings","icon":"fa-store"},"documents":{"title":"Documentos","subtitle":"CIF e identificación","section":"documents","icon":"fa-folder-open"},"seo":{"title":"SEO","subtitle":"Visibilidad en búsquedas","section":"seo","icon":"fa-magnifying-glass"},"shipping":{"title":"Recogida","subtitle":"Puntos y horarios","section":"shipping","icon":"fa-location-dot"},"discounts":{"title":"Descuentos","subtitle":"Ofertas sobre tus productos","section":"discounts","icon":"fa-percent"},"coupons":{"title":"Cupones","subtitle":"Promociones propias","section":"coupons","icon":"fa-ticket"},"promotions":{"title":"Promociones","subtitle":"Destaca en el marketplace","section":"promotions","icon":"fa-bullhorn"},"campaigns":{"title":"Campañas","subtitle":"Lanza acciones","section":"campaigns","icon":"fa-megaphone"},"audience":{"title":"Audiencia","subtitle":"Conoce a tus compradores","section":"audience","icon":"fa-users"},"training":{"title":"Formación","subtitle":"Aprende a vender","section":"training","icon":"fa-graduation-cap"},"goals":{"title":"Objetivos","subtitle":"Metas de venta","section":"goals","icon":"fa-bullseye"},"calendar":{"title":"Calendario","subtitle":"Disponibilidad","section":"calendar","icon":"fa-calendar-days"},"team":{"title":"Equipo","subtitle":"Colaboradores","section":"team","icon":"fa-people-group"},"bulk":{"title":"Masivo","subtitle":"Importación por hoja","section":"bulk","icon":"fa-file-csv"},"export":{"title":"Exportar","subtitle":"CSV o JSON","section":"export","icon":"fa-download"},"reports":{"title":"Informes","subtitle":"Ventas y devoluciones","section":"reports","icon":"fa-chart-bar"},"api":{"title":"API","subtitle":"Integración técnica","section":"api","icon":"fa-code"},"integrations":{"title":"Integraciones","subtitle":"Conecta tu ERP","section":"integrations","icon":"fa-plug"},"widgets":{"title":"Widgets","subtitle":"Inserta en tu web","section":"widgets","icon":"fa-puzzle-piece"},"quality":{"title":"Calidad","subtitle":"Cumplimiento","section":"quality","icon":"fa-circle-check"},"logistics":{"title":"Logística","subtitle":"Preparación","section":"logistics","icon":"fa-truck-ramp-box"},"labels":{"title":"Etiquetas","subtitle":"QR de recogida","section":"labels","icon":"fa-qrcode"},"returns":{"title":"Devoluciones","subtitle":"Gestiona incidencias","section":"returns","icon":"fa-rotate-left"},"refunds":{"title":"Reembolsos","subtitle":"Notas de crédito","section":"refunds","icon":"fa-money-bill-transfer"},"disputes":{"title":"Disputas","subtitle":"Centro de conflictos","section":"disputes","icon":"fa-scale-balanced"},"badges":{"title":"Insignias","subtitle":"Reconocimientos","section":"badges","icon":"fa-medal"},"rank":{"title":"Ranking","subtitle":"Tu posición","section":"rank","icon":"fa-ranking-star"},"tools":{"title":"Herramientas","subtitle":"Utilidades avanzadas","section":"tools","icon":"fa-screwdriver-wrench"},"community":{"title":"Comunidad","subtitle":"Otros vendedores","section":"community","icon":"fa-people-arrows"},"live":{"title":"Venta en directo","subtitle":"Emite tu tienda","section":"live","icon":"fa-video"},"refundsS":{"title":"Reembolsos 2","subtitle":"Gestión ampliada","section":"refunds","icon":"fa-hand-holding-dollar"},"questionsS":{"title":"Preguntas 2","subtitle":"Consultas avanzadas","section":"questions","icon":"fa-comments-question"},"promotionsS":{"title":"Promociones 2","subtitle":"Campañas ampliadas","section":"promotions","icon":"fa-tags"},"analyticsS":{"title":"Analíticas 2","subtitle":"Panel extendido","section":"analytics","icon":"fa-diagram-project"},"feedbackS":{"title":"Feedback 2","subtitle":"Mejora continua","section":"feedback","icon":"fa-face-smile"},"categoryElectronics":{"title":"Vender Electrónica","subtitle":"Catálogo de electrónica","section":"products","icon":"fa-plug"},"categoryModa":{"title":"Vender Moda","subtitle":"Catálogo de moda","section":"products","icon":"fa-shirt"},"categoryDeportes":{"title":"Vender Deportes","subtitle":"Catálogo de deporte","section":"products","icon":"fa-dumbbell"},"categoryHogar":{"title":"Vender Hogar","subtitle":"Catálogo de hogar","section":"products","icon":"fa-house-chimney"},"categoryBelleza":{"title":"Vender Belleza","subtitle":"Catálogo de belleza","section":"products","icon":"fa-spa"},"categoryJuguetes":{"title":"Vender Juguetes","subtitle":"Catálogo de juguetes","section":"products","icon":"fa-puzzle-piece"},"categoryLibros":{"title":"Vender Libros","subtitle":"Catálogo de libros","section":"products","icon":"fa-book"},"categoryCocina":{"title":"Vender Cocina","subtitle":"Catálogo de cocina","section":"products","icon":"fa-utensils"},"categoryJardin":{"title":"Vender Jardín","subtitle":"Catálogo de jardín","section":"products","icon":"fa-leaf"},"categoryBebes":{"title":"Vender Bebés","subtitle":"Catálogo de bebés","section":"products","icon":"fa-baby"},"categoryMascotas":{"title":"Vender Mascotas","subtitle":"Catálogo de mascotas","section":"products","icon":"fa-paw"},"categorySalud":{"title":"Vender Salud","subtitle":"Catálogo de salud","section":"products","icon":"fa-heart-pulse"},"categoryOficina":{"title":"Vender Oficina","subtitle":"Catálogo de oficina","section":"products","icon":"fa-briefcase"},"ordersPending":{"title":"Pedidos pendientes","subtitle":"Por preparar","section":"orders","icon":"fa-hourglass-half"},"ordersCompleted":{"title":"Pedidos completados","subtitle":"Entregados y recogidos","section":"orders","icon":"fa-circle-check"},"ordersCancelled":{"title":"Pedidos cancelados","subtitle":"Anulados","section":"orders","icon":"fa-ban"},"ordersRefunded":{"title":"Reembolsos","subtitle":"Devoluciones procesadas","section":"orders","icon":"fa-rotate-left"},"pickupReady":{"title":"Listos para recogida","subtitle":"Pendientes de QR","section":"orders","icon":"fa-qrcode"},"sellNovaTech":{"title":"Vender NovaTech","subtitle":"Catálogo de marca","section":"products","icon":"fa-microchip"},"sellCasaLuz":{"title":"Vender CasaLuz","subtitle":"Catálogo de marca","section":"products","icon":"fa-lightbulb"},"sellSportPro":{"title":"Vender SportPro","subtitle":"Catálogo de marca","section":"products","icon":"fa-dumbbell"},"sellBioVida":{"title":"Vender BioVida","subtitle":"Catálogo de marca","section":"products","icon":"fa-leaf"},"sellerSeoAdvanced":{"title":"SEO avanzado","subtitle":"Palabras clave y títulos","section":"seo","icon":"fa-magnifying-glass-chart"},"sellerAdsManager":{"title":"Gestor de anuncios","subtitle":"Campañas de producto","section":"promotions","icon":"fa-bullhorn"},"sellerPromoCalendar":{"title":"Calendario promos","subtitle":"Planifica ofertas","section":"calendar","icon":"fa-calendar-week"},"sellerCouponStudio":{"title":"Estudio de cupones","subtitle":"Crea cupones","section":"coupons","icon":"fa-ticket"},"sellerInventoryAlerts":{"title":"Alertas de inventario","subtitle":"Stock bajo","section":"inventory","icon":"fa-triangle-exclamation"},"sellerStockForecast":{"title":"Previsión de stock","subtitle":"Anticipa la demanda","section":"inventory","icon":"fa-chart-line"},"sellerPriceOptimizer":{"title":"Optimizador de precios","subtitle":"Ajusta márgenes","section":"discounts","icon":"fa-sliders"},"sellerReviewBoost":{"title":"Impulso de reseñas","subtitle":"Solicita opiniones","section":"reviews","icon":"fa-star"},"sellerMessageTemplates":{"title":"Plantillas","subtitle":"Respuestas rápidas","section":"messages","icon":"fa-message"},"sellerAutoReply":{"title":"Respuestas automáticas","subtitle":"Atención 24/7","section":"messages","icon":"fa-robot"},"sellerHolidayMode":{"title":"Modo vacaciones","subtitle":"Pausa tu tienda","section":"settings","icon":"fa-plane"},"sellerPayoutSchedule":{"title":"Calendario de pagos","subtitle":"Cuándo cobras","section":"payouts","icon":"fa-calendar-check"},"sellerTaxCenter":{"title":"Centro fiscal","subtitle":"IVA y modelos","section":"taxes","icon":"fa-landmark"},"sellerInvoiceStudio":{"title":"Estudio de facturas","subtitle":"Diseña facturas","section":"invoices","icon":"fa-file-invoice"},"sellerBrandStory":{"title":"Historia de marca","subtitle":"Cuéntalo en tu tienda","section":"settings","icon":"fa-book-open"},"sellerStorefrontDesign":{"title":"Diseño de tienda","subtitle":"Personaliza tu escaparate","section":"settings","icon":"fa-palette"},"sellerBannerStudio":{"title":"Estudio de banners","subtitle":"Crea cabeceras","section":"promotions","icon":"fa-image"},"sellerBadgeTracker":{"title":"Seguidor de insignias","subtitle":"Logros de calidad","section":"badges","icon":"fa-medal"},"sellerRankTracker":{"title":"Seguidor de ranking","subtitle":"Tu posición","section":"rank","icon":"fa-ranking-star"},"sellerGoalTracker":{"title":"Seguidor de metas","subtitle":"Progreso mensual","section":"goals","icon":"fa-bullseye"},"sellerTrainingPath":{"title":"Ruta de formación","subtitle":"Aprende paso a paso","section":"training","icon":"fa-route"},"sellerCommunityForum":{"title":"Foro de vendedores","subtitle":"Comparte experiencias","section":"community","icon":"fa-comments"},"sellerLiveStudio":{"title":"Estudio en directo","subtitle":"Emisiones","section":"live","icon":"fa-video"},"sellerWidgetGallery":{"title":"Galería de widgets","subtitle":"Inserta en tu web","section":"widgets","icon":"fa-puzzle-piece"},"sellerApiKeys":{"title":"Claves API","subtitle":"Acceso técnico","section":"api","icon":"fa-key"},"sellerWebhookConsole":{"title":"Consola webhooks","subtitle":"Eventos en tiempo real","section":"api","icon":"fa-code-branch"},"sellerIntegrationHub":{"title":"Hub de integraciones","subtitle":"Conecta tu ERP","section":"integrations","icon":"fa-plug"},"sellerDataStudio":{"title":"Estudio de datos","subtitle":"Exporta y analiza","section":"export","icon":"fa-database"},"sellerAuditLog":{"title":"Registro de auditoría","subtitle":"Historial de cambios","section":"tools","icon":"fa-clipboard-list"},"sellerSecurityCenter":{"title":"Centro de seguridad","subtitle":"Protege tu cuenta","section":"settings","icon":"fa-shield-halved"},"sellerCompliance":{"title":"Cumplimiento","subtitle":"Normativa vigente","section":"quality","icon":"fa-scale-balanced"},"sellerLocalization":{"title":"Localización","subtitle":"Idioma y región","section":"settings","icon":"fa-earth-europe"},"sellerTranslation":{"title":"Traducción","subtitle":"Multidioma","section":"settings","icon":"fa-language"},"sellerMultiCurrency":{"title":"Multidivisa","subtitle":"Precios en EUR","section":"settings","icon":"fa-coins"},"sellerGiftServices":{"title":"Servicios de regalo","subtitle":"Envoltorio y nota","section":"settings","icon":"fa-gift"},"sellerLoyaltyProgram":{"title":"Programa de fidelidad","subtitle":"Premia a tus clientes","section":"promotions","icon":"fa-crown"},"sellerReferralProgram":{"title":"Programa de referidos","subtitle":"Invita compradores","section":"promotions","icon":"fa-handshake"},"sellerAffiliateProgram":{"title":"Programa de afiliados","subtitle":"Colaboradores","section":"promotions","icon":"fa-link"},"sellerPartnerNetwork":{"title":"Red de socios","subtitle":"Puntos de recogida","section":"community","icon":"fa-people-arrows"}});
 Object.assign(INFO_PAGES, {"luckyWheel":{"title":"Rueda de la suerte","html":"<p>Gira la ruleta FIJA y gana descuentos exclusivos para tu próxima recogida Click &amp; Collect.</p><p>Disponible para usuarios registrados. Cada giro puede otorgar un cupón de hasta un 10% en productos participantes.</p><p>Abre la ruleta desde tu panel de usuario para jugar.</p>"}});
 // ===== WRAPPERS: LISTADOS (páginas dedicadas) =====
@@ -10616,7 +11028,7 @@ window.__GEN_COUNT__ = 536;
 /* <<<FIJA_LOTE9_START>>> */
 // ===== LOTE 9 — 100 FUNCIONES NUEVAS =====
 Object.assign(LISTING_DEFS, {"bestElectrónica":{"key":"Electrónica","title":"Lo mejor de Electrónica","subtitle":"Los productos mejor valorados de Electrónica","icon":"fa-microchip","kind":"category","sort":"rating"},"bestModa":{"key":"Moda","title":"Lo mejor de Moda","subtitle":"Los productos mejor valorados de Moda","icon":"fa-shirt","kind":"category","sort":"rating"},"bestDeportes":{"key":"Deportes","title":"Lo mejor de Deportes","subtitle":"Los productos mejor valorados de Deportes","icon":"fa-futbol","kind":"category","sort":"rating"},"bestHogar":{"key":"Hogar","title":"Lo mejor de Hogar","subtitle":"Los productos mejor valorados de Hogar","icon":"fa-couch","kind":"category","sort":"rating"},"bestBelleza":{"key":"Belleza","title":"Lo mejor de Belleza","subtitle":"Los productos mejor valorados de Belleza","icon":"fa-spa","kind":"category","sort":"rating"},"bestJuguetes":{"key":"Juguetes","title":"Lo mejor de Juguetes","subtitle":"Los productos mejor valorados de Juguetes","icon":"fa-puzzle-piece","kind":"category","sort":"rating"},"bestLibros":{"key":"Libros","title":"Lo mejor de Libros","subtitle":"Los productos mejor valorados de Libros","icon":"fa-book","kind":"category","sort":"rating"},"bestCocina":{"key":"Cocina","title":"Lo mejor de Cocina","subtitle":"Los productos mejor valorados de Cocina","icon":"fa-utensils","kind":"category","sort":"rating"},"bestJardín":{"key":"Jardín","title":"Lo mejor de Jardín","subtitle":"Los productos mejor valorados de Jardín","icon":"fa-leaf","kind":"category","sort":"rating"},"bestBebés":{"key":"Bebés","title":"Lo mejor de Bebés","subtitle":"Los productos mejor valorados de Bebés","icon":"fa-baby","kind":"category","sort":"rating"},"bestAutomóvil":{"key":"Automóvil","title":"Lo mejor de Automóvil","subtitle":"Los productos mejor valorados de Automóvil","icon":"fa-car","kind":"category","sort":"rating"},"bestMascotas":{"key":"Mascotas","title":"Lo mejor de Mascotas","subtitle":"Los productos mejor valorados de Mascotas","icon":"fa-paw","kind":"category","sort":"rating"},"bestSalud":{"key":"Salud","title":"Lo mejor de Salud","subtitle":"Los productos mejor valorados de Salud","icon":"fa-heart-pulse","kind":"category","sort":"rating"},"bestOficina":{"key":"Oficina","title":"Lo mejor de Oficina","subtitle":"Los productos mejor valorados de Oficina","icon":"fa-briefcase","kind":"category","sort":"rating"},"topRatedAll":{"key":"topRatedAll","title":"Mejor valorados","subtitle":"Los productos con mejores reseñas","icon":"fa-star","kind":"rated","sort":"rating"},"bigDiscounts":{"key":"bigDiscounts","title":"Grandes descuentos","subtitle":"Descuentos de 15% o más","icon":"fa-percent","kind":"deal","min":15},"megaSavings":{"key":"megaSavings","title":"Ahorro mega","subtitle":"Ofertas de 10% o más","icon":"fa-tags","kind":"deal","min":10},"under30":{"key":"under30","title":"Menos de 30 €","subtitle":"Buenas compras por poco","icon":"fa-coins","kind":"under","max":30},"under40":{"key":"under40","title":"Menos de 40 €","subtitle":"Calidad accesible","icon":"fa-coins","kind":"under","max":40},"giftCentral":{"key":"giftCentral","title":"Centro de regalos","subtitle":"Para todas las ocasiones","icon":"fa-gift","kind":"gift"},"topSellers":{"key":"topSellers","title":"Más vendidos","subtitle":"Los favoritos de los compradores","icon":"fa-fire","kind":"bestseller","sort":"bestseller"},"trendingNow":{"key":"trendingNow","title":"Tendencias","subtitle":"Lo que está de moda ahora","icon":"fa-chart-line","kind":"trending"},"newestAll":{"key":"newestAll","title":"Recién llegados","subtitle":"Lo último en la tienda","icon":"fa-sparkles","kind":"new"},"staffPicks":{"key":"staffPicks","title":"Selección del equipo","subtitle":"Elegidos por FIJA","icon":"fa-medal","kind":"rated","sort":"rating"},"byNovaTech":{"key":"NovaTech","title":"Marca NovaTech","subtitle":"Todos los productos NovaTech","icon":"fa-tag","kind":"brand"},"byFIJA":{"key":"FIJA","title":"Marca FIJA","subtitle":"Todos los productos FIJA","icon":"fa-tag","kind":"brand"},"byCasaLuz":{"key":"CasaLuz","title":"Marca CasaLuz","subtitle":"Todos los productos CasaLuz","icon":"fa-tag","kind":"brand"},"bySportPro":{"key":"SportPro","title":"Marca SportPro","subtitle":"Todos los productos SportPro","icon":"fa-tag","kind":"brand"},"byBioVida":{"key":"BioVida","title":"Marca BioVida","subtitle":"Todos los productos BioVida","icon":"fa-tag","kind":"brand"},"byVeraModa":{"key":"VeraModa","title":"Marca VeraModa","subtitle":"Todos los productos VeraModa","icon":"fa-tag","kind":"brand"},"byLumen":{"key":"Lumen","title":"Marca Lumen","subtitle":"Todos los productos Lumen","icon":"fa-tag","kind":"brand"},"byPetCare":{"key":"PetCare","title":"Marca PetCare","subtitle":"Todos los productos PetCare","icon":"fa-tag","kind":"brand"}});
-Object.assign(INFO_PAGES, {"nxClickCollectGuide":{"title":"Guía Click & Collect","html":"<p>FIJA es un marketplace de recogida en tienda. Compra online y recoge tu pedido en el punto del vendedor mostrando tu código QR.</p><p>No hacemos envíos a domicilio: tu producto te espera en el punto de recogida.</p>"},"nxHowPickupWorks":{"title":"Cómo funciona la recogida","html":"<p>1. Eliges tus productos. 2. Pagas de forma segura. 3. Recibes un QR de recogida. 4. Lo muestras en el punto del vendedor y retiras tu compra.</p>"},"nxPickupPointsMap":{"title":"Puntos de recogida","html":"<p>Encuentra el punto de recogida más cercano en el mapa de la pasarela de pago al confirmar tu pedido.</p>"},"nxQrGuide":{"title":"Tu código QR de recogida","html":"<p>Cada pedido genera un código QR único. Muéstralo en el punto de recogida para validar tu compra al instante.</p>"},"nxPaymentSecurity":{"title":"Seguridad de pago","html":"<p>Todos los pagos están cifrados. FIJA nunca comparte tus datos de tarjeta con los vendedores.</p>"},"nxCommissionInfo":{"title":"Comisión FIJA 4,7%","html":"<p>FIJA absorbe una comisión del 4,7% sobre cada venta. Los descuentos de casa los cubre FIJA, no el vendedor.</p>"},"nxSellGuide":{"title":"Cómo vender en FIJA","html":"<p>Regístrate como vendedor, verifica tu identidad y publica tus productos. Tus clientes los recogen en tu punto.</p>"},"nxSellerVerification":{"title":"Verificación de vendedor","html":"<p>Para vender necesitas una cuenta verificada: documenta tu identidad y tu punto de recogida.</p>"},"nxReturnsStep":{"title":"Cómo devolver","html":"<p>Tienes 30 días para devolver. El reembolso se procesa al verificar la recogida del producto devuelto.</p>"},"nxRefundPolicy":{"title":"Política de reembolso","html":"<p>El reembolso se emite en 24-48h tras aceptar la devolución. Depende de tu método de pago.</p>"},"nxOrderTracking":{"title":"Seguimiento de pedido","html":"<p>Consulta el estado de tus pedidos en Mi Cuenta y el QR de recogida asociado a cada uno.</p>"},"nxAccountHelp":{"title":"Ayuda con tu cuenta","html":"<p>Gestiona tu perfil, contraseña y seguridad desde Mi Cuenta. Registro obligatorio para comprar.</p>"},"nxPrivacyPolicy":{"title":"Política de privacidad","html":"<p>Tus datos se usan solo para procesar tu compra y la recogida. Puedes exportarlos o eliminarlos.</p>"},"nxCookiePolicy":{"title":"Política de cookies","html":"<p>Usamos cookies para mejorar tu experiencia y recordar tu carrito entre sesiones.</p>"},"nxTermsUse":{"title":"Términos de uso","html":"<p>Condiciones de uso del marketplace FIJA. Al comprar aceptas recoger en el punto del vendedor.</p>"},"nxAccessibilityInfo":{"title":"Accesibilidad","html":"<p>Ofrecemos modo alto contraste, texto grande y navegación por teclado para una experiencia inclusiva.</p>"},"nxSustainability":{"title":"Sostenibilidad","html":"<p>Al recoger en tienda reducimos envíos y emisiones. Compra local, recoge cerca.</p>"},"nxGiftCardsInfo":{"title":"Tarjetas regalo","html":"<p>Regala FIJA con tarjetas regalo digitales. El saldo se aplica en el pago de recogida.</p>"},"nxLoyaltyProgram":{"title":"Programa de puntos","html":"<p>Gana puntos en cada recogida y canjéalos por descuentos en tus próximas compras.</p>"},"nxReferralProgram":{"title":"Programa de referidos","html":"<p>Invita a amigos a FIJA y ambos reciben un cupón de bienvenida para su primera recogida.</p>"},"nxWarrantyInfo":{"title":"Garantía","html":"<p>Los productos incluyen garantía legal de 2 años. Consulta la ficha de cada artículo.</p>"},"nxAuthenticityInfo":{"title":"Autenticidad","html":"<p>Verificamos los vendedores y marcas para garantizar productos originales en FIJA.</p>"},"nxShippingPolicy":{"title":"Sobre el envío","html":"<p>FIJA es exclusivamente Click & Collect: no realizamos envíos a domicilio. Recoges en el punto.</p>"},"nxContactInfo":{"title":"Contacto","html":"<p>Escríbenos a soporte@fija.com o usa el chat en vivo desde Mi Cuenta.</p>"},"nxAboutFija":{"title":"Sobre FIJA","html":"<p>FIJA es un marketplace de recogida en tienda con identidad propia, pensado para compra local.</p>"},"nxCareersInfo":{"title":"Empleo","html":"<p>Únete al equipo que construye el futuro del comercio de recogida. Mira nuestras ofertas.</p>"},"nxPressInfo":{"title":"Prensa","html":"<p>Notas de prensa, logos y recursos para medios sobre FIJA.</p>"},"nxSitemapInfo":{"title":"Mapa del sitio","html":"<p>Explora todas las categorías, marcas y secciones de ayuda de FIJA en un vistazo.</p>"},"nxSellerFeesInfo":{"title":"Comisiones de vendedor","html":"<p>Comisión única del 4,7%. Sin costes ocultos: publicar y vender es transparente.</p>"},"nxDataRequestInfo":{"title":"Tus datos","html":"<p>Solicita la exportación o eliminación de tus datos personales en cualquier momento.</p>"}});
+Object.assign(INFO_PAGES, {"nxClickCollectGuide":{"title":"Guía Click & Collect","html":"<p>FIJA es un marketplace de recogida en tienda. Compra online y recoge tu pedido en el punto del vendedor mostrando tu código QR.</p><p>No hacemos envíos a domicilio: tu producto te espera en el punto de recogida.</p>"},"nxHowPickupWorks":{"title":"Cómo funciona la recogida","html":"<p>1. Eliges tus productos. 2. Pagas de forma segura. 3. Recibes un QR de recogida. 4. Lo muestras en el punto del vendedor y retiras tu compra.</p>"},"nxPickupPointsMap":{"title":"Puntos de recogida","html":"<p>Encuentra el punto de recogida más cercano en el mapa de la pasarela de pago al confirmar tu pedido.</p>"},"nxQrGuide":{"title":"Tu código QR de recogida","html":"<p>Cada pedido genera un código QR único. Muéstralo en el punto de recogida para validar tu compra al instante.</p>"},"nxPaymentSecurity":{"title":"Seguridad de pago","html":"<p>Todos los pagos están cifrados. FIJA nunca comparte tus datos de tarjeta con los vendedores.</p>"},"nxCommissionInfo":{"title":"Comisión FIJA 4,7%","html":"<p>FIJA absorbe una comisión del 4,7% sobre cada venta. Los descuentos de casa los cubre FIJA, no el vendedor.</p>"},"nxSellGuide":{"title":"Cómo vender en FIJA","html":"<p>Regístrate como vendedor, verifica tu identidad y publica tus productos. Tus clientes los recogen en tu punto.</p>"},"nxSellerVerification":{"title":"Verificación de vendedor","html":"<p>Para vender necesitas una cuenta verificada: documenta tu identidad y tu punto de recogida.</p>"},"nxReturnsStep":{"title":"Cómo devolver","html":"<p>Tienes 30 días para devolver. El reembolso se procesa al verificar la recogida del producto devuelto.</p>"},"nxRefundPolicy":{"title":"Política de reembolso","html":"<p>El reembolso se emite en 24-48h tras aceptar la devolución. Depende de tu método de pago.</p>"},"nxOrderTracking":{"title":"Seguimiento de pedido","html":"<p>Consulta el estado de tus pedidos en Mi Cuenta y el QR de recogida asociado a cada uno.</p>"},"nxAccountHelp":{"title":"Ayuda con tu cuenta","html":"<p>Gestiona tu perfil, contraseña y seguridad desde Mi Cuenta. Registro obligatorio para comprar.</p>"},"nxPrivacyPolicy":{"title":"Política de privacidad","html":"<p>Tus datos se usan solo para procesar tu compra y la recogida. Puedes exportarlos o eliminarlos.</p>"},"nxCookiePolicy":{"title":"Política de cookies","html":"<p>Usamos cookies para mejorar tu experiencia y recordar tu carrito entre sesiones.</p>"},"nxTermsUse":{"title":"Términos de uso","html":"<p>Condiciones de uso del marketplace FIJA. Al comprar aceptas recoger en el punto del vendedor.</p>"},"nxAccessibilityInfo":{"title":"Accesibilidad","html":"<p>Ofrecemos modo alto contraste, texto grande y navegación por teclado para una experiencia inclusiva.</p>"},"nxSustainability":{"title":"Sostenibilidad","html":"<p>Al recoger en tienda reducimos envíos y emisiones. Compra local, recoge cerca.</p>"},"nxGiftCardsInfo":{"title":"Tarjetas regalo","html":"<p>Regala FIJA con tarjetas regalo digitales. El saldo se aplica en el pago de recogida.</p>"},"nxLoyaltyProgram":{"title":"Programa de puntos","html":"<p>Gana puntos en cada recogida y canjéalos por descuentos en tus próximas compras.</p>"},"nxReferralProgram":{"title":"Programa de referidos","html":"<p>Invita a amigos a FIJA y ambos reciben un cupón de bienvenida para su primera recogida.</p>"},"nxWarrantyInfo":{"title":"Garantía","html":"<p>Los productos incluyen garantía legal de 2 años. Consulta la ficha de cada artículo.</p>"},"nxAuthenticityInfo":{"title":"Autenticidad","html":"<p>Verificamos los vendedores y marcas para garantizar productos originales en FIJA.</p>"},"nxShippingPolicy":{"title":"Sobre el envío","html":"<p>FIJA es exclusivamente Click & Collect: no realizamos envíos a domicilio. Recoges en el punto.</p>"},"nxContactInfo":{"title":"Contacto","html":"<p>Escríbenos a jchenw02@gmail.com o usa el chat en vivo desde Mi Cuenta.</p>"},"nxAboutFija":{"title":"Sobre FIJA","html":"<p>FIJA es un marketplace de recogida en tienda con identidad propia, pensado para compra local.</p>"},"nxCareersInfo":{"title":"Empleo","html":"<p>Únete al equipo que construye el futuro del comercio de recogida. Mira nuestras ofertas.</p>"},"nxPressInfo":{"title":"Prensa","html":"<p>Notas de prensa, logos y recursos para medios sobre FIJA.</p>"},"nxSitemapInfo":{"title":"Mapa del sitio","html":"<p>Explora todas las categorías, marcas y secciones de ayuda de FIJA en un vistazo.</p>"},"nxSellerFeesInfo":{"title":"Comisiones de vendedor","html":"<p>Comisión única del 4,7%. Sin costes ocultos: publicar y vender es transparente.</p>"},"nxDataRequestInfo":{"title":"Tus datos","html":"<p>Solicita la exportación o eliminación de tus datos personales en cualquier momento.</p>"}});
 
 Object.assign(INFO_PAGES, {
   "terminos": {
@@ -10659,7 +11071,7 @@ Object.assign(INFO_PAGES, {
     html: `
       <p>En FIJA nos tomamos en serio tu privacidad. Esta política explica qué datos recogemos, para qué y qué derechos tienes conforme al Reglamento (UE) 2016/679 (RGPD) y la LOPDGDD.</p>
       <h2 class="text-lg font-bold text-fija-900 mt-4">Responsable del tratamiento</h2>
-      <p>FIJA Marketplace (responsable), con domicilio a efectos de contacto en soporte@fija.com. Puedes escribirnos para cualquier cuestión sobre tus datos.</p>
+      <p>FIJA Marketplace (responsable), con domicilio a efectos de contacto en jchenw02@gmail.com. Puedes escribirnos para cualquier cuestión sobre tus datos.</p>
       <h2 class="text-lg font-bold text-fija-900 mt-4">¿Qué datos recogemos?</h2>
       <ul class="list-disc pl-5 space-y-1">
         <li><strong>Datos de registro:</strong> nombre, correo, contraseña (cifrada) y, en su caso, perfil de vendedor.</li>
@@ -10679,7 +11091,7 @@ Object.assign(INFO_PAGES, {
       <h2 class="text-lg font-bold text-fija-900 mt-4">Conservación</h2>
       <p>Conservamos tus datos mientras tengas la cuenta activa y, tras su cierre, durante los plazos legalmente exigibles (p. ej. fiscalía).</p>
       <h2 class="text-lg font-bold text-fija-900 mt-4">Tus derechos</h2>
-      <p>Puedes en cualquier momento <strong>acceder, rectificar, suprimir, oponerte, limitar y portar</strong> tus datos, así como retirar el consentimiento. Use «Mis datos» en tu cuenta o escríbenos a soporte@fija.com.</p>
+      <p>Puedes en cualquier momento <strong>acceder, rectificar, suprimir, oponerte, limitar y portar</strong> tus datos, así como retirar el consentimiento. Use «Mis datos» en tu cuenta o escríbenos a jchenw02@gmail.com.</p>
       <h2 class="text-lg font-bold text-fija-900 mt-4">Menores</h2>
       <p>La Plataforma no está dirigida a menores de 16 años sin autorización; no recogemos conscientemente sus datos.</p>
     `
@@ -10884,7 +11296,7 @@ Object.assign(INFO_PAGES, {
         <thead><tr class="bg-gray-50"><th class="text-left p-2 border">Canal</th><th class="text-left p-2 border">Detalle</th></tr></thead>
         <tbody>
           <tr><td class="p-2 border">Chat en vivo</td><td class="p-2 border">Desde Mi Cuenta · respuesta inmediata</td></tr>
-          <tr><td class="p-2 border">Correo</td><td class="p-2 border">soporte@fija.com</td></tr>
+          <tr><td class="p-2 border">Correo</td><td class="p-2 border">jchenw02@gmail.com</td></tr>
           <tr><td class="p-2 border">WhatsApp</td><td class="p-2 border">+34 633 616 054</td></tr>
           <tr><td class="p-2 border">Teléfono</td><td class="p-2 border">633 616 054 · l-v 9-21 h</td></tr>
         </tbody>
