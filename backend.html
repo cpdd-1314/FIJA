@@ -572,6 +572,22 @@
                                 <button onclick="restoreWelcomeTemplate()" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-rotate-left mr-1"></i>Restaurar texto por defecto</button>
                             </div>
                         </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <div class="flex items-start justify-between gap-3 mb-1">
+                                <h2 class="font-semibold">Correo de confirmación de compra</h2>
+                                <span id="order-cfg-state" class="text-[11px] px-2 py-1 rounded-full bg-fija-100 text-fija-600">sin configurar</span>
+                            </div>
+                            <p class="text-xs text-fija-500 mb-4 leading-relaxed">Se envía automáticamente al comprador en cuanto se crea el pedido, con el resumen de artículos, el total, el <b>código de recogida</b> y el punto de recogida. Usa las mismas credenciales que el correo del boletín (Service ID y Public Key): solo necesitas, si quieres, una <b>plantilla distinta</b> para pedidos.</p>
+                            <label class="flex items-center gap-2 mb-4 text-sm text-fija-700"><input type="checkbox" id="set-order-enabled" class="rounded border-fija-300"><span>Enviar correo de confirmación al crear un pedido</span></label>
+                            <div class="mb-4"><label class="block text-xs font-medium text-fija-700 mb-1">EmailJS · Template ID para pedidos <span class="text-fija-400 font-normal">(opcional: vacío = usa la plantilla del boletín)</span></label><input type="text" id="set-emailjs-order-template" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="template_xxxxxx"></div>
+                            <div class="mb-4"><label class="block text-xs font-medium text-fija-700 mb-1">Asunto del correo</label><input type="text" id="set-order-subject" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="Tu pedido {{pedido}} en {{tienda}}"></div>
+                            <div><label class="block text-xs font-medium text-fija-700 mb-1">Texto del correo <span class="text-fija-400 font-normal">(variables: {{nombre}}, {{pedido}}, {{total}}, {{codigo}}, {{fecha}}, {{tienda}}, {{soporte}}, {{web}})</span></label><textarea id="set-order-message" rows="8" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm font-mono text-[12px]"></textarea></div>
+                            <p class="text-[11px] text-fija-400 mt-2">El resumen de artículos, el total y el código de recogida se añaden solos debajo del texto: no hace falta escribirlos.</p>
+                            <div class="flex flex-wrap gap-2 mt-4">
+                                <button onclick="sendTestOrder()" class="border border-fija-300 text-fija-700 hover:bg-fija-50 px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-paper-plane mr-2"></i>Enviar correo de prueba</button>
+                                <button onclick="restoreOrderTemplate()" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-rotate-left mr-1"></i>Restaurar texto por defecto</button>
+                            </div>
+                        </div>
                         <button onclick="savePlatformSettings()" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-floppy-disk mr-2"></i>Guardar ajustes</button>
                     </section>
                 </section>
@@ -770,7 +786,8 @@
         };
         const DEFAULT_SETTINGS = { commissionRate: 0.047, freeShipThreshold: 0, storeName: 'FIJA', maintenance: false, supportEmail: 'soporte@fija.demo',
             welcomeEmailEnabled: true, emailjsService: '', emailjsTemplate: '', emailjsKey: '', emailWebhookUrl: '',
-            welcomeSubject: '¡Gracias por suscribirte a {{tienda}}!', welcomeMessage: '' };
+            welcomeSubject: '¡Gracias por suscribirte a {{tienda}}!', welcomeMessage: '',
+            orderEmailEnabled: true, emailjsOrderTemplate: '', orderSubject: 'Tu pedido {{pedido}} en {{tienda}}', orderMessage: '' };
         const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [], tickets: [] };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
@@ -1319,7 +1336,7 @@
                     const n = o.netTotal != null ? o.netTotal : o.items.reduce((s, it) => s + itemNet(it), 0);
                     return `<tr>
                     <td class="px-6 py-4 font-mono text-xs">${escapeHtml((o.id||'').slice(0,8).toUpperCase())}</td>
-                    <td class="px-6 py-4">${escapeHtml(o.buyerName || o.buyerEmail || '—')}</td>
+                    <td class="px-6 py-4">${escapeHtml(o.buyerName || o.buyerEmail || '—')}${o.emailStatus ? `<div class="mt-1">${emailStatusChip(o.emailStatus)}</div>` : ''}</td>
                     <td class="px-6 py-4 font-medium"><button onclick="openOrderDetail('${o.id}')" class="hover:underline text-fija-900 cursor-pointer" title="Ver detalle del pedido">${formatEuro(paid)}</button></td>
                     <td class="px-6 py-4">${formatEuro(g)}</td>
                     <td class="px-6 py-4 text-fija-gold font-medium">${formatEuro(c)}</td>
@@ -1978,11 +1995,14 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
 </td></tr>
 </table></td></tr></table></body></html>`;
         }
-        async function deliverEmail(to, subject, html, text) {
+        async function deliverEmail(to, subject, html, text, opts) {
+            const o = opts || {};
             const s = state.settings || {};
-            if (s.welcomeEmailEnabled === false) return { status: 'desactivado' };
+            const enabled = o.kind === 'order' ? (s.orderEmailEnabled !== false) : (s.welcomeEmailEnabled !== false);
+            if (!enabled) return { status: 'desactivado' };
             const service = (s.emailjsService || '').trim();
-            const template = (s.emailjsTemplate || '').trim();
+            const generalTemplate = (s.emailjsTemplate || '').trim();
+            const template = o.kind === 'order' ? (((s.emailjsOrderTemplate || '').trim()) || generalTemplate) : generalTemplate;
             const key = (s.emailjsKey || '').trim();
             const webhook = (s.emailWebhookUrl || '').trim();
             const ctrl = new AbortController();
@@ -1992,7 +2012,8 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                     const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
                         body: JSON.stringify({ service_id: service, template_id: template, user_id: key,
-                            template_params: { to_email: to, email: to, to_name: to, subject: subject, message: text, html: html, store: s.storeName || 'FIJA', reply_to: s.supportEmail || '' } })
+                            template_params: { to_email: to, email: to, to_name: to, subject: subject, message: text, html: html, store: s.storeName || 'FIJA', reply_to: s.supportEmail || '',
+                                kind: o.kind || 'welcome', order_id: o.orderId || '', total: o.total || '' } })
                     });
                     if (!res.ok) throw new Error('EmailJS ' + res.status + ': ' + (await res.text()).slice(0, 160));
                     return { status: 'enviado' };
@@ -2000,7 +2021,8 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 if (webhook) {
                     const res = await fetch(webhook, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
-                        body: JSON.stringify({ to: to, subject: subject, html: html, text: text, from: s.supportEmail || '', store: s.storeName || 'FIJA' })
+                        body: JSON.stringify({ to: to, subject: subject, html: html, text: text, from: s.supportEmail || '', store: s.storeName || 'FIJA',
+                            kind: o.kind || 'welcome', orderId: o.orderId || '', total: o.total || '' })
                     });
                     if (!res.ok) throw new Error('Webhook ' + res.status);
                     return { status: 'enviado' };
@@ -2008,6 +2030,153 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 return { status: 'pendiente' };
             } finally { clearTimeout(tmr); }
         }
+        // ---------- Correo de confirmación de compra (post-compra) ----------
+        const ORDER_TEXT_DEFAULT = [
+            '¡Hola {{nombre}}!',
+            '',
+            'Gracias por comprar en {{tienda}}. Tu pedido {{pedido}} por {{total}} ya está registrado y lo estamos preparando.',
+            '',
+            'Te avisaremos en cuanto puedas pasar a recogerlo. Tu código de recogida aparece más abajo: enséñalo (o el QR) en el punto de recogida.',
+            '',
+            'También tienes el QR y el detalle del pedido en Mi Cuenta → Pedidos.',
+            '',
+            '¿Alguna duda? Responde a este correo o escríbenos a {{soporte}}.'
+        ].join('\n');
+        function orderFill(tpl, order) {
+            const s = state.settings || {};
+            const o = order || {};
+            const name = o.buyerName || 'cliente';
+            const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
+            const total = (typeof o.total === 'number') ? formatEuro(o.total) : '';
+            return String(tpl || '')
+                .replace(/\{\{\s*nombre\s*\}\}/gi, name)
+                .replace(/\{\{\s*pedido\s*\}\}/gi, '#' + String(o.id || '').slice(0, 8).toUpperCase())
+                .replace(/\{\{\s*total\s*\}\}/gi, total)
+                .replace(/\{\{\s*codigo\s*\}\}/gi, code)
+                .replace(/\{\{\s*fecha\s*\}\}/gi, new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES'))
+                .replace(/\{\{\s*email\s*\}\}/gi, o.buyerEmail || '')
+                .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
+        }
+        function orderPickupAddress(o) {
+            const first = (o.items || [])[0] || {};
+            const p = (state.products || []).find(x => x.id === first.productId);
+            if (p && p.pickupAddress) return p.pickupAddress;
+            const s = (state.profiles || []).find(x => x.userId === first.sellerId);
+            return (s && s.address) || '';
+        }
+        function orderEmailHtml(order) {
+            const s = state.settings || {};
+            const store = s.storeName || 'FIJA';
+            const support = s.supportEmail || 'soporte@fija.demo';
+            const o = order || {};
+            const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
+            const addr = orderPickupAddress(o);
+            const body = orderFill(s.orderMessage || ORDER_TEXT_DEFAULT, o)
+                .split('\n')
+                .map(l => l.trim() === '' ? '<div style="height:9px"></div>'
+                    : `<p style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#374151">${escapeHtml(l)}</p>`)
+                .join('');
+            const items = (o.items || []).map(it => {
+                const sub = +((Number(it.price) || 0) * (Number(it.quantity) || 0)).toFixed(2);
+                const was = (it.basePrice != null && Number(it.basePrice) > Number(it.price))
+                    ? ` <span style="color:#9ca3af;text-decoration:line-through;font-size:12px">${formatEuro(it.basePrice)}</span>` : '';
+                return `<tr>
+                    <td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13px;color:#111827">${escapeHtml(it.title)}${was}
+                        <div style="font-size:11px;color:#9ca3af">${escapeHtml(it.sellerName || '')} · ${it.quantity} × ${formatEuro(it.price)}</div></td>
+                    <td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13px;text-align:right;color:#111827;white-space:nowrap">${formatEuro(sub)}</td>
+                </tr>`;
+            }).join('');
+            const lines = [];
+            if (o.couponDiscount) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#059669">Cupón ${escapeHtml(o.couponCode || '')}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#059669">− ${formatEuro(o.couponDiscount)}</td></tr>`);
+            if (o.giftWrapFee) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#4b5563">Embalaje regalo</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#4b5563">${formatEuro(o.giftWrapFee)}</td></tr>`);
+            return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(store)}</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
+<tr><td style="background:#111827;padding:22px 24px">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#ffffff">FI<span style="color:#f5b301">J</span>A</div>
+<div style="font-size:11px;color:#f5b301;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Confirmación de pedido</div>
+</td></tr>
+<tr><td style="height:4px;background:#f5b301"></td></tr>
+<tr><td style="padding:26px 24px 8px">${body}
+<div style="margin:18px 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;font-weight:700">Tu pedido</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items}${lines.join('')}
+<tr><td style="padding:12px 0 4px;font-size:15px;font-weight:800;color:#111827">Total</td><td style="padding:12px 0 4px;font-size:15px;font-weight:800;text-align:right;color:#111827">${formatEuro(o.total || 0)}</td></tr></table>
+<div style="margin:18px 0 4px;border:1px dashed #d1d5db;border-radius:12px;padding:16px;text-align:center;background:#fafafa">
+<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;font-weight:700">Código de recogida</div>
+<div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:2px;color:#111827;margin-top:6px">${escapeHtml(code)}</div>
+${addr ? `<div style="font-size:12px;color:#6b7280;margin-top:8px;line-height:1.5">${escapeHtml(addr)}</div>` : ''}
+</div>
+<div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver mi pedido</a></div>
+</td></tr>
+<tr><td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.6">
+Pedido ${escapeHtml('#' + String(o.id || '').slice(0, 8).toUpperCase())} · ${escapeHtml(new Date(o.createdAt || Date.now()).toLocaleString('es-ES'))} · ${escapeHtml(o.method || '')}<br>
+Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${escapeHtml(o.buyerEmail || '')}. ¿Dudas? Escríbenos a ${escapeHtml(support)}.
+</td></tr>
+</table></td></tr></table></body></html>`;
+        }
+        function orderEmailConfigState() {
+            const s = state.settings || {};
+            const el = document.getElementById('order-cfg-state');
+            if (!el) return;
+            const ej = !!(s.emailjsService && (s.emailjsOrderTemplate || s.emailjsTemplate) && s.emailjsKey);
+            const wh = !!(s.emailWebhookUrl || '').trim();
+            const on = s.orderEmailEnabled !== false;
+            let txt = 'sin configurar', cls = 'bg-amber-100 text-amber-700';
+            if (!on) { txt = 'desactivado'; cls = 'bg-gray-100 text-gray-500'; }
+            else if (ej) { txt = 'EmailJS activo'; cls = 'bg-green-100 text-green-700'; }
+            else if (wh) { txt = 'Webhook activo'; cls = 'bg-green-100 text-green-700'; }
+            // El chip del boletín también depende de estos mismos credenciales
+            el.textContent = txt; el.className = 'text-[11px] px-2 py-1 rounded-full ' + cls;
+        }
+        window.restoreOrderTemplate = async () => {
+            const ta = document.getElementById('set-order-message');
+            if (ta) ta.value = ORDER_TEXT_DEFAULT;
+            showToast('Texto por defecto restaurado (pulsa Guardar ajustes)');
+        };
+        window.sendTestOrder = async () => {
+            const to = await fijaPrompt({ title: 'Correo de prueba', message: '¿A qué dirección enviamos la confirmación de pedido de prueba?', placeholder: 'tu@correo.com' });
+            if (!to) return;
+            const s = state.settings || {};
+            // Usa el pedido más reciente real; si no hay, uno de ejemplo
+            const sample = (state.orders || [])[0] || {
+                id: 'demo1234', buyerEmail: to.trim(), buyerName: 'Cliente de prueba', total: 49.9,
+                pickupCode: 'FIJA-DEMO01', createdAt: Date.now(), method: 'Tarjeta',
+                items: [{ title: 'Producto de ejemplo', quantity: 1, price: 49.9, sellerName: 'FIJA' }]
+            };
+            const order = Object.assign({}, sample, { buyerEmail: to.trim() });
+            const subject = orderFill(s.orderSubject || 'Tu pedido {{pedido}} en {{tienda}}', order);
+            try {
+                const r = await deliverEmail(to.trim(), subject, orderEmailHtml(order), orderFill(s.orderMessage || ORDER_TEXT_DEFAULT, order),
+                    { kind: 'order', orderId: order.id, total: order.total });
+                if (r.status === 'enviado') showToast('Confirmación de prueba enviada a ' + to.trim());
+                else if (r.status === 'desactivado') showToast('El envío de pedidos está desactivado en los ajustes', true);
+                else showToast('Falta configurar EmailJS o el webhook (guarda antes los ajustes)', true);
+            } catch (e) { showToast('Error al enviar: ' + String(e.message || e).slice(0, 120), true); }
+        };
+        window.resendOrderEmail = async (orderId) => {
+            const o = (state.orders || []).find(x => x.id === orderId);
+            if (!o) return showToast('Pedido no encontrado', true);
+            const to = (o.buyerEmail || '').trim();
+            if (!to) return showToast('El pedido no tiene correo del comprador', true);
+            const s = state.settings || {};
+            const subject = orderFill(s.orderSubject || 'Tu pedido {{pedido}} en {{tienda}}', o);
+            let mail;
+            try {
+                mail = await deliverEmail(to, subject, orderEmailHtml(o), orderFill(s.orderMessage || ORDER_TEXT_DEFAULT, o),
+                    { kind: 'order', orderId: o.id, total: o.total });
+            } catch (e) { mail = { status: 'error', error: String(e.message || e).slice(0, 200) }; }
+            o.emailStatus = mail.status; o.emailAt = Date.now(); o.emailError = mail.error || null;
+            await mutateCollection('orders', arr => { const x = arr.find(y => y.id === orderId); if (x) { x.emailStatus = mail.status; x.emailAt = o.emailAt; x.emailError = o.emailError; } });
+            try { state.orders = (await readDataFile('orders')).data || []; } catch (e) {}
+            try { renderAdmin(); } catch (e) {}
+            if (document.getElementById('order-detail-modal') && !document.getElementById('order-detail-modal').classList.contains('hide')) openOrderDetail(orderId);
+            if (mail.status === 'enviado') showToast('Confirmación reenviada a ' + to);
+            else if (mail.status === 'pendiente') showToast('Sin proveedor configurado: el correo queda pendiente', true);
+            else if (mail.status === 'desactivado') showToast('El envío de pedidos está desactivado en los ajustes', true);
+            else showToast('Error al enviar: ' + (mail.error || ''), true);
+        };
         function emailConfigState() {
             const s = state.settings || {};
             const el = document.getElementById('email-cfg-state');
@@ -2079,7 +2248,13 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
             set('set-welcome-message', state.settings.welcomeMessage || WELCOME_TEXT_DEFAULT);
             const wEn = document.getElementById('set-welcome-enabled');
             if (wEn) wEn.checked = state.settings.welcomeEmailEnabled !== false;
+            set('set-emailjs-order-template', state.settings.emailjsOrderTemplate || '');
+            set('set-order-subject', state.settings.orderSubject || 'Tu pedido {{pedido}} en {{tienda}}');
+            set('set-order-message', state.settings.orderMessage || ORDER_TEXT_DEFAULT);
+            const oEn = document.getElementById('set-order-enabled');
+            if (oEn) oEn.checked = state.settings.orderEmailEnabled !== false;
             emailConfigState();
+            orderEmailConfigState();
         }
         window.savePlatformSettings = async () => {
             const commission = Math.max(0, Math.min(50, parseFloat(document.getElementById('set-commission').value) || 0)) / 100;
@@ -2095,10 +2270,15 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
             const emailWebhookUrl = val('set-email-webhook');
             const welcomeSubject = val('set-welcome-subject') || '¡Gracias por suscribirte a {{tienda}}!';
             const welcomeMessage = ((document.getElementById('set-welcome-message') || {}).value || '').trim() || WELCOME_TEXT_DEFAULT;
+            const orderEnabled = !!(document.getElementById('set-order-enabled') || {}).checked;
+            const emailjsOrderTemplate = val('set-emailjs-order-template');
+            const orderSubject = val('set-order-subject') || 'Tu pedido {{pedido}} en {{tienda}}';
+            const orderMessage = ((document.getElementById('set-order-message') || {}).value || '').trim() || ORDER_TEXT_DEFAULT;
             try {
                 await mutateSettings(obj => { obj.commissionRate = commission; obj.freeShipThreshold = freeShip; obj.storeName = storeName; obj.supportEmail = supportEmail; obj.maintenance = maintenance;
                     obj.welcomeEmailEnabled = welcomeEnabled; obj.emailjsService = emailjsService; obj.emailjsTemplate = emailjsTemplate; obj.emailjsKey = emailjsKey;
-                    obj.emailWebhookUrl = emailWebhookUrl; obj.welcomeSubject = welcomeSubject; obj.welcomeMessage = welcomeMessage; });
+                    obj.emailWebhookUrl = emailWebhookUrl; obj.welcomeSubject = welcomeSubject; obj.welcomeMessage = welcomeMessage;
+                    obj.orderEmailEnabled = orderEnabled; obj.emailjsOrderTemplate = emailjsOrderTemplate; obj.orderSubject = orderSubject; obj.orderMessage = orderMessage; });
                 await loadAll(); showToast('Ajustes guardados');
             } catch (e) { console.error(e); showToast('Error al guardar los ajustes', true); }
         };
@@ -2547,7 +2727,12 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 <div class="mb-4 text-sm"><span class="text-fija-500">Comprador:</span> <strong>${escapeHtml(o.buyerName || '—')}</strong> · ${escapeHtml(o.buyerEmail || '')}
                 <br><span class="text-fija-500">Código de recogida:</span> <strong class="font-mono">${escapeHtml(orderPickupCode(o))}</strong> ${statusBadge(o.status)}
                 ${o.verifiedAt ? `<br><span class="text-fija-500">Recogido el:</span> ${new Date(o.verifiedAt).toLocaleString('es-ES')} · <span class="text-fija-500">Verificado por:</span> ${escapeHtml(o.verifiedBy || '—')}` : ''}
-                <br><span class="text-fija-500">Método:</span> ${escapeHtml(o.method || '—')}</div>
+                <br><span class="text-fija-500">Método:</span> ${escapeHtml(o.method || '—')}
+                <div class="mt-3 flex flex-wrap items-center gap-2"><span class="text-fija-500">Correo de confirmación:</span>${emailStatusChip(o.emailStatus)}
+                    <button onclick="resendOrderEmail('${o.id}')" class="border border-fija-300 text-fija-700 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-fija-50"><i class="fa-solid fa-paper-plane mr-1"></i>Reenviar confirmación</button>
+                    ${o.emailAt ? `<span class="text-[11px] text-fija-400">${new Date(o.emailAt).toLocaleString('es-ES')}</span>` : ''}
+                    ${o.emailError ? `<span class="text-[11px] text-red-600">${escapeHtml(String(o.emailError).slice(0, 120))}</span>` : ''}
+                </div></div>
                 <table class="w-full text-sm text-left border-collapse">
                     <thead><tr class="text-xs uppercase text-fija-500 border-b border-fija-200"><th class="py-2 font-medium">Producto</th><th class="py-2 text-right font-medium">Cliente paga</th><th class="py-2 text-right font-medium">Bruto empresa</th><th class="py-2 text-right font-medium">Comisión 4,7%</th>${hasDiscount ? '<th class="py-2 text-right font-medium">Descuento FIJA</th>' : ''}<th class="py-2 text-right font-medium">Neto empresa</th></tr></thead>
                     <tbody>${rows}</tbody>

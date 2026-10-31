@@ -4703,6 +4703,14 @@
                 state.promo = null; state.giftWrap = false;
                 await loadAll();
                 goPage({ type: 'orderConfirm' });
+                // Correo de confirmación de compra: se lanza sin bloquear la pantalla
+                // (si el proveedor tarda o falla, el pedido ya está creado).
+                if (order.buyerEmail) {
+                    sendOrderMailAndSave(order).then(r => {
+                        if (r && r.status === 'enviado') showToast('Confirmación enviada a ' + order.buyerEmail);
+                        else if (r && r.status === 'error') showToast('Pedido creado, pero el correo de confirmación no salió', true);
+                    }).catch(e => console.warn('order mail', e));
+                }
             } catch (error) { console.error(error); showToast(error.message === 'no-token' ? 'Configura tu token para crear pedidos' : 'Error al crear el pedido', true); }
         };
 
@@ -6168,11 +6176,18 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
 </td></tr>
 </table></td></tr></table></body></html>`;
         }
-        async function deliverEmail(to, subject, html, text) {
+        // opts: { kind: 'welcome' | 'order', orderId, total }
+        // Cada tipo de correo tiene su propio interruptor y (opcionalmente) su
+        // propia plantilla de EmailJS; si no hay plantilla de pedidos se reutiliza
+        // la general, que recibe {{subject}} y {{html}}.
+        async function deliverEmail(to, subject, html, text, opts) {
+            const o = opts || {};
             const s = storeSettings();
-            if (s.welcomeEmailEnabled === false) return { status: 'desactivado' };
+            const enabled = o.kind === 'order' ? (s.orderEmailEnabled !== false) : (s.welcomeEmailEnabled !== false);
+            if (!enabled) return { status: 'desactivado' };
             const service = (s.emailjsService || '').trim();
-            const template = (s.emailjsTemplate || '').trim();
+            const generalTemplate = (s.emailjsTemplate || '').trim();
+            const template = o.kind === 'order' ? (((s.emailjsOrderTemplate || '').trim()) || generalTemplate) : generalTemplate;
             const key = (s.emailjsKey || '').trim();
             const webhook = (s.emailWebhookUrl || '').trim();
             const ctrl = new AbortController();
@@ -6186,7 +6201,8 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                             template_params: {
                                 to_email: to, email: to, to_name: to, subject: subject,
                                 message: text, html: html, store: s.storeName || 'FIJA',
-                                reply_to: s.supportEmail || ''
+                                reply_to: s.supportEmail || '',
+                                kind: o.kind || 'welcome', order_id: o.orderId || '', total: o.total || ''
                             }
                         })
                     });
@@ -6196,7 +6212,8 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
                 if (webhook) {
                     const res = await fetch(webhook, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
-                        body: JSON.stringify({ to: to, subject: subject, html: html, text: text, from: s.supportEmail || '', store: s.storeName || 'FIJA' })
+                        body: JSON.stringify({ to: to, subject: subject, html: html, text: text, from: s.supportEmail || '', store: s.storeName || 'FIJA',
+                            kind: o.kind || 'welcome', orderId: o.orderId || '', total: o.total || '' })
                     });
                     if (!res.ok) throw new Error('Webhook ' + res.status);
                     return { status: 'enviado' };
@@ -6211,12 +6228,144 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
             const html = welcomeEmailHtml(to);
             const text = welcomeFill(s.welcomeMessage || WELCOME_TEXT_DEFAULT, to);
             try {
-                const r = await deliverEmail(to, subject, html, text);
+                const r = await deliverEmail(to, subject, html, text, { kind: 'welcome' });
                 return { status: r.status, subject: subject, at: Date.now() };
             } catch (e) {
                 console.warn('welcome email', e);
                 return { status: 'error', error: String(e.message || e).slice(0, 200), subject: subject, at: Date.now() };
             }
+        };
+
+        // ---------- 22c. CORREO DE CONFIRMACIÓN DE COMPRA (post-compra) ----------
+        // Se envía al crear el pedido, al correo de la cuenta del comprador. Lleva
+        // resumen de artículos, total, código de recogida y punto de recogida.
+        const ORDER_TEXT_DEFAULT = [
+            '¡Hola {{nombre}}!',
+            '',
+            'Gracias por comprar en {{tienda}}. Tu pedido {{pedido}} por {{total}} ya está registrado y lo estamos preparando.',
+            '',
+            'Te avisaremos en cuanto puedas pasar a recogerlo. Tu código de recogida aparece más abajo: enséñalo (o el QR) en el punto de recogida.',
+            '',
+            'También tienes el QR y el detalle del pedido en Mi Cuenta → Pedidos.',
+            '',
+            '¿Alguna duda? Responde a este correo o escríbenos a {{soporte}}.'
+        ].join('\n');
+
+        function orderFill(tpl, order) {
+            const s = storeSettings();
+            const o = order || {};
+            const name = o.buyerName || (state.profile || {}).username || 'cliente';
+            const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
+            const total = (typeof o.total === 'number') ? formatEuro(o.total) : '';
+            return String(tpl || '')
+                .replace(/\{\{\s*nombre\s*\}\}/gi, name)
+                .replace(/\{\{\s*pedido\s*\}\}/gi, '#' + String(o.id || '').slice(0, 8).toUpperCase())
+                .replace(/\{\{\s*total\s*\}\}/gi, total)
+                .replace(/\{\{\s*codigo\s*\}\}/gi, code)
+                .replace(/\{\{\s*fecha\s*\}\}/gi, new Date(o.createdAt || Date.now()).toLocaleDateString('es-ES'))
+                .replace(/\{\{\s*email\s*\}\}/gi, o.buyerEmail || (state.profile || {}).email || '')
+                .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
+        }
+        function orderPickupAddress(o) {
+            const first = (o.items || [])[0] || {};
+            const p = (state.products || []).find(x => x.id === first.productId);
+            let addr = p ? pickupAddressFor(p) : '';
+            if (!addr) { const s = (state.profiles || []).find(x => x.userId === first.sellerId); addr = (s && s.address) || ''; }
+            return addr || '';
+        }
+        function orderEmailHtml(order) {
+            const s = storeSettings();
+            const store = s.storeName || 'FIJA';
+            const support = s.supportEmail || 'soporte@fija.demo';
+            const o = order || {};
+            const code = o.pickupCode || ('FIJA-' + String(o.id || '').replace(/-/g, '').slice(0, 6).toUpperCase());
+            const addr = orderPickupAddress(o);
+            const body = orderFill(s.orderMessage || ORDER_TEXT_DEFAULT, o)
+                .split('\n')
+                .map(l => l.trim() === '' ? '<div style="height:9px"></div>'
+                    : `<p style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#374151">${escapeHtml(l)}</p>`)
+                .join('');
+            const items = (o.items || []).map(it => {
+                const sub = +((Number(it.price) || 0) * (Number(it.quantity) || 0)).toFixed(2);
+                const was = (it.basePrice != null && Number(it.basePrice) > Number(it.price))
+                    ? ` <span style="color:#9ca3af;text-decoration:line-through;font-size:12px">${formatEuro(it.basePrice)}</span>` : '';
+                return `<tr>
+                    <td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13px;color:#111827">${escapeHtml(it.title)}${was}
+                        <div style="font-size:11px;color:#9ca3af">${escapeHtml(it.sellerName || '')} · ${it.quantity} × ${formatEuro(it.price)}</div></td>
+                    <td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-size:13px;text-align:right;color:#111827;white-space:nowrap">${formatEuro(sub)}</td>
+                </tr>`;
+            }).join('');
+            const lines = [];
+            if (o.couponDiscount) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#059669">Cupón ${escapeHtml(o.couponCode || '')}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#059669">− ${formatEuro(o.couponDiscount)}</td></tr>`);
+            if (o.giftWrapFee) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#4b5563">Embalaje regalo</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#4b5563">${formatEuro(o.giftWrapFee)}</td></tr>`);
+            return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(store)}</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
+<tr><td style="background:#111827;padding:22px 24px">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#ffffff">FI<span style="color:#f5b301">J</span>A</div>
+<div style="font-size:11px;color:#f5b301;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Confirmación de pedido</div>
+</td></tr>
+<tr><td style="height:4px;background:#f5b301"></td></tr>
+<tr><td style="padding:26px 24px 8px">${body}
+<div style="margin:18px 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;font-weight:700">Tu pedido</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items}${lines.join('')}
+<tr><td style="padding:12px 0 4px;font-size:15px;font-weight:800;color:#111827">Total</td><td style="padding:12px 0 4px;font-size:15px;font-weight:800;text-align:right;color:#111827">${formatEuro(o.total || 0)}</td></tr></table>
+<div style="margin:18px 0 4px;border:1px dashed #d1d5db;border-radius:12px;padding:16px;text-align:center;background:#fafafa">
+<div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#6b7280;font-weight:700">Código de recogida</div>
+<div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:2px;color:#111827;margin-top:6px">${escapeHtml(code)}</div>
+${addr ? `<div style="font-size:12px;color:#6b7280;margin-top:8px;line-height:1.5">${escapeHtml(addr)}</div>` : ''}
+</div>
+<div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver mi pedido</a></div>
+</td></tr>
+<tr><td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.6">
+Pedido ${escapeHtml('#' + String(o.id || '').slice(0, 8).toUpperCase())} · ${escapeHtml(new Date(o.createdAt || Date.now()).toLocaleString('es-ES'))} · ${escapeHtml(o.method || '')}<br>
+Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${escapeHtml(o.buyerEmail || '')}. ¿Dudas? Escríbenos a ${escapeHtml(support)}.
+</td></tr>
+</table></td></tr></table></body></html>`;
+        }
+        window.sendOrderEmail = async (order) => {
+            const to = (order && (order.buyerEmail || (state.profile || {}).email)) || '';
+            if (!to) return { status: 'error', error: 'sin destinatario' };
+            const s = storeSettings();
+            const subject = orderFill(s.orderSubject || 'Tu pedido {{pedido}} en {{tienda}}', order);
+            const html = orderEmailHtml(order);
+            const text = orderFill(s.orderMessage || ORDER_TEXT_DEFAULT, order);
+            try {
+                const r = await deliverEmail(to, subject, html, text, { kind: 'order', orderId: order.id, total: order.total });
+                return { status: r.status, subject: subject, to: to, at: Date.now() };
+            } catch (e) {
+                console.warn('order email', e);
+                return { status: 'error', error: String(e.message || e).slice(0, 200), subject: subject, to: to, at: Date.now() };
+            }
+        };
+        // Envía el correo y guarda el resultado en el propio pedido (para que el
+        // back-office vea si salió y pueda reenviarlo).
+        window.sendOrderMailAndSave = async (order) => {
+            const r = await sendOrderEmail(order);
+            order.emailStatus = r.status; order.emailAt = r.at; order.emailError = r.error || null;
+            const mem = (state.orders || []).find(o => o.id === order.id);
+            if (mem) { mem.emailStatus = r.status; mem.emailAt = r.at; mem.emailError = r.error || null; }
+            try {
+                await mutateCollection('orders', arr => { const x = arr.find(o => o.id === order.id); if (x) { x.emailStatus = r.status; x.emailAt = r.at; x.emailError = r.error || null; } });
+            } catch (e) { console.warn('order email save', e); }
+            try { renderOrderMailNote(); } catch (e) {}
+            return r;
+        };
+        // Nota de estado dentro de la página de confirmación
+        window.renderOrderMailNote = () => {
+            const el = document.getElementById('order-confirm-mail');
+            if (!el) return;
+            const o = (state.orders || []).find(x => x.id === state.lastOrderId);
+            const to = (o && o.buyerEmail) || (state.profile || {}).email || '';
+            let html = '';
+            const st = o && o.emailStatus;
+            if (st === 'enviado') html = `<div class="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5"><i class="fa-solid fa-envelope-circle-check mr-1.5"></i>Confirmación enviada a <b>${escapeHtml(to)}</b>. Revisa tu bandeja (y el spam).</div>`;
+            else if (st === 'error') html = `<div class="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5"><i class="fa-solid fa-triangle-exclamation mr-1.5"></i>No pudimos enviar la confirmación a <b>${escapeHtml(to)}</b>. Tu pedido está guardado: puedes verlo en Mi Cuenta.</div>`;
+            else if (st === 'desactivado' || st === 'pendiente') html = `<div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5"><i class="fa-solid fa-clock mr-1.5"></i>Confirmación pendiente de envío a <b>${escapeHtml(to)}</b> (el equipo la puede reenviar desde el back-office).</div>`;
+            else html = `<div class="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5"><i class="fa-solid fa-paper-plane mr-1.5"></i>Enviando la confirmación a <b>${escapeHtml(to)}</b>…</div>`;
+            el.innerHTML = html;
         };
 
         // ---------- 23. MODAL GENÉRICO ----------
@@ -9641,11 +9790,13 @@ function renderOrderConfirmPageUI() {
             <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-circle-check text-3xl text-green-600"></i></div>
             <h2 class="text-2xl font-bold text-fija-900 mb-2">¡Pedido Creado!</h2>
             <p class="text-gray-600 mb-1 text-sm">Tu pedido se ha registrado como <strong>Click &amp; Collect</strong>.</p>
-            <p class="text-xs text-gray-400 mb-6">Recógelo en el punto del vendedor. ID: <span class="font-mono text-fija-900">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</span></p>
+            <p class="text-xs text-gray-400 mb-4">Recógelo en el punto del vendedor. ID: <span class="font-mono text-fija-900">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</span></p>
+            <div id="order-confirm-mail" class="mb-4"></div>
             <button onclick="openOrderQR('${o.id}')" class="w-full bg-fija-gold hover:bg-yellow-600 text-fija-900 font-semibold py-3 rounded-lg transition-colors mb-2"><i class="fa-solid fa-qrcode mr-2"></i>Ver QR de recogida</button>
             <button onclick="exitPageTo('user-dashboard')" class="w-full bg-fija-900 hover:bg-fija-800 text-white font-medium py-3 rounded-lg transition-colors mb-2">Ver en Mi Cuenta</button>
             <button onclick="exitPageTo('storefront')" class="w-full text-gray-600 hover:text-fija-900 text-sm font-medium transition-colors">Seguir comprando</button>
         </div></div>`;
+    renderOrderMailNote();
 }
 
 // ---- QR de recogida como PÁGINA COMPLETA ----
