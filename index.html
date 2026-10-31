@@ -6294,18 +6294,11 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                     if (p) return { html: `<b>${escapeHtml(p.title)}</b><br>${escapeHtml((p.description || '').slice(0, 160))}<br>Precio: <b>${fmtMoney(effectivePrice(p))}</b>${(Number(p.discountPercent) || 0) ? ` <span class="text-red-600">(-${p.discountPercent}%)</span>` : ''}`, chips: ['Compáralos', 'Más barato'], score: 1.1 };
                 }
             }
-            // Sin IA: en vez de «no te he entendido», pide el dato que falta y ofrece opciones
-            if (!botAiCfg().enabled) {
-                return {
-                    html: 'Ayúdame con una pista y te lo resuelvo: dime <b>qué producto</b> buscas, <b>para qué</b> lo quieres o <b>cuánto</b> quieres gastar. También puedo contarte las <b>ofertas del día</b>, rastrear un <b>pedido</b> o pasarte con una <b>persona</b>.',
-                    chips: ['Ofertas del día', 'Ver categorías', 'Rastrear pedido', 'Contactar soporte'],
-                    score: 0.2
-                };
-            }
+            // Si la IA no está o falla, esto es lo que se ve: pide la pista que falta en vez de rendirse
             return {
-                html: 'No te he entendido del todo <i class="fa-solid fa-circle-question"></i> Puedo ayudarte con <b>productos</b>, <b>pedidos</b>, <b>ofertas</b>, <b>cupones</b>, <b>recogida</b>, <b>pagos</b> o <b>devoluciones</b>. Si prefieres, te paso con una persona.',
-                chips: ['Productos', 'Ofertas del día', 'Rastrear pedido', 'Contactar soporte'],
-                score: 0
+                html: 'Ayúdame con una pista y te lo resuelvo: dime <b>qué producto</b> buscas, <b>para qué</b> lo quieres o <b>cuánto</b> quieres gastar. También puedo contarte las <b>ofertas del día</b>, rastrear un <b>pedido</b> o pasarte con una <b>persona</b>.',
+                chips: ['Ofertas del día', 'Ver categorías', 'Rastrear pedido', 'Contactar soporte'],
+                score: 0.2
             };
         }
         // --- Capa IA opcional (modelo pequeño con contexto de la tienda) ---
