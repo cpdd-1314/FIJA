@@ -5815,7 +5815,9 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const btn = document.querySelector('#generic-modal-content button, [id*=generic] button');
             const ok = await submitTicketToCloud('soporte', { email: email || ((state.profile || {}).email || ''), subject: subject, message: body.slice(0, 2000) });
             if (!ok) { showToast('No se pudo enviar el mensaje, inténtalo de nuevo', true); return; }
-            closeModal('generic-modal'); showToast('Mensaje enviado. Te responderemos en 24 h.');
+            blankFields('cf-subject', 'cf-body');
+            formSuccessView('Mensaje enviado', 'Hemos recibido tu consulta. El equipo de atención al cliente te responderá en menos de 24 h.', { actionLabel: 'Enviar otro mensaje', action: 'openContactForm()' });
+            showToast('Mensaje enviado. Te responderemos en 24 h.');
         };
 
         // ---------- 48b. CHATBOT ESPECIALIZADO FIJA ----------
@@ -6087,7 +6089,12 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const already = (state.tickets || []).some(t => t.type === 'newsletter' && (t.email || '').toLowerCase() === email.toLowerCase());
             if (already) { showToast('Ese correo ya está suscrito al boletín'); return; }
             const ok = await submitTicketToCloud('newsletter', { email: email, subject: 'Suscripción al boletín', message: 'Nueva suscripción al boletín semanal de FIJA.' });
-            if (ok) { try { localStorage.setItem('fija_newsletter', email); } catch (e) {} showToast('¡Suscrito! Recibirás ofertas en ' + email); }
+            if (ok) {
+                try { localStorage.setItem('fija_newsletter', email); } catch (e) {}
+                blankFields('newsletter-email');
+                const nl = document.getElementById('newsletter-email'); if (nl) { try { nl.blur(); } catch (e) {} }
+                showToast('¡Suscrito! Recibirás ofertas en ' + email);
+            }
             else showToast('No se pudo completar la suscripción, inténtalo de nuevo', true);
         };
 
@@ -6096,6 +6103,27 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             openFullPage(title, null, null, html, ['Tienda', title]);
         }
         window.showGenericModal = showGenericModal;
+        // Vacía los campos indicados (los formularios de soporte/reportar son
+        // vistas de página, así que el texto NO desaparecía al enviarse).
+        window.blankFields = (...ids) => {
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { try { el.value = ''; } catch (e) {} }
+            });
+        };
+        // Pantalla de confirmación que sustituye al formulario ya enviado.
+        window.formSuccessView = (title, msg, opts) => {
+            const o = opts || {};
+            showGenericModal(title, `
+                <div class="text-center py-6">
+                    <div class="w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center mx-auto mb-4 text-2xl"><i class="fa-solid fa-circle-check"></i></div>
+                    <p class="text-sm text-gray-600 mb-6 max-w-sm mx-auto leading-relaxed">${msg}</p>
+                    <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                        <button type="button" onclick="pageBack()" class="px-6 py-2.5 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50"><i class="fa-solid fa-arrow-left mr-2"></i>Volver</button>
+                        ${o.actionLabel ? `<button type="button" onclick="${o.action}" class="px-6 py-2.5 rounded-lg bg-fija-900 hover:bg-fija-800 text-white text-sm font-semibold">${escapeHtml(o.actionLabel)}</button>` : ''}
+                    </div>
+                </div>`);
+        };
         // ---------- 23b. MARCA DE AGUA "PROYECTO": aviso + desactivación ----------
         window.watermarkEnabled = () => {
             try { return localStorage.getItem('fija_watermark') !== 'off'; } catch (e) { return true; }
@@ -6519,7 +6547,10 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 await mutateCollection('reports', arr => arr.push(rep));
                 if (!Array.isArray(state.reports)) state.reports = [];
                 state.reports.push(rep);
-                closeModal('generic-modal'); showToast('Informe recibido. Gracias por avisarnos.');
+                blankFields('report-text');
+                document.querySelectorAll('input[name="report-reason"]').forEach(r => { r.checked = false; });
+                formSuccessView('Informe recibido', `Gracias por avisarnos. Hemos registrado tu informe${rep.targetTitle ? ' sobre <b>' + escapeHtml(rep.targetTitle) + '</b>' : ''} por el motivo <b>«${escapeHtml(reason)}»</b>. El equipo de moderación lo revisará en las próximas 24 h.`);
+                showToast('Informe recibido. Gracias por avisarnos.');
             } catch (e) { console.error(e); showToast('No se pudo enviar el informe', true); }
         };
 
@@ -8587,7 +8618,9 @@ const FIJA_THEMES = {
             localStorage.setItem('fija_support', JSON.stringify(log.slice(-30)));
             const ok = await submitTicketToCloud('soporte', { email: mail, subject: 'Consulta de soporte', message: m.slice(0, 2000) });
             if (!ok) return showToast('No se pudo enviar el mensaje, inténtalo de nuevo', true);
-            closeModal('generic-modal'); showToast('Mensaje enviado. Te respondemos en 24 h'); };
+            blankFields('cf-msg');
+            formSuccessView('Mensaje enviado', 'Hemos recibido tu consulta. El equipo de atención al cliente te responderá en menos de 24 h.');
+            showToast('Mensaje enviado. Te respondemos en 24 h'); };
         window.supportTicketCount = () => JSON.parse(localStorage.getItem('fija_support') || '[]').length;
         window.openSupportHistory = async () => {
             const log = JSON.parse(localStorage.getItem('fija_support') || '[]');
