@@ -3722,21 +3722,41 @@
                     state.profile = state.profiles.find(p => p.userId === state.session.userId) || null;
                 }
                 updateNavUI();
+                // Hidrata cupones y ajustes ANTES de pintar: así no se muestran un instante
+                // cupones antiguos o de fábrica que el dueño ya ha borrado en el back-office.
+                await hydrateCloudConfig();
                 renderStorefront();
                 if (state.currentView === 'cart') renderCart();
                 if (state.currentView === 'user-dashboard') renderUserDashboard();
-                // Hidrata cupones y ajustes desde la misma fuente que el back-office
-                hydrateCloudConfig();
                 // Firma inicial para que la primera re-sincronización no re-pinte de más.
                 _syncSig = cloudDataSig(state.products, state.orders, state.profiles);
             } catch (e) { console.error('loadAll', e); }
         }
         // Descarga cupones/ajustes (creados en el back-office) y los deja en localStorage
+        // Si el back-office cambia los cupones, la tienda se actualiza sin recargar:
+        // retira el cupón aplicado si ya no existe y repinta la franja de cupones / la cesta.
+        function onCouponsChanged() {
+            const promos = getPromos();
+            if (state.promo && !promos[state.promo.code]) {
+                state.promo = null;
+                showToast('El cupón que tenías aplicado ya no está disponible', true);
+            }
+            try { renderPromosStrip(); } catch (e) {}
+            try { if (state.currentView === 'cart') renderCart(); } catch (e) {}
+        }
         async function hydrateCloudConfig() {
             try {
                 const [cp, st] = await Promise.all([readDataFile('coupons'), readDataFile('settings')]);
-                if (cp && cp.data && !Array.isArray(cp.data) && Object.keys(cp.data).length) {
-                    localStorage.setItem('fija_coupons', JSON.stringify(cp.data));
+                // La copia del back-office sustituye SIEMPRE a la local, incluso si viene vacía
+                // (así un cupón borrado en el back-office deja de mostrarse en la tienda).
+                if (cp && cp.data && typeof cp.data === 'object' && !Array.isArray(cp.data)) {
+                    const next = JSON.stringify(cp.data);
+                    let prev = null;
+                    try { prev = localStorage.getItem('fija_coupons'); } catch (e) {}
+                    if (prev !== next) {
+                        try { localStorage.setItem('fija_coupons', next); } catch (e) {}
+                        if (prev !== null) onCouponsChanged();
+                    }
                 }
                 if (st && st.data && !Array.isArray(st.data) && Object.keys(st.data).length) {
                     localStorage.setItem('fija_settings', JSON.stringify(st.data));
@@ -4655,7 +4675,7 @@
         window.openPaymentGateway = () => {
             if (state.cart.length === 0) { showToast("Tu cesta está vacía", true); return; }
             if (!state.session || !state.profile) { showToast("Inicia sesión para finalizar la compra", true); openAuthModal(); return; }
-            if (state.promo && isCouponUsed(state.promo.code)) { state.promo = null; showToast('El cupón aplicado ya se había usado', true); }
+            if (state.promo && (!getPromos()[state.promo.code] || isCouponUsed(state.promo.code))) { state.promo = null; showToast('El cupón aplicado ya no está disponible', true); }
             if (!state.payMethod) state.payMethod = 'Tarjeta';
             goPage({ type: 'payment' });
         };
@@ -4689,8 +4709,9 @@
             // Cupón de descuento (un solo uso por cuenta): reduce lo que paga el cliente,
             // la tienda sigue cobrando su precio marcado (el coste lo asume FIJA).
             // Validación final: si esta cuenta ya usó el cupón, no se aplica el descuento.
-            const promo = (state.promo && state.promo.type === 'pct' && !isCouponUsed(state.promo.code)) ? state.promo : null;
-            if (state.promo && !promo) showToast('El cupón ya se había usado: no se aplicará el descuento', true);
+            const promoValid = !!(state.promo && getPromos()[state.promo.code]);
+            const promo = (state.promo && promoValid && state.promo.type === 'pct' && !isCouponUsed(state.promo.code)) ? state.promo : null;
+            if (state.promo && !promo) showToast(promoValid ? 'El cupón ya se había usado: no se aplicará el descuento' : 'El cupón ya no está disponible: no se aplicará el descuento', true);
             const couponCode = promo ? promo.code : null;
             const couponPercent = promo ? promo.value : 0;
             const couponDiscount = couponCode ? +(items.reduce((s, it) => s + it.paid, 0) * couponPercent / 100).toFixed(2) : 0;
@@ -5173,6 +5194,10 @@
                 });
             }
             if (gridSection) gridSection.classList.remove('hide');
+            // La franja de cupones la manda renderPromosStrip: el bucle de arriba la
+            // des-ocultaba aunque el back-office no tuviera ningún cupón activo.
+            const promoSection = document.getElementById('promos-section');
+            if (promoSection && !Object.keys(getPromos()).length) promoSection.classList.add('hide');
 
             let list = state.products.filter(p => !p.hidden);
             if (state.categoryFilter !== 'all') list = list.filter(p => p.category === state.categoryFilter);
@@ -5655,17 +5680,28 @@
         // ---------- 9. CÓDIGO DE DESCUENTO ----------
         const DEFAULT_PROMOS = { 'FIJA10': { type: 'pct', value: 10, label: '10% de descuento' }, 'BIENVENIDA': { type: 'pct', value: 15, label: '15% en tu primera compra' }, 'ENVIOGRATIS': { type: 'ship', value: 0, label: 'Recogida prioritaria' }, 'FIJA20': { type: 'pct', value: 20, label: '20% de descuento' } };
         // Cupones gestionables desde el back-office (fija_coupons en localStorage / data/coupons.json).
-        // active:false desactiva un código (incluso los de fábrica); el resto se añade al catálogo.
+        // La copia sincronizada es la ÚNICA fuente de verdad: si el dueño borra un cupón en el
+        // back-office desaparece también aquí (antes se volvían a colar los de fábrica y se
+        // seguían mostrando cupones ya eliminados).
         function loadPromos() {
-            let extra = {};
-            try { extra = JSON.parse(localStorage.getItem('fija_coupons') || '{}') || {}; } catch (e) {}
-            const merged = Object.assign({}, DEFAULT_PROMOS);
+            let raw = null, extra = null;
+            try { raw = localStorage.getItem('fija_coupons'); } catch (e) {}
+            try { extra = raw ? JSON.parse(raw) : null; } catch (e) { extra = null; }
+            // Sin ninguna sincronización todavía (primera visita y sin red): catálogo de fábrica.
+            if (!extra || typeof extra !== 'object' || Array.isArray(extra)) return Object.assign({}, DEFAULT_PROMOS);
+            const out = {};
             Object.keys(extra).forEach(code => {
-                const c = extra[code]; if (!c) return;
-                if (c.active === false) delete merged[code];
-                else merged[code] = { type: c.type, value: c.value, label: c.label };
+                const c = extra[code];
+                if (!code || !c || typeof c !== 'object') return;
+                if (c.active === false) return;                         // desactivado en el back-office
+                if (!c.type) return;                                    // registro corrupto
+                out[String(code).trim().toUpperCase()] = {
+                    type: c.type,
+                    value: Number(c.value) || 0,
+                    label: c.label || String(code)
+                };
             });
-            return merged;
+            return out;
         }
         // Se lee en cada uso (no en carga) para reflejar los cupones creados en el back-office
         function getPromos() { return loadPromos(); }
@@ -5695,6 +5731,8 @@
         };
         function promoDiscount(subtotal) {
             if (!state.promo || state.promo.type !== 'pct') return 0;
+            // Un cupón borrado o desactivado en el back-office deja de descontar al instante.
+            if (!getPromos()[state.promo.code]) { state.promo = null; return 0; }
             return +(subtotal * state.promo.value / 100).toFixed(2);
         }
 
@@ -7146,8 +7184,11 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         function renderPromosStrip() {
             const el = document.getElementById('promos-strip'); if (!el) return;
             const sec = document.getElementById('promos-section');
+            // Sin cupones vivos (todos borrados/desactivados en el back-office) no se muestra la franja.
+            const promos = Object.entries(getPromos());
+            if (!promos.length) { if (sec) sec.classList.add('hide'); el.innerHTML = ''; return; }
             if (sec) sec.classList.remove('hide');
-            el.innerHTML = Object.entries(getPromos()).map(([code, pr]) => `
+            el.innerHTML = promos.map(([code, pr]) => `
                 <div class="border border-dashed border-fija-gold bg-fija-50/40 rounded-xl p-4 flex items-center gap-3">
                     <i class="fa-solid fa-ticket text-fija-gold text-xl"></i>
                     <div class="flex-1 min-w-0"><p class="font-mono font-black text-fija-900">${code}</p><p class="text-[11px] text-gray-500 truncate">${pr.label}</p></div>
