@@ -5851,7 +5851,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             ctx: { lastProducts: [], lastOrder: null, lastIntent: null, lastQuery: '', turns: [] },
             busy: false
         };
-        const BOT_STOP = new Set(['fija', 'funciona', 'funcionan', 'funcionamiento', 'usar', 'usa', 'uso', 'para', 'como', 'donde', 'cuando', 'cuanto', 'quiero', 'quiere', 'quisiera', 'buscar', 'busco', 'buscame', 'producto', 'productos', 'tienes', 'tiene', 'tienen', 'cuesta', 'cuestan', 'precio', 'precios', 'hola', 'buenas', 'favor', 'algo', 'algun', 'alguna', 'alguno', 'que', 'con', 'los', 'las', 'del', 'una', 'uno', 'unos', 'unas', 'hay', 'esta', 'este', 'estos', 'estas', 'mi', 'mis', 'tu', 'tus', 'es', 'son', 'el', 'la', 'de', 'en', 'y', 'o', 'a', 'por', 'mas', 'menos', 'muy', 'pero', 'sin', 'sobre', 'dime', 'sabes', 'puedes', 'podrias', 'ayuda', 'ayudame', 'necesito', 'ser', 'ver', 'tema', 'sabrias', 'decirme', 'explicame', 'cuentame']);
+        const BOT_STOP = new Set(['fija', 'funciona', 'funcionan', 'funcionamiento', 'usar', 'usa', 'uso', 'para', 'como', 'donde', 'cuando', 'cuanto', 'quiero', 'quiere', 'quisiera', 'buscar', 'busco', 'buscame', 'producto', 'productos', 'tienes', 'tiene', 'tienen', 'cuesta', 'cuestan', 'precio', 'precios', 'hola', 'buenas', 'favor', 'algo', 'algun', 'alguna', 'alguno', 'que', 'con', 'los', 'las', 'del', 'una', 'uno', 'unos', 'unas', 'hay', 'esta', 'este', 'estos', 'estas', 'mi', 'mis', 'tu', 'tus', 'es', 'son', 'el', 'la', 'de', 'en', 'y', 'o', 'a', 'por', 'mas', 'menos', 'muy', 'pero', 'sin', 'sobre', 'dime', 'sabes', 'puedes', 'podrias', 'ayuda', 'ayudame', 'necesito', 'ser', 'ver', 'tema', 'sabrias', 'decirme', 'explicame', 'cuentame', 'comprar', 'compra', 'comprarlo', 'comprarme', 'compraria']);
         const BOT_SYN = {
             auricular: 'auriculares', auriculares: 'auriculares', cascos: 'auriculares', audifonos: 'auriculares', airpods: 'auriculares',
             movil: 'smartphone', moviles: 'smartphone', celular: 'smartphone', telefono: 'smartphone',
@@ -5878,8 +5878,14 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                 .replace(/[^a-z0-9@.\s#%+]/g, ' ').replace(/\s+/g, ' ').trim();
         };
+        // Abreviaturas y escritura de móvil → palabra completa (solo palabras cortas)
+        const BOT_ABBR = {
+            q: 'que', k: 'que', xq: 'porque', pq: 'porque', xq: 'porque', tb: 'tambien', tmb: 'tambien', tbn: 'tambien',
+            dnd: 'donde', dnde: 'donde', cmo: 'como', kmo: 'como', qtal: 'que tal', xfa: 'por favor', pf: 'por favor',
+            stas: 'estas', sta: 'esta', sto: 'esto', n: 'en', cn: 'con', d: 'de', t: 'te', x: 'por', ami: 'amigo'
+        };
         function botTokens(s) {
-            return botNorm(s).split(' ').filter(Boolean).map(w => BOT_SYN[w] || w);
+            return botNorm(s).split(' ').filter(Boolean).map(w => (BOT_ABBR[w] || w)).map(w => BOT_SYN[w] || w);
         }
         function botEdit(a, b) {
             if (a === b) return 0;
@@ -6004,6 +6010,44 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const mail = s.supportEmail || 'jchenw02@gmail.com';
             return { mail: mail, wa: '633 616 054', tienda: s.storeName || 'FIJA' };
         }
+        // FAQ propias del dueño: cada línea «pregunta | respuesta» (se guardan en Ajustes)
+        function botCustomFaq() {
+            const s = storeSettings() || {};
+            return String(s.botFaqCustom || '').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+                const parts = l.split(/\s*\|\s*|\s*=>\s*/);
+                if (parts.length < 2) return null;
+                const q = parts[0].trim(), a = parts.slice(1).join(' | ').trim();
+                if (!q || !a) return null;
+                return { q: q, a: a, toks: botTokens(q).filter(t => t.length > 2 && !BOT_STOP.has(t)) };
+            }).filter(Boolean);
+        }
+        // Recorta terminaciones para que «pagais» y «pago» se consideren la misma palabra
+        function botStem(w) {
+            const x = String(w || '');
+            if (x.length <= 4) return x;
+            return x.replace(/(ais|eis|amos|emos|iendo|ando|aciones|acion|ar|er|ir|es|s|o|a)$/, '');
+        }
+        // Devuelve la FAQ que mejor encaja (cobertura de sus palabras clave)
+        function botFaqMatch(q) {
+            const toks = botTokens(q).filter(t => t.length > 2 && !BOT_STOP.has(t));
+            if (!toks.length) return null;
+            let best = null, bestCov = 0;
+            botCustomFaq().forEach(f => {
+                if (!f.toks.length) return;
+                let hit = 0;
+                f.toks.forEach(k => {
+                    let m = 0;
+                    toks.forEach(t => {
+                        if (m < 1) m = Math.max(m, botTokMatch(t, k));
+                        if (m < 1) { const a = botStem(t), b2 = botStem(k); if (a === b2 || (a.length >= 3 && (b2.indexOf(a) === 0 || a.indexOf(b2) === 0))) m = 1; }
+                    });
+                    if (m >= 0.8) hit++;
+                });
+                const cov = hit / f.toks.length;
+                if (cov > bestCov) { bestCov = cov; best = f; }
+            });
+            return bestCov >= 0.7 ? { faq: best, cov: bestCov } : null;
+        }
         // --- Respuestas locales por tema (con datos reales cuando aplica) ---
         function botAnswerDeals() {
             const top = botDealTop(3);
@@ -6113,7 +6157,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const add = (id, score, run) => { if (score > 0) intents.push({ id: id, score: score, run: run }); };
             add('order', botScore(tokens, ['pedido', 'rastrear', 'seguimiento', 'orden', 'estado', 'recogido', 'listo']), () => botAnswerOrder(q));
             add('deals', botScore(tokens, ['oferta', 'descuento', 'rebaja', 'chollo']), () => botAnswerDeals());
-            add('compare', botScore(tokens, ['comparar', 'comparativa', 'diferencia', 'versus']), () => botAnswerCompare());
+            if (/compar/.test(t)) add('compare', 1.15, () => botAnswerCompare());
             if ((BOT.ctx.lastProducts || []).length && /barat|economic|asequible/.test(t)) add('cheaper', 1.3, () => botAnswerCheaper());
             add('coupon', botScore(tokens, ['cupon', 'voucher', 'descuento']), () => botAnswerCoupons());
             add('categories', botScore(tokens, ['categoria', 'categorias', 'seccion', 'catalogo']), () => botAnswerCategories());
@@ -6165,6 +6209,16 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             intents.sort((a, b) => b.score - a.score);
             const top = intents[0];
             const prodHits = botSearch(q, { limit: 4 });
+            // FAQ propias del dueño (Ajustes → «Respuestas propias»): máxima prioridad
+            const faqHit = botFaqMatch(q);
+            if (faqHit) {
+                BOT.ctx.lastIntent = 'faq';
+                return {
+                    html: escapeHtml(faqHit.faq.a).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>'),
+                    chips: ['Ofertas del día', 'Buscar producto', 'Contactar soporte'],
+                    score: 1.6
+                };
+            }
             // Preguntas generales sobre la tienda: se contestan con el proceso, nunca con un listado de productos
             const asksAbout = /como (funciona|funcionan|va|se usa|se compra|compro|comprar|hago (una )?compra|puedo comprar)|que es (fija|esta web|esta pagina|esto)|en que consiste|de que va|quienes sois|que haceis|para que sirve (fija|la web|esta pagina|esto)|informacion general|como va el tema/.test(t);
             if (asksAbout && !prodHits.length) {
@@ -6189,12 +6243,39 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 }
                 return { html: 'Con ese presupuesto no encuentro nada en el catálogo. Sube un poco el límite o mira las <b>ofertas del día</b>, que llegan hasta el 70%.', chips: ['Ofertas del día', 'Ver categorías'], score: 1.0 };
             }
+            // Continuaciones: «otra categoría», «más caro», «solo los rebajados»
+            if ((BOT.ctx.lastProducts || []).length) {
+                const base = BOT.ctx.lastProducts[0];
+                if (/otra categoria|otras categorias|algo distinto|diferente categoria|cambia de categoria/.test(t)) {
+                    const cats = [...new Set((state.products || []).map(p => p.category).filter(Boolean))].filter(c => c !== base.category).slice(0, 3);
+                    const pick = cats.map(c => (state.products || []).find(p => p.category === c)).filter(Boolean);
+                    if (pick.length) { BOT.ctx.lastProducts = pick; return { html: 'Cambio de categoría, mira esto:<br>' + pick.map(botCard).join(''), chips: ['Más barato', 'Compáralos'], score: 1.15 }; }
+                }
+                if (/mas caro|de mas calidad|premium|mejor calidad|gama alta/.test(t)) {
+                    const up = (state.products || []).filter(p => p.category === base.category && effectivePrice(p) > effectivePrice(base)).sort((a, b) => effectivePrice(b) - effectivePrice(a)).slice(0, 3);
+                    if (up.length) { BOT.ctx.lastProducts = up; return { html: `Por encima de <b>${escapeHtml(base.title)}</b>:<br>` + up.map(botCard).join(''), chips: ['Compáralos', 'Más barato'], score: 1.15 }; }
+                }
+                if (/solo (las )?ofertas|rebajados|con descuento/.test(t)) {
+                    const deals = (state.products || []).filter(p => (Number(p.discountPercent) || 0) > 0 && p.category === base.category).slice(0, 3);
+                    if (deals.length) { BOT.ctx.lastProducts = deals; return { html: `Con descuento en <b>${escapeHtml(base.category || 'su categoría')}</b>:<br>` + deals.map(botCard).join(''), chips: ['Más barato', 'Compáralos'], score: 1.15 }; }
+                }
+            }
             const productScore = prodHits.length ? Math.min(1.9, 0.9 + prodHits.length * 0.15) : 0;
             // Los productos ganan a los temas genéricos cuando la consulta es concreta
             if (prodHits.length && (!top || top.score < 1.05 || ['stores', 'greet', 'thanks', 'help', 'categories'].indexOf(top.id) >= 0)) {
                 BOT.ctx.lastProducts = prodHits;
                 BOT.ctx.lastIntent = 'search';
                 return Object.assign(botAnswerSearch(q, prodHits), { score: Math.max(productScore, top ? top.score : 0) });
+            }
+            // Dos preguntas en una («¿hacéis envío y puedo devolver?») → contesta las dos
+            const MERGE_OK = ['returns', 'pickup', 'payment', 'shipping', 'hours', 'seller', 'account', 'stores', 'coupons', 'deals', 'categories'];
+            if (top && top.score >= 1.0 && MERGE_OK.indexOf(top.id) >= 0) {
+                const second = intents.slice(1).find(x => x.id !== top.id && x.score >= 1.0 && MERGE_OK.indexOf(x.id) >= 0);
+                if (second && /\b(y|tambien|ademas|tb)\b/.test(t)) {
+                    const r1 = top.run() || {}, r2 = second.run() || {};
+                    BOT.ctx.lastIntent = top.id;
+                    return { html: (r1.html || '') + '<br><br>' + (r2.html || ''), chips: r1.chips || r2.chips, score: Math.max(top.score, second.score) };
+                }
             }
             if (top && top.score >= 0.6) {
                 const r = top.run() || {};
@@ -6212,6 +6293,14 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                     const p = BOT.ctx.lastProducts[idx];
                     if (p) return { html: `<b>${escapeHtml(p.title)}</b><br>${escapeHtml((p.description || '').slice(0, 160))}<br>Precio: <b>${fmtMoney(effectivePrice(p))}</b>${(Number(p.discountPercent) || 0) ? ` <span class="text-red-600">(-${p.discountPercent}%)</span>` : ''}`, chips: ['Compáralos', 'Más barato'], score: 1.1 };
                 }
+            }
+            // Sin IA: en vez de «no te he entendido», pide el dato que falta y ofrece opciones
+            if (!botAiCfg().enabled) {
+                return {
+                    html: 'Ayúdame con una pista y te lo resuelvo: dime <b>qué producto</b> buscas, <b>para qué</b> lo quieres o <b>cuánto</b> quieres gastar. También puedo contarte las <b>ofertas del día</b>, rastrear un <b>pedido</b> o pasarte con una <b>persona</b>.',
+                    chips: ['Ofertas del día', 'Ver categorías', 'Rastrear pedido', 'Contactar soporte'],
+                    score: 0.2
+                };
             }
             return {
                 html: 'No te he entendido del todo <i class="fa-solid fa-circle-question"></i> Puedo ayudarte con <b>productos</b>, <b>pedidos</b>, <b>ofertas</b>, <b>cupones</b>, <b>recogida</b>, <b>pagos</b> o <b>devoluciones</b>. Si prefieres, te paso con una persona.',
@@ -6265,6 +6354,11 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 ordLines || '- el usuario no tiene pedidos o no ha iniciado sesión',
                 '',
                 'El motor local ya ha intentado responder y no ha bastado. Responde solo a lo que se pregunta, sin repetir el saludo.',
+                '',
+                'EJEMPLOS DE ESTILO',
+                'P: ¿Tenéis envío a domicilio? → «No: en FIJA es todo Click & Collect. Pagas online y recoges gratis en el punto del vendedor en 24-48 h, con tu código QR.»',
+                'P: Busco algo para el móvil por menos de 20 → «Te encaja **[nombre del listado]** por **[precio]**. ¿Quieres que te enseñe otra opción más barata?» (1-2 productos, con nombre y precio exactos del listado)',
+                'P: ¿Puedo devolverlo? → «Sí, 30 días desde la recogida en su embalaje original; el reembolso sale en 24-48 h.»',
                 cfg_extra_placeholder()
             ].join('\n');
             function cfg_extra_placeholder() { return botAiCfg().extra ? '\nINSTRUCCIONES EXTRA DEL DUEÑO: ' + botAiCfg().extra : ''; }
