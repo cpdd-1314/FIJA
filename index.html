@@ -1035,10 +1035,27 @@
     </main>
 
     <!-- ===================== FOOTER (estilo Amazon) ===================== -->
+    <style>
+        /* Rejilla propia del pie: la clase lg:grid-cols-7 no existe en el CSS compilado,
+           así que en escritorio caía a 3 columnas y la última se iba sola a otra fila.
+           Aquí las columnas quedan siempre alineadas arriba y del mismo ancho. */
+        .fija-foot-grid { display: grid; gap: 2rem 1.5rem; margin-bottom: 2.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+        .fija-foot-brand { grid-column: 1 / -1; }
+        .fija-foot-grid > div > h4 { margin: 0 0 1rem; line-height: 1.2; }
+        .fija-foot-grid ul { margin: 0; padding: 0; list-style: none; }
+        .fija-foot-grid ul > li > button, .fija-foot-grid ul > li > a { display: inline-block; text-align: left; line-height: 1.45; }
+        @media (min-width: 640px) {
+            .fija-foot-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @media (min-width: 1024px) {
+            .fija-foot-grid { grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr)); gap: 2rem 1.75rem; }
+            .fija-foot-brand { grid-column: auto; }
+        }
+    </style>
     <footer class="bg-fija-900 text-white mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-8 mb-10">
-                <div class="col-span-2 lg:col-span-2">
+            <div class="fija-foot-grid">
+                <div class="fija-foot-brand">
                     <img src="logo-white.png" alt="FIJA" class="h-10 w-auto mb-1">
                     <p class="text-sm text-white/60 mt-4 leading-relaxed max-w-xs">El marketplace Click &amp; Collect que conecta compradores con vendedores verificados. Sin intermediarios innecesarios.</p>
                     <div class="flex gap-3 mt-5">
