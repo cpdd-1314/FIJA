@@ -2272,6 +2272,23 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             el.textContent = txt; el.className = 'text-[11px] px-2 py-1 rounded-full ' + cls;
         }
         window.chatAiState = chatAiState;
+        function aiModelsUrl(endpoint) {
+            const ep = String(endpoint || '').trim();
+            if (/\/chat\/completions\/?$/.test(ep)) return ep.replace(/\/chat\/completions\/?$/, '/models');
+            return ep.replace(/\/+$/, '') + '/models';
+        }
+        async function aiListModels(endpoint, key) {
+            try {
+                const res = await fetch(aiModelsUrl(endpoint), { headers: { 'Authorization': 'Bearer ' + key } });
+                const raw = await res.text();
+                if (!res.ok) return { error: 'HTTP ' + res.status + ': ' + raw.slice(0, 90), ids: [] };
+                const data = JSON.parse(raw);
+                const ids = (data.data || data.models || []).map(m => m.id || m.name).filter(Boolean)
+                    .filter(id => !/whisper|tts|guard|orpheus|embed|rerank|moderation/i.test(id));
+                return { error: '', ids: ids };
+            } catch (e) { return { error: String(e.message || e), ids: [] }; }
+        }
+        window.__aiModelsUrl = aiModelsUrl;
         window.testChatAi = async () => {
             const s = state.settings || {};
             const endpoint = ((document.getElementById('set-chat-ai-endpoint') || {}).value || '').trim() || String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions';
@@ -2280,35 +2297,64 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             if (!key) { showToast('Pega primero una API Key (o guarda los ajustes)', true); return; }
             showToast('Probando la IA...');
             const ctrl = new AbortController();
-            const tmr = setTimeout(() => ctrl.abort(), 20000);
-            const tries = [modelIn, 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'].filter((m, i, a) => m && a.indexOf(m) === i);
+            const tmr = setTimeout(() => ctrl.abort(), 30000);
+            const call = async (model) => {
+                const res = await fetch(endpoint, {
+                    method: 'POST', signal: ctrl.signal,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                    body: JSON.stringify({
+                        model: model, temperature: 0.3, max_tokens: 80,
+                        messages: [
+                            { role: 'system', content: 'Eres el asistente de FIJA, marketplace español de Click & Collect. Responde en español, máximo 25 palabras, sin HTML.' },
+                            { role: 'user', content: '¿Hacéis envíos a domicilio?' }
+                        ]
+                    })
+                });
+                if (!res.ok) {
+                    const t = await res.text();
+                    return { ok: false, status: res.status, err: 'HTTP ' + res.status + ': ' + t.slice(0, 160), modelErr: res.status === 404 || /model/i.test(t) };
+                }
+                const data = await res.json();
+                const txt = ((((data.choices || [])[0] || {}).message || {}).content || '').trim();
+                return txt ? { ok: true, txt: txt } : { ok: false, status: res.status, err: 'respuesta vacía', modelErr: true };
+            };
             try {
-                let okModel = '', okTxt = '', lastErr = '';
-                for (const model of tries) {
-                    const res = await fetch(endpoint, {
-                        method: 'POST', signal: ctrl.signal,
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-                        body: JSON.stringify({
-                            model: model, temperature: 0.3, max_tokens: 80,
-                            messages: [
-                                { role: 'system', content: 'Eres el asistente de FIJA, marketplace español de Click & Collect. Responde en español, máximo 25 palabras, sin HTML.' },
-                                { role: 'user', content: '¿Hacéis envíos a domicilio?' }
-                            ]
-                        })
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        okTxt = ((((data.choices || [])[0] || {}).message || {}).content || '').trim();
-                        if (okTxt) { okModel = model; break; }
-                        lastErr = 'respuesta vacía';
-                    } else {
-                        lastErr = 'HTTP ' + res.status + ': ' + (await res.text()).slice(0, 120);
-                        if (!(res.status === 404 || /model/i.test(lastErr))) break;
+                let okModel = '', okTxt = '', lastErr = '', tried = [];
+                const statics = [modelIn, 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile'];
+                for (const model of statics.filter((m, i, a) => m && a.indexOf(m) === i)) {
+                    tried.push(model);
+                    const r = await call(model);
+                    if (r.ok) { okModel = model; okTxt = r.txt; break; }
+                    lastErr = r.err;
+                    if (!r.modelErr) { tried = [model]; break; }
+                }
+                // Si ni los modelos conocidos sirven, preguntamos al proveedor qué modelos tiene esta clave
+                let listInfo = '';
+                if (!okModel) {
+                    const list = await aiListModels(endpoint, key);
+                    if (list.ids.length) {
+                        const pref = list.ids.filter(id => /gpt-oss|llama|qwen|mixtral|gemma|mistral|deepseek/i.test(id));
+                        const cand = (pref.length ? pref : list.ids).slice(0, 3);
+                        for (const model of cand) {
+                            tried.push(model);
+                            const r = await call(model);
+                            if (r.ok) { okModel = model; okTxt = r.txt; break; }
+                            lastErr = r.err;
+                        }
+                        if (!okModel) listInfo = ' Modelos de tu clave: ' + list.ids.slice(0, 5).join(', ');
+                    } else if (list.error) {
+                        listInfo = ' (tampoco pude listar modelos: ' + list.error.slice(0, 60) + ')';
                     }
                 }
-                if (!okModel) { showToast('La IA no responde: ' + String(lastErr).slice(0, 140), true); return; }
+                if (!okModel) {
+                    showToast('La IA no responde. Probé: ' + tried.slice(-3).join(', ') + '.' + listInfo + ' Último error: ' + String(lastErr).slice(0, 110), true);
+                    return;
+                }
                 const inp = document.getElementById('set-chat-ai-model');
-                if (inp && okModel !== modelIn) { inp.value = okModel; showToast('Ojo: «' + modelIn + '» ya no existe. He cambiado el modelo a «' + okModel + '». Pulsa Guardar ajustes.', true); }
+                if (inp && okModel !== modelIn) {
+                    inp.value = okModel;
+                    showToast('He cambiado el modelo a «' + okModel + '» (el anterior no funciona). Pulsa Guardar ajustes.', true);
+                }
                 showToast('IA OK (' + okModel + '): ' + okTxt.slice(0, 70));
                 chatAiState();
             } catch (e) {
@@ -2321,15 +2367,13 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             const key = ((document.getElementById('set-chat-ai-key') || {}).value || '').trim() || String(s.chatAiKey || '').trim();
             const endpoint = ((document.getElementById('set-chat-ai-endpoint') || {}).value || '').trim() || String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions';
             if (!key) { showToast('Pega primero una API Key', true); return; }
-            const url = endpoint.replace(/\/chat\/completions\/?$/, '/models');
             try {
-                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + key } });
-                const raw = await res.text();
-                if (!res.ok) { showToast('No se pudo listar (' + res.status + '): ' + raw.slice(0, 90), true); return; }
-                const data = JSON.parse(raw);
-                const ids = (data.data || data.models || []).map(m => m.id || m.name).filter(Boolean).filter(id => !/whisper|tts|guard|orpheus/i.test(id));
+                const list = await aiListModels(endpoint, key);
+                if (list.error) { showToast('No se pudo listar: ' + list.error, true); return; }
+                const ids = list.ids;
                 if (!ids.length) { showToast('El proveedor no devolvió modelos', true); return; }
                 console.log('Modelos disponibles:', ids);
+                window.__aiModelsCache = ids;
                 showToast('Modelos: ' + ids.slice(0, 6).join(' · ') + (ids.length > 6 ? ' … (+' + (ids.length - 6) + ' en consola)' : ''));
             } catch (e) {
                 showToast('No se pudo listar: ' + String(e.message || e).slice(0, 90), true);

@@ -6274,24 +6274,44 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 .concat(BOT.ctx.turns.slice(-8).map(m => ({ role: m.role, content: String(m.content || '').slice(0, 500) })))
                 .concat([{ role: 'user', content: String(q).slice(0, 600) }]);
             const ctrl = new AbortController();
-            const tmr = setTimeout(() => ctrl.abort(), 15000);
-            const tries = [cfg.model].concat(BOT_AI_FALLBACK.filter(m => m !== cfg.model));
+            const tmr = setTimeout(() => ctrl.abort(), 20000);
+            const post = (model) => fetch(cfg.url, {
+                method: 'POST', signal: ctrl.signal,
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+                body: JSON.stringify({ model: model, messages: msgs, temperature: 0.35, max_tokens: 400 })
+            });
             try {
-                let res = null, errTxt = '';
+                // Si ya descubrimos un modelo que funciona para este endpoint, va primero
+                const remembered = (window.__botAiModelOk && window.__botAiModelOk.url === cfg.url) ? window.__botAiModelOk.model : '';
+                const tries = [remembered, cfg.model].concat(BOT_AI_FALLBACK).filter((m, i, a) => m && a.indexOf(m) === i);
+                let res = null, errTxt = '', used = '';
                 for (const model of tries) {
-                    res = await fetch(cfg.url, {
-                        method: 'POST', signal: ctrl.signal,
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
-                        body: JSON.stringify({ model: model, messages: msgs, temperature: 0.35, max_tokens: 400 })
-                    });
-                    if (res.ok) break;
+                    res = await post(model);
+                    if (res.ok) { used = model; break; }
                     errTxt = (await res.text()).slice(0, 160);
                     // solo cambiamos de modelo si el problema es el modelo; otros errores (401, 429) no se arreglan reintentando
                     const modelIssue = res.status === 404 || /model/i.test(errTxt);
                     if (!modelIssue) throw new Error('HTTP ' + res.status + ' ' + errTxt);
                     console.warn('chatbot IA: modelo no disponible (' + model + ')', errTxt);
                 }
+                // Último recurso: preguntar al proveedor qué modelos acepta esta clave y probar el primero
+                if (!res || !res.ok) {
+                    const listUrl = String(cfg.url).replace(/\/chat\/completions\/?$/, '/models');
+                    const lr = await fetch(listUrl, { headers: { 'Authorization': 'Bearer ' + cfg.key } });
+                    if (lr.ok) {
+                        const ld = await lr.json();
+                        const ids = (ld.data || ld.models || []).map(m => m.id || m.name).filter(Boolean)
+                            .filter(id => !/whisper|tts|guard|orpheus|embed|rerank|moderation/i.test(id))
+                            .slice(0, 3);
+                        for (const model of ids) {
+                            res = await post(model);
+                            if (res.ok) { used = model; break; }
+                            errTxt = (await res.text()).slice(0, 160);
+                        }
+                    }
+                }
                 if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : '?') + ' ' + errTxt);
+                if (used) window.__botAiModelOk = { url: cfg.url, model: used };
                 const data = await res.json();
                 const txt = (((data.choices || [])[0] || {}).message || {}).content || '';
                 if (!txt.trim()) throw new Error('respuesta vacía');
