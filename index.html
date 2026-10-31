@@ -6088,14 +6088,135 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { showToast('Introduce un correo válido', true); return; }
             const already = (state.tickets || []).some(t => t.type === 'newsletter' && (t.email || '').toLowerCase() === email.toLowerCase());
             if (already) { showToast('Ese correo ya está suscrito al boletín'); return; }
-            const ok = await submitTicketToCloud('newsletter', { email: email, subject: 'Suscripción al boletín', message: 'Nueva suscripción al boletín semanal de FIJA.' });
+            const t = await submitTicketToCloud('newsletter', { email: email, subject: 'Suscripción al boletín', message: 'Nueva suscripción al boletín semanal de FIJA.' });
+            const ok = !!t;
             if (ok) {
                 try { localStorage.setItem('fija_newsletter', email); } catch (e) {}
                 blankFields('newsletter-email');
                 const nl = document.getElementById('newsletter-email'); if (nl) { try { nl.blur(); } catch (e) {} }
-                showToast('¡Suscrito! Recibirás ofertas en ' + email);
+                // Correo de agradecimiento (si el back-office tiene proveedor configurado)
+                let mail = { status: 'pendiente' };
+                try { mail = await sendWelcomeEmail(email); } catch (e) { mail = { status: 'error', error: String(e.message || e) }; }
+                if (t) {
+                    t.emailStatus = mail.status; t.emailAt = mail.at || Date.now(); t.emailError = mail.error || null;
+                    try {
+                        await mutateCollection('tickets', arr => { const x = arr.find(y => y.id === t.id); if (x) { x.emailStatus = mail.status; x.emailAt = t.emailAt; x.emailError = t.emailError; } });
+                    } catch (e) {}
+                }
+                showToast(mail.status === 'enviado'
+                    ? '¡Suscrito! Te hemos enviado un correo de agradecimiento a ' + email
+                    : '¡Suscrito! Recibirás ofertas en ' + email);
             }
             else showToast('No se pudo completar la suscripción, inténtalo de nuevo', true);
+        };
+
+        // ---------- 22b. CORREO DE AGRADECIMIENTO AL BOLETÍN ----------
+        // La tienda es estática (GitHub Pages): no hay servidor SMTP propio. El envío
+        // se hace con un proveedor externo configurable desde el back-office:
+        //   · EmailJS  (gratis 200 correos/mes, solo claves públicas)
+        //   · Webhook propio (Resend, Brevo, Supabase Edge Function, Zapier…)
+        // Si no hay nada configurado, el correo queda como "pendiente" y el equipo lo
+        // ve en Soporte & Tickets, sin perder la suscripción.
+        const WELCOME_TEXT_DEFAULT = [
+            '¡Gracias por suscribirte al boletín de {{tienda}}!',
+            '',
+            'A partir de ahora serás el primero en enterarte de:',
+            '· Ofertas diarias con hasta un 70% de descuento',
+            '· Novedades y productos recién llegados',
+            '· Cupones exclusivos para suscriptores',
+            '',
+            'Y recuerda: con Click & Collect reservas online y recoges en tienda en 24-48 h, sin coste de envío.',
+            '',
+            'Tu correo registrado es {{email}}.'
+        ].join('\n');
+        function storeSettings() {
+            let s = {};
+            try { s = JSON.parse(localStorage.getItem('fija_settings') || '{}') || {}; } catch (e) {}
+            if (state.settings && typeof state.settings === 'object') s = Object.assign(s, state.settings);
+            return s;
+        }
+        function welcomeFill(tpl, to) {
+            const s = storeSettings();
+            return String(tpl || '')
+                .replace(/\{\{\s*email\s*\}\}/gi, to || '')
+                .replace(/\{\{\s*tienda\s*\}\}/gi, s.storeName || 'FIJA')
+                .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
+                .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
+        }
+        function welcomeEmailHtml(to) {
+            const s = storeSettings();
+            const store = s.storeName || 'FIJA';
+            const support = s.supportEmail || 'soporte@fija.demo';
+            const body = welcomeFill(s.welcomeMessage || WELCOME_TEXT_DEFAULT, to)
+                .split('\n')
+                .map(l => l.trim() === '' ? '<div style="height:10px"></div>'
+                    : `<p style="margin:0 0 8px;font-size:14px;line-height:1.65;color:#374151">${escapeHtml(l)}</p>`)
+                .join('');
+            return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FIJA</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
+<tr><td style="background:#111827;padding:22px 24px">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#ffffff">FI<span style="color:#f5b301">J</span>A</div>
+<div style="font-size:11px;color:#f5b301;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Click &amp; Collect</div>
+</td></tr>
+<tr><td style="height:4px;background:#f5b301"></td></tr>
+<tr><td style="padding:26px 24px">${body}
+<div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver las ofertas de hoy</a></div>
+</td></tr>
+<tr><td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.6">
+Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. Si no fuiste tú, ignora este mensaje y borraremos tus datos.<br>¿Dudas? Escríbenos a ${escapeHtml(support)}.
+</td></tr>
+</table></td></tr></table></body></html>`;
+        }
+        async function deliverEmail(to, subject, html, text) {
+            const s = storeSettings();
+            if (s.welcomeEmailEnabled === false) return { status: 'desactivado' };
+            const service = (s.emailjsService || '').trim();
+            const template = (s.emailjsTemplate || '').trim();
+            const key = (s.emailjsKey || '').trim();
+            const webhook = (s.emailWebhookUrl || '').trim();
+            const ctrl = new AbortController();
+            const tmr = setTimeout(() => ctrl.abort(), 8000);
+            try {
+                if (service && template && key) {
+                    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+                        body: JSON.stringify({
+                            service_id: service, template_id: template, user_id: key,
+                            template_params: {
+                                to_email: to, email: to, to_name: to, subject: subject,
+                                message: text, html: html, store: s.storeName || 'FIJA',
+                                reply_to: s.supportEmail || ''
+                            }
+                        })
+                    });
+                    if (!res.ok) throw new Error('EmailJS ' + res.status + ': ' + (await res.text()).slice(0, 160));
+                    return { status: 'enviado' };
+                }
+                if (webhook) {
+                    const res = await fetch(webhook, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: ctrl.signal,
+                        body: JSON.stringify({ to: to, subject: subject, html: html, text: text, from: s.supportEmail || '', store: s.storeName || 'FIJA' })
+                    });
+                    if (!res.ok) throw new Error('Webhook ' + res.status);
+                    return { status: 'enviado' };
+                }
+                return { status: 'pendiente' };
+            } finally { clearTimeout(tmr); }
+        }
+        window.sendWelcomeEmail = async (to) => {
+            if (!to) return { status: 'error', error: 'sin destinatario' };
+            const s = storeSettings();
+            const subject = welcomeFill(s.welcomeSubject || '¡Gracias por suscribirte a {{tienda}}!', to);
+            const html = welcomeEmailHtml(to);
+            const text = welcomeFill(s.welcomeMessage || WELCOME_TEXT_DEFAULT, to);
+            try {
+                const r = await deliverEmail(to, subject, html, text);
+                return { status: r.status, subject: subject, at: Date.now() };
+            } catch (e) {
+                console.warn('welcome email', e);
+                return { status: 'error', error: String(e.message || e).slice(0, 200), subject: subject, at: Date.now() };
+            }
         };
 
         // ---------- 23. MODAL GENÉRICO ----------
