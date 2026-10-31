@@ -4543,9 +4543,13 @@
                 state.profile = profile;
                 closeModal('auth-modal'); await loadAll();
                 showToast("Sesión iniciada correctamente");
-                if (profile.role === 'user') switchView('user-dashboard');
+                // Si venía de un enlace "valorar" del correo, vuelve al producto y a sus opiniones
+                const fromReview = state.pendingReview;
+                state.pendingReview = null;
+                if (fromReview && state.products.some(p => p.id === fromReview)) openProductDetail(fromReview, 'reviews');
+                else if (profile.role === 'user') switchView('user-dashboard');
                 else switchView('storefront'); // vendedores y admins gestionan en backend.html (Área Vendedores)
-                if (!onboardingShown()) setTimeout(openOnboarding, 500);
+                if (!fromReview && !onboardingShown()) setTimeout(openOnboarding, 500);
             } catch (error) { console.error(error); errorDiv.classList.remove('hidden'); }
         };
 
@@ -6151,6 +6155,16 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 .replace(/\{\{\s*soporte\s*\}\}/gi, s.supportEmail || 'soporte@fija.demo')
                 .replace(/\{\{\s*web\s*\}\}/gi, 'https://cpdd-1314.github.io/FIJA/');
         }
+        // Cabecera común de los correos: logo original de FIJA sobre fondo blanco
+        // (el logo es azul marino + dorado, así que necesita fondo claro) y banda dorada.
+        function emailHeaderHtml(subtitle) {
+            const home = 'https://cpdd-1314.github.io/FIJA/';
+            return `<tr><td style="background:#ffffff;padding:24px 24px 18px;text-align:center">
+<a href="${home}" style="text-decoration:none;display:inline-block"><img src="${home}logo.png" alt="FIJA" width="140" height="67" style="display:block;border:0;outline:none;text-decoration:none;width:140px;height:auto;max-width:140px"></a>
+<div style="font-size:10px;color:#9ca3af;letter-spacing:2.2px;text-transform:uppercase;margin-top:9px">${escapeHtml(subtitle || 'Click & Collect')}</div>
+</td></tr>
+<tr><td style="height:4px;background:#f5b301"></td></tr>`;
+        }
         function welcomeEmailHtml(to) {
             const s = storeSettings();
             const store = s.storeName || 'FIJA';
@@ -6163,11 +6177,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FIJA</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
-<tr><td style="background:#111827;padding:22px 24px">
-<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#ffffff">FI<span style="color:#f5b301">J</span>A</div>
-<div style="font-size:11px;color:#f5b301;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Click &amp; Collect</div>
-</td></tr>
-<tr><td style="height:4px;background:#f5b301"></td></tr>
+${emailHeaderHtml()}
 <tr><td style="padding:26px 24px">${body}
 <div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver las ofertas de hoy</a></div>
 </td></tr>
@@ -6303,11 +6313,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
             return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(store)}</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
-<tr><td style="background:#111827;padding:22px 24px">
-<div style="font-size:22px;font-weight:800;letter-spacing:-.5px;color:#ffffff">FI<span style="color:#f5b301">J</span>A</div>
-<div style="font-size:11px;color:#f5b301;letter-spacing:2px;text-transform:uppercase;margin-top:2px">Confirmación de pedido</div>
-</td></tr>
-<tr><td style="height:4px;background:#f5b301"></td></tr>
+${emailHeaderHtml('Confirmación de pedido')}
 <tr><td style="padding:26px 24px 8px">${body}
 <div style="margin:18px 0 6px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;font-weight:700">Tu pedido</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${items}${lines.join('')}
@@ -6367,6 +6373,21 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             else html = `<div class="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5"><i class="fa-solid fa-paper-plane mr-1.5"></i>Enviando la confirmación a <b>${escapeHtml(to)}</b>…</div>`;
             el.innerHTML = html;
         };
+
+        // ---------- 22d. ENLACES DEL CORREO: valorar un producto ----------
+        // Los correos de entrega enlazan a .../#valorar=<idProducto>. Al abrirlo se
+        // carga la ficha del producto directamente en la pestaña de opiniones; si el
+        // cliente no tiene sesión, al publicar se le pedirá y volverá aquí mismo.
+        window.applyDeepLink = () => {
+            const h = location.hash || '';
+            const m = /^#valorar=(.+)$/.exec(h);
+            if (!m) return;
+            const id = decodeURIComponent(m[1]);
+            if (!(state.products || []).some(p => p.id === id)) { showToast('Ese producto ya no está disponible', true); return; }
+            state.pendingReview = id;
+            openProductDetail(id, 'reviews');
+        };
+        try { window.addEventListener('hashchange', () => { try { applyDeepLink(); } catch (e) {} }); } catch (e) {}
 
         // ---------- 23. MODAL GENÉRICO ----------
         function showGenericModal(title, html) {
@@ -9290,7 +9311,7 @@ const FIJA_THEMES = {
         initKeyboardShortcuts();
         renderMiniCart();
         watchPriceDrops();
-        loadAll().then(() => { try { restoreSavedLocation(); } catch (e) {} if (!state.onboarded) setTimeout(() => { if (state.currentView === 'storefront' && !state.currentPageDesc) openOnboarding(); }, 900); });
+        loadAll().then(() => { try { restoreSavedLocation(); } catch (e) {} try { applyDeepLink(); } catch (e) {} if (!state.onboarded) setTimeout(() => { if (state.currentView === 'storefront' && !state.currentPageDesc && !state.pendingReview) openOnboarding(); }, 900); });
         // Analítica de entradas de clientes (IP, dispositivo, país). Fire-and-forget.
         try { logVisitorEntry(); } catch (e) {}
         // Botón "volver arriba" visible al hacer scroll
