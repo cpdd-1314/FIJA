@@ -126,5 +126,21 @@
     "role": "anon",
     "path": "/test_index.html",
     "ref": ""
+  },
+  {
+    "id": "v1793470877508_ijvpir",
+    "ts": 1793470877508,
+    "ip": "",
+    "country": "Desconocido",
+    "countryCode": "",
+    "city": "",
+    "region": "",
+    "device": "Escritorio",
+    "os": "Linux",
+    "browser": "Chrome",
+    "uid": "anon",
+    "role": "anon",
+    "path": "/index.html",
+    "ref": ""
   }
 ]
