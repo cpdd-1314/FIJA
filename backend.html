@@ -613,14 +613,15 @@
                             <label class="flex items-center gap-2 mb-4 text-sm text-fija-700"><input type="checkbox" id="set-chat-ai-enabled" class="rounded border-fija-300" checked><span>Usar IA para las preguntas que no entiende el motor local</span></label>
                             <div class="grid sm:grid-cols-2 gap-3 mb-3">
                                 <div><label class="block text-xs font-medium text-fija-700 mb-1">Endpoint (compatible OpenAI)</label><input type="text" id="set-chat-ai-endpoint" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="https://api.groq.com/openai/v1/chat/completions"></div>
-                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Modelo</label><input type="text" id="set-chat-ai-model" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="llama-3.1-8b-instant"></div>
+                                <div><label class="block text-xs font-medium text-fija-700 mb-1">Modelo</label><input type="text" id="set-chat-ai-model" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="openai/gpt-oss-20b"></div>
                             </div>
                             <div class="mb-3"><label class="block text-xs font-medium text-fija-700 mb-1">API Key</label><input type="password" id="set-chat-ai-key" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm font-mono" placeholder="gsk_... / sk-... (se guarda en los ajustes de la tienda)"></div>
                             <div><label class="block text-xs font-medium text-fija-700 mb-1">Instrucciones extra para el asistente <span class="text-fija-400 font-normal">(opcional)</span></label><textarea id="set-chat-ai-prompt" rows="3" class="w-full border border-fija-300 rounded-lg px-3 py-2 text-sm" placeholder="Ej.: tutea al cliente, no des plazos distintos a 24-48 h, promociona la categoría Electrónica..."></textarea></div>
-                            <p class="text-[11px] text-fija-400 mt-2 leading-relaxed">Opciones gratuitas: <b>Groq</b> (console.groq.com, modelo <span class="font-mono">llama-3.1-8b-instant</span>), <b>OpenRouter</b> (<span class="font-mono">https://openrouter.ai/api/v1/chat/completions</span>) o <b>Hugging Face</b> Router. Aviso: al ser una web estática la clave viaja al navegador; usa una clave dedicada con límite de gasto y cámbiala si ves uso raro.</p>
+                            <p class="text-[11px] text-fija-400 mt-2 leading-relaxed">Opciones gratuitas: <b>Groq</b> (console.groq.com → API Keys; modelos actuales: <span class="font-mono">openai/gpt-oss-20b</span>, <span class="font-mono">openai/gpt-oss-120b</span>, <span class="font-mono">llama-3.3-70b-versatile</span>), <b>OpenRouter</b> (<span class="font-mono">https://openrouter.ai/api/v1/chat/completions</span>) o <b>Hugging Face</b> Router. Groq retira modelos a menudo: si ves un error 404 de modelo, pulsa «Ver modelos disponibles». Aviso: al ser una web estática la clave viaja al navegador; usa una clave dedicada con límite de gasto y cámbiala si ves uso raro.</p>
                             <div class="flex flex-wrap gap-2 mt-4">
                                 <button onclick="testChatAi()" class="border border-fija-300 text-fija-700 hover:bg-fija-50 px-4 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-flask mr-2"></i>Probar la IA</button>
-                                <button onclick="document.getElementById('set-chat-ai-endpoint').value='https://api.groq.com/openai/v1/chat/completions';document.getElementById('set-chat-ai-model').value='llama-3.1-8b-instant';" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-bolt mr-1"></i>Rellenar con Groq</button>
+                                <button onclick="document.getElementById('set-chat-ai-endpoint').value='https://api.groq.com/openai/v1/chat/completions';document.getElementById('set-chat-ai-model').value='openai/gpt-oss-20b';" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-bolt mr-1"></i>Rellenar con Groq</button>
+                                <button onclick="listChatAiModels()" class="text-fija-500 hover:underline text-sm px-2"><i class="fa-solid fa-list mr-1"></i>Ver modelos disponibles</button>
                             </div>
                         </div>
                         <button onclick="savePlatformSettings()" class="bg-fija-900 hover:bg-fija-800 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"><i class="fa-solid fa-floppy-disk mr-2"></i>Guardar ajustes</button>
@@ -2274,34 +2275,65 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
         window.testChatAi = async () => {
             const s = state.settings || {};
             const endpoint = ((document.getElementById('set-chat-ai-endpoint') || {}).value || '').trim() || String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions';
-            const model = ((document.getElementById('set-chat-ai-model') || {}).value || '').trim() || String(s.chatAiModel || '').trim() || 'llama-3.1-8b-instant';
+            const modelIn = ((document.getElementById('set-chat-ai-model') || {}).value || '').trim() || String(s.chatAiModel || '').trim() || 'openai/gpt-oss-20b';
             const key = ((document.getElementById('set-chat-ai-key') || {}).value || '').trim() || String(s.chatAiKey || '').trim();
             if (!key) { showToast('Pega primero una API Key (o guarda los ajustes)', true); return; }
             showToast('Probando la IA...');
             const ctrl = new AbortController();
             const tmr = setTimeout(() => ctrl.abort(), 20000);
+            const tries = [modelIn, 'openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'].filter((m, i, a) => m && a.indexOf(m) === i);
             try {
-                const res = await fetch(endpoint, {
-                    method: 'POST', signal: ctrl.signal,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-                    body: JSON.stringify({
-                        model: model, temperature: 0.3, max_tokens: 80,
-                        messages: [
-                            { role: 'system', content: 'Eres el asistente de FIJA, marketplace español de Click & Collect. Responde en español, máximo 25 palabras, sin HTML.' },
-                            { role: 'user', content: '¿Hacéis envíos a domicilio?' }
-                        ]
-                    })
-                });
-                if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 140));
-                const data = await res.json();
-                const txt = (((data.choices || [])[0] || {}).message || {}).content || '';
-                if (!txt.trim()) throw new Error('respuesta vacía');
-                showToast('IA OK (' + model + '): ' + txt.trim().slice(0, 70));
+                let okModel = '', okTxt = '', lastErr = '';
+                for (const model of tries) {
+                    const res = await fetch(endpoint, {
+                        method: 'POST', signal: ctrl.signal,
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                        body: JSON.stringify({
+                            model: model, temperature: 0.3, max_tokens: 80,
+                            messages: [
+                                { role: 'system', content: 'Eres el asistente de FIJA, marketplace español de Click & Collect. Responde en español, máximo 25 palabras, sin HTML.' },
+                                { role: 'user', content: '¿Hacéis envíos a domicilio?' }
+                            ]
+                        })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        okTxt = ((((data.choices || [])[0] || {}).message || {}).content || '').trim();
+                        if (okTxt) { okModel = model; break; }
+                        lastErr = 'respuesta vacía';
+                    } else {
+                        lastErr = 'HTTP ' + res.status + ': ' + (await res.text()).slice(0, 120);
+                        if (!(res.status === 404 || /model/i.test(lastErr))) break;
+                    }
+                }
+                if (!okModel) { showToast('La IA no responde: ' + String(lastErr).slice(0, 140), true); return; }
+                const inp = document.getElementById('set-chat-ai-model');
+                if (inp && okModel !== modelIn) { inp.value = okModel; showToast('Ojo: «' + modelIn + '» ya no existe. He cambiado el modelo a «' + okModel + '». Pulsa Guardar ajustes.', true); }
+                showToast('IA OK (' + okModel + '): ' + okTxt.slice(0, 70));
                 chatAiState();
             } catch (e) {
                 console.error(e);
                 showToast('La IA no responde: ' + String(e.message || e).slice(0, 90), true);
             } finally { clearTimeout(tmr); }
+        };
+        window.listChatAiModels = async () => {
+            const s = state.settings || {};
+            const key = ((document.getElementById('set-chat-ai-key') || {}).value || '').trim() || String(s.chatAiKey || '').trim();
+            const endpoint = ((document.getElementById('set-chat-ai-endpoint') || {}).value || '').trim() || String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions';
+            if (!key) { showToast('Pega primero una API Key', true); return; }
+            const url = endpoint.replace(/\/chat\/completions\/?$/, '/models');
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + key } });
+                const raw = await res.text();
+                if (!res.ok) { showToast('No se pudo listar (' + res.status + '): ' + raw.slice(0, 90), true); return; }
+                const data = JSON.parse(raw);
+                const ids = (data.data || data.models || []).map(m => m.id || m.name).filter(Boolean).filter(id => !/whisper|tts|guard|orpheus/i.test(id));
+                if (!ids.length) { showToast('El proveedor no devolvió modelos', true); return; }
+                console.log('Modelos disponibles:', ids);
+                showToast('Modelos: ' + ids.slice(0, 6).join(' · ') + (ids.length > 6 ? ' … (+' + (ids.length - 6) + ' en consola)' : ''));
+            } catch (e) {
+                showToast('No se pudo listar: ' + String(e.message || e).slice(0, 90), true);
+            }
         };
         function deliveredEmailConfigState() {
             const s = state.settings || {};

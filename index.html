@@ -6210,6 +6210,8 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             };
         }
         // --- Capa IA opcional (modelo pequeño con contexto de la tienda) ---
+        // Modelos que probamos si el configurado ya no existe en el proveedor (Groq retira modelos a menudo)
+        var BOT_AI_FALLBACK = ['openai/gpt-oss-20b', 'openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
         function botAiCfg() {
             const s = storeSettings() || {};
             const key = String(s.chatAiKey || '').trim();
@@ -6217,7 +6219,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 enabled: !!key && s.chatAiEnabled !== false,
                 key: key,
                 url: String(s.chatAiEndpoint || '').trim() || 'https://api.groq.com/openai/v1/chat/completions',
-                model: String(s.chatAiModel || '').trim() || 'llama-3.1-8b-instant',
+                model: String(s.chatAiModel || '').trim() || BOT_AI_FALLBACK[0],
                 extra: String(s.chatAiPrompt || '').trim()
             };
         }
@@ -6273,13 +6275,23 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 .concat([{ role: 'user', content: String(q).slice(0, 600) }]);
             const ctrl = new AbortController();
             const tmr = setTimeout(() => ctrl.abort(), 15000);
+            const tries = [cfg.model].concat(BOT_AI_FALLBACK.filter(m => m !== cfg.model));
             try {
-                const res = await fetch(cfg.url, {
-                    method: 'POST', signal: ctrl.signal,
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
-                    body: JSON.stringify({ model: cfg.model, messages: msgs, temperature: 0.35, max_tokens: 400 })
-                });
-                if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 120));
+                let res = null, errTxt = '';
+                for (const model of tries) {
+                    res = await fetch(cfg.url, {
+                        method: 'POST', signal: ctrl.signal,
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+                        body: JSON.stringify({ model: model, messages: msgs, temperature: 0.35, max_tokens: 400 })
+                    });
+                    if (res.ok) break;
+                    errTxt = (await res.text()).slice(0, 160);
+                    // solo cambiamos de modelo si el problema es el modelo; otros errores (401, 429) no se arreglan reintentando
+                    const modelIssue = res.status === 404 || /model/i.test(errTxt);
+                    if (!modelIssue) throw new Error('HTTP ' + res.status + ' ' + errTxt);
+                    console.warn('chatbot IA: modelo no disponible (' + model + ')', errTxt);
+                }
+                if (!res || !res.ok) throw new Error('HTTP ' + (res ? res.status : '?') + ' ' + errTxt);
                 const data = await res.json();
                 const txt = (((data.choices || [])[0] || {}).message || {}).content || '';
                 if (!txt.trim()) throw new Error('respuesta vacía');
