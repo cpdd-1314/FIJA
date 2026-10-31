@@ -402,6 +402,33 @@
                     <!-- ===== ANALÍTICAS ===== -->
                     <section id="sec-analytics" class="hide">
                         <div class="mb-6"><h1 class="text-2xl font-bold">Analíticas de producto</h1><p class="text-fija-500 text-sm">Interés real de los compradores: clics y tiempo de visualización (datos agregados de la tienda).</p></div>
+
+                        <!-- ===== Puente al panel de analítica completo (SOLO LECTURA) ===== -->
+                        <div class="mb-8 rounded-xl border border-fija-200 bg-white overflow-hidden">
+                            <div class="p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between border-b border-fija-100">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-fija-900 text-fija-gold grid place-items-center shrink-0"><i class="fa-solid fa-chart-pie"></i></div>
+                                    <div>
+                                        <p class="font-semibold text-sm flex items-center gap-2">Panel de analítica completo
+                                            <span class="text-[10px] font-bold uppercase tracking-wide bg-fija-100 text-fija-500 px-2 py-0.5 rounded-full">solo lectura</span>
+                                        </p>
+                                        <p class="text-xs text-fija-500 mt-0.5 leading-relaxed">Página independiente <span class="font-mono">analytics.html</span>, conectada al repositorio de GitHub y a Supabase. Desde aquí solo se consulta: no se edita nada.</p>
+                                    </div>
+                                </div>
+                                <a href="analytics.html" target="_blank" rel="noopener" class="shrink-0 inline-flex items-center justify-center bg-fija-900 hover:bg-fija-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i>Abrir panel completo</a>
+                            </div>
+                            <div class="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-fija-100">
+                                <div class="p-4"><p class="text-[11px] uppercase tracking-wide text-fija-500 font-semibold mb-1">Ingresos (30 d)</p><p class="text-xl font-bold" id="bk-revenue">—</p></div>
+                                <div class="p-4"><p class="text-[11px] uppercase tracking-wide text-fija-500 font-semibold mb-1">Pedidos (30 d)</p><p class="text-xl font-bold" id="bk-orders">—</p></div>
+                                <div class="p-4"><p class="text-[11px] uppercase tracking-wide text-fija-500 font-semibold mb-1">Visitas (30 d)</p><p class="text-xl font-bold" id="bk-visits">—</p></div>
+                                <div class="p-4"><p class="text-[11px] uppercase tracking-wide text-fija-500 font-semibold mb-1">Ticket medio (30 d)</p><p class="text-xl font-bold" id="bk-ticket">—</p></div>
+                            </div>
+                            <div class="px-5 py-3 bg-fija-100/60 text-[11px] text-fija-500 flex flex-wrap items-center gap-x-4 gap-y-1">
+                                <span><i class="fa-brands fa-github mr-1"></i>GitHub: <span id="bk-gh" class="font-medium">—</span></span>
+                                <span><i class="fa-solid fa-bolt mr-1"></i>Supabase: <span id="bk-sb" class="font-medium">—</span></span>
+                                <span class="ml-auto" id="bk-updated">—</span>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Producto más clicado</p><p class="text-xl font-bold text-fija-900 leading-tight" id="an-top-click">—</p><p class="text-xs text-fija-400 mt-1"><span id="an-top-click-n">0</span> clics</p></div>
                             <div class="bg-white rounded-xl shadow-sm border border-fija-200 p-5"><p class="text-sm text-fija-500 mb-1">Más tiempo visto</p><p class="text-xl font-bold text-fija-900 leading-tight" id="an-top-time">—</p><p class="text-xs text-fija-400 mt-1"><span id="an-top-time-s">0</span> vistos</p></div>
@@ -1523,6 +1550,25 @@ pagáis a plazos | Sí, con Sequra a partir de 30 €: 3, 6 o 12 meses sin inter
                 <td class="px-6 py-2.5">${escapeHtml(v.browser || '—')}</td></tr>`).join('') : `<tr><td colspan="5" class="px-6 py-8 text-center text-fija-400">Sin entradas todavía.</td></tr>`;
             const lu = document.getElementById('an-last-update');
             if (lu && visits.length) lu.textContent = 'Total: ' + visits.length + ' entradas';
+            renderAnalyticsBridge(visits);
+        }
+
+        // Resumen de solo lectura para el panel independiente (analytics.html)
+        function renderAnalyticsBridge(visits) {
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+            const from = Date.now() - 30 * 86400000;
+            const inRange = o => (o.createdAt || 0) >= from;
+            const liveOrderList = (state.orders || []).filter(o => o.status !== 'cancelled');
+            const recent = liveOrderList.filter(inRange);
+            const revenue = recent.reduce((sum, o) => sum + (o.total != null ? Number(o.total) : (o.items || []).reduce((s2, it) => s2 + itemPaid(it), 0)), 0);
+            const v30 = (visits || (state.visits || [])).filter(v => (v.ts || 0) >= from);
+            set('bk-revenue', formatEuro(revenue));
+            set('bk-orders', String(recent.length));
+            set('bk-visits', String(v30.length));
+            set('bk-ticket', recent.length ? formatEuro(revenue / recent.length) : formatEuro(0));
+            set('bk-gh', CONFIG.owner && CONFIG.repo ? (CONFIG.owner + '/' + CONFIG.repo) : 'cpdd-1314/FIJA');
+            set('bk-sb', cloudProvider() === 'supabase' ? 'en vivo' : 'no configurado');
+            set('bk-updated', 'Última actualización: ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
         }
 
         // ---------- ADMIN: Informes ----------

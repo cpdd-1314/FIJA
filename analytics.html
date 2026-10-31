@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FIJA · Analítica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+    :root {
+        --ink: #0a0a0a;
+        --ink-2: #27272a;
+        --muted: #71717a;
+        --muted-2: #a1a1aa;
+        --line: #e4e4e7;
+        --bg: #f4f4f5;
+        --card: #ffffff;
+        --gold: #d4af37;
+        --gold-soft: #f7edd0;
+        --green: #15803d;
+        --green-soft: #dcfce7;
+        --red: #b91c1c;
+        --red-soft: #fee2e2;
+        --blue: #1d4ed8;
+        --blue-soft: #dbeafe;
+        --amber: #b45309;
+        --amber-soft: #fef3c7;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: var(--bg); color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+    }
+    .hide { display: none !important; }
+    button { font-family: inherit; cursor: pointer; }
+    a { color: inherit; }
+
+    /* ============ LOGIN ============ */
+    #gate {
+        min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+        background:
+            radial-gradient(900px 420px at 15% -10%, rgba(212,175,55,.16), transparent 60%),
+            radial-gradient(700px 380px at 105% 10%, rgba(10,10,10,.08), transparent 60%),
+            var(--bg);
+    }
+    .gate-card {
+        width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--line);
+        border-radius: 18px; padding: 34px 30px 28px; box-shadow: 0 24px 60px -28px rgba(10,10,10,.35);
+    }
+    .gate-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .gate-logo img { height: 34px; width: auto; }
+    .gate-title { font-size: 20px; font-weight: 800; letter-spacing: -.02em; margin: 14px 0 4px; }
+    .gate-sub { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+    .field input {
+        width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px;
+        font-size: 14px; font-family: inherit; background: #fff; color: var(--ink); transition: border-color .15s, box-shadow .15s;
+    }
+    .field input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212,175,55,.18); }
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        border: 1px solid var(--line); background: #fff; color: var(--ink);
+        padding: 9px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+        transition: background .15s, border-color .15s, color .15s, transform .1s;
+        text-decoration: none; white-space: nowrap;
+    }
+    .btn:hover { background: #fafafa; border-color: var(--muted-2); }
+    .btn:active { transform: translateY(1px); }
+    .btn-dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .btn-dark:hover { background: var(--ink-2); border-color: var(--ink-2); }
+    .btn-gold { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+    .btn-gold:hover { background: #c9a432; border-color: #c9a432; }
+    .btn-block { width: 100%; padding: 12px; font-size: 14px; }
+    .gate-error {
+        display: none; margin-top: 12px; padding: 10px 12px; border-radius: 10px;
+        background: var(--red-soft); color: var(--red); font-size: 12.5px; line-height: 1.45;
+    }
+
+    /* ============ APP SHELL ============ */
+    .topbar {
+        position: sticky; top: 0; z-index: 40;
+        background: rgba(255,255,255,.88); backdrop-filter: saturate(180%) blur(12px);
+        border-bottom: 1px solid var(--line);
+    }
+    .topbar-inner {
+        max-width: 1320px; margin: 0 auto; padding: 12px 24px;
+        display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-right: auto; min-width: 0; }
+    .brand img { height: 30px; width: auto; }
+    .brand-div { width: 1px; height: 24px; background: var(--line); }
+    .brand-txt { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+    .brand-txt small { display: block; font-size: 11px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .seg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+    .seg button {
+        border: 0; background: transparent; padding: 7px 11px; border-radius: 8px;
+        font-size: 12.5px; font-weight: 600; color: var(--muted);
+    }
+    .seg button.on { background: var(--ink); color: #fff; }
+    .src-dot { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: var(--muted); }
+    .src-dot i.fa-circle { font-size: 7px; }
+    .src-dot.ok i.fa-circle { color: #16a34a; }
+    .src-dot.bad i.fa-circle { color: #dc2626; }
+    .src-dot.warn i.fa-circle { color: #d97706; }
+
+    main { max-width: 1320px; margin: 0 auto; padding: 26px 24px 60px; }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+    .page-head h1 { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin: 0 0 4px; }
+    .page-head p { margin: 0; font-size: 13px; color: var(--muted); }
+    .stamp { font-size: 11.5px; color: var(--muted-2); display: flex; align-items: center; gap: 7px; }
+    .live { display: inline-flex; align-items: center; gap: 6px; }
+    .live b { width: 7px; height: 7px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 0 rgba(22,163,74,.5); animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(22,163,74,.45); } 70% { box-shadow: 0 0 0 7px rgba(22,163,74,0); } 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); } }
+
+    /* ============ CARDS / GRIDS ============ */
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 1px 2px rgba(10,10,10,.03); }
+    .card-head {
+        padding: 16px 20px; border-bottom: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .card-head h2 { font-size: 14px; font-weight: 700; margin: 0; letter-spacing: -.01em; display: flex; align-items: center; gap: 9px; }
+    .card-head h2 i { color: var(--gold); font-size: 13px; }
+    .card-head .hint { font-size: 11.5px; color: var(--muted); font-weight: 500; }
+    .card-body { padding: 20px; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 620px) { .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; } .kpi { padding: 12px 13px; } .kpi .k-val { font-size: 19px; } .kpi .k-icon { width: 22px; height: 22px; font-size: 9px; } .kpi .k-sub { font-size: 10.5px; } }
+    .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; position: relative; overflow: hidden; }
+    .kpi .k-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .kpi .k-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .kpi .k-icon { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--gold-soft); color: #8a6d1f; font-size: 11px; }
+    .kpi .k-val { font-size: 25px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; }
+    .kpi .k-sub { font-size: 11.5px; color: var(--muted-2); margin-top: 5px; }
+    .kpi .k-sub b { color: var(--green); font-weight: 700; }
+    .kpi .k-sub b.down { color: var(--red); }
+
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .two-wide { display: grid; grid-template-columns: 1.35fr 1fr; gap: 18px; margin-bottom: 18px; }
+    @media (max-width: 980px) { .two, .two-wide { grid-template-columns: 1fr; } }
+    .stack { display: grid; gap: 18px; margin-bottom: 18px; }
+
+    /* ============ CHART ============ */
+    .chart-wrap { padding: 6px 8px 0; }
+    .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 4px 20px 14px; font-size: 11.5px; color: var(--muted); }
+    .chart-legend span { display: inline-flex; align-items: center; gap: 7px; }
+    .lg-swatch { width: 9px; height: 9px; border-radius: 3px; }
+    .chart-empty { padding: 46px 20px; text-align: center; color: var(--muted-2); font-size: 13px; }
+
+    /* ============ FUNNEL ============ */
+    .funnel { display: flex; flex-direction: column; gap: 10px; }
+    .fun-row { display: grid; grid-template-columns: 118px 1fr 84px; align-items: center; gap: 12px; }
+    .fun-name { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+    .fun-bar { height: 26px; border-radius: 7px; background: #f4f4f5; overflow: hidden; }
+    .fun-fill { height: 100%; border-radius: 7px; background: linear-gradient(90deg, #b38f27, var(--gold)); transition: width .5s ease; }
+    .fun-val { text-align: right; font-size: 12.5px; font-weight: 700; }
+    .fun-val small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted-2); }
+
+    /* ============ BARS ============ */
+    .barlist { display: grid; gap: 11px; }
+    .bar-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 12.5px; }
+    .bar-row .bl { font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-row .bv { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .bar-row .bt { grid-column: 1 / -1; height: 7px; border-radius: 5px; background: #f1f1f3; overflow: hidden; }
+    .bar-row .bt > i { display: block; height: 100%; border-radius: 5px; background: var(--ink); opacity: .82; }
+
+    /* ============ DONUT ============ */
+    .donut-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+    .donut { width: 148px; height: 148px; border-radius: 50%; flex: 0 0 auto; position: relative; }
+    .donut::after {
+        content: ''; position: absolute; inset: 26px; background: #fff; border-radius: 50%;
+        box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; z-index: 2; }
+    .donut-center b { display: block; font-size: 21px; font-weight: 800; letter-spacing: -.02em; }
+    .donut-center span { font-size: 10.5px; color: var(--muted); }
+    .donut-legend { display: grid; gap: 9px; font-size: 12.5px; min-width: 150px; }
+    .donut-legend div { display: flex; align-items: center; gap: 8px; }
+    .donut-legend i { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
+    .donut-legend span { color: var(--muted); }
+    .donut-legend b { margin-left: auto; font-weight: 700; }
+
+    /* ============ TABLES ============ */
+    .tbl-wrap { overflow-x: auto; }
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 12.8px; }
+    table.tbl thead th {
+        text-align: left; padding: 10px 16px; background: #fafafa; border-bottom: 1px solid var(--line);
+        font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; white-space: nowrap;
+    }
+    table.tbl tbody td { padding: 11px 16px; border-bottom: 1px solid #f4f4f5; vertical-align: middle; }
+    table.tbl tbody tr:last-child td { border-bottom: 0; }
+    table.tbl tbody tr:hover { background: #fcfcfc; }
+    .r { text-align: right; font-variant-numeric: tabular-nums; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted); }
+    .pill { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .pill.gray { background: #f4f4f5; color: var(--muted); }
+    .pill.green { background: var(--green-soft); color: var(--green); }
+    .pill.red { background: var(--red-soft); color: var(--red); }
+    .pill.blue { background: var(--blue-soft); color: var(--blue); }
+    .pill.amber { background: var(--amber-soft); color: var(--amber); }
+    .pill.gold { background: var(--gold-soft); color: #8a6d1f; }
+    .empty { padding: 34px 20px; text-align: center; color: var(--muted-2); font-size: 12.5px; }
+
+    /* ============ SOURCES ============ */
+    .src-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 780px) { .src-grid { grid-template-columns: 1fr; } }
+    .src-card { border: 1px solid var(--line); border-radius: 12px; padding: 15px 16px; background: #fcfcfc; }
+    .src-card .sh { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; margin-bottom: 8px; }
+    .src-card .sh i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-size: 10px; background: var(--ink); color: #fff; }
+    .src-card .sh i.gh { background: #24292f; }
+    .src-card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; font-size: 11.8px; }
+    .src-card dt { color: var(--muted); }
+    .src-card dd { margin: 0; font-weight: 600; text-align: right; word-break: break-all; }
+    .src-note { margin-top: 10px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+    footer.pf { max-width: 1320px; margin: 0 auto; padding: 0 24px 34px; font-size: 11.5px; color: var(--muted-2); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    /* ============ TOOLTIP ============ */
+    #tip {
+        position: fixed; z-index: 90; pointer-events: none; opacity: 0; transform: translate(-50%, -120%);
+        background: var(--ink); color: #fff; padding: 8px 11px; border-radius: 9px; font-size: 11.5px;
+        line-height: 1.45; box-shadow: 0 10px 24px -8px rgba(0,0,0,.5); transition: opacity .12s; white-space: nowrap;
+    }
+    #tip.on { opacity: 1; }
+    #tip b { color: var(--gold); }
+
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 720px) {
+        .topbar-inner { padding: 10px 14px; gap: 10px; }
+        .src-dot { font-size: 0; gap: 0; }
+        .src-dot i.fa-circle { font-size: 9px; }
+        .brand img { height: 26px; }
+        .brand-txt { font-size: 13px; }
+        .brand-txt small { font-size: 10px; }
+        main { padding: 18px 14px 48px; }
+        .page-head h1 { font-size: 22px; }
+        .card-body { padding: 16px; }
+        .kpi .k-val { font-size: 22px; }
+        .toolbar .btn span.lbl { display: none; }
+        .fun-row { grid-template-columns: 92px 1fr 70px; }
+    }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="gate">
+    <div class="gate-card">
+        <div class="gate-logo"><img src="logo.png" alt="FIJA"></div>
+        <h1 class="gate-title">Analítica FIJA</h1>
+        <p class="gate-sub">Panel de datos conectado a GitHub. Acceso restringido al administrador.</p>
+        <form id="gate-form" autocomplete="off">
+            <div class="field">
+                <label for="gate-user">Usuario o correo</label>
+                <input id="gate-user" type="text" placeholder="admin" required>
+            </div>
+            <div class="field">
+                <label for="gate-pass">Contraseña</label>
+                <input id="gate-pass" type="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn btn-dark btn-block" id="gate-btn"><i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar</button>
+            <div class="gate-error" id="gate-error"></div>
+        </form>
+        <p class="src-note" style="margin-top:18px">Solo cuentas con rol <b>admin</b>. Si ya has iniciado sesión en el back-office, entrarás directamente.</p>
+    </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hide">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <img src="logo.png" alt="FIJA">
+                <div class="brand-div"></div>
+                <div class="brand-txt">Analítica<small id="brand-sub">Marketplace Click &amp; Collect</small></div>
+            </div>
+            <div class="toolbar">
+                <div class="src-dot" id="dot-sb" title="Supabase"><i class="fa-solid fa-circle"></i> Supabase</div>
+                <div class="src-dot" id="dot-gh" title="GitHub"><i class="fa-solid fa-circle"></i> GitHub</div>
+                <div class="seg" id="range-seg">
+                    <button data-days="7">7d</button>
+                    <button data-days="30" class="on">30d</button>
+                    <button data-days="90">90d</button>
+                    <button data-days="365">1a</button>
+                    <button data-days="0">Todo</button>
+                </div>
+                <button class="btn" id="btn-refresh" title="Actualizar"><i class="fa-solid fa-rotate" id="refresh-icon"></i><span class="lbl">Actualizar</span></button>
+                <button class="btn" id="btn-csv" title="Exportar CSV"><i class="fa-solid fa-file-csv"></i><span class="lbl">CSV</span></button>
+                <a class="btn" href="backend.html" title="Volver al back-office"><i class="fa-solid fa-arrow-left"></i><span class="lbl">Back-office</span></a>
+                <button class="btn" id="btn-out" title="Salir"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="page-head">
+            <div>
+                <h1>Analítica</h1>
+                <p id="head-sub">Ventas, tráfico y comportamiento de la tienda en un solo panel.</p>
+            </div>
+            <div class="stamp">
+                <span class="live"><b></b> En vivo</span>
+                <span>·</span>
+                <span id="stamp">Cargando…</span>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <section class="kpis" id="kpis"></section>
+
+        <!-- Trend -->
+        <section class="card" style="margin-bottom:18px">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-chart-column"></i> Ingresos y pedidos por día</h2>
+                <span class="hint" id="trend-hint">—</span>
+            </div>
+            <div class="chart-wrap" id="trend"></div>
+            <div class="chart-legend">
+                <span><i class="lg-swatch" style="background:linear-gradient(180deg,#e3c565,#d4af37)"></i> Ingresos cobrados</span>
+                <span><i class="lg-swatch" style="background:#0a0a0a;border-radius:50%"></i> Pedidos</span>
+                <span><i class="lg-swatch" style="background:#c7c7cc"></i> Visitas</span>
+            </div>
+        </section>
+
+        <div class="two">
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-filter"></i> Embudo de conversión</h2><span class="hint">visitas → pedidos → entregados</span></div>
+                <div class="card-body" id="funnel"></div>
+            </section>
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-circle-half-stroke"></i> Estado de los pedidos</h2><span class="hint" id="donut-hint">—</span></div>
+                <div class="card-body" id="donut"></div>
+            </section>
+        </div>
+
+        <div class="two">
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-layer-group"></i> Ingresos por categoría</h2><span class="hint">top 8</span></div>
+                <div class="card-body" id="by-cat"></div>
+            </section>
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-store"></i> Vendedores por facturación</h2><span class="hint">top 8</span></div>
+                <div class="card-body" id="by-seller"></div>
+            </section>
+        </div>
+
+        <section class="card" style="margin-bottom:18px">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-ranking-star"></i> Productos más vendidos</h2>
+                <span class="hint" id="prod-hint">—</span>
+            </div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr>
+                        <th style="width:38px">#</th><th>Producto</th><th>Categoría</th>
+                        <th class="r">Unidades</th><th class="r">Ingresos</th><th class="r">Clics</th><th class="r">Precio medio</th>
+                    </tr></thead>
+                    <tbody id="prod-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="two">
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-earth-europe"></i> Tráfico por país</h2><span class="hint">top 8</span></div>
+                <div class="card-body" id="by-country"></div>
+            </section>
+            <section class="card">
+                <div class="card-head"><h2><i class="fa-solid fa-mobile-screen-button"></i> Dispositivos y navegadores</h2><span class="hint" id="dev-hint">—</span></div>
+                <div class="card-body" id="by-device"></div>
+            </section>
+        </div>
+
+        <section class="card" style="margin-bottom:18px">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-receipt"></i> Últimos pedidos</h2>
+                <span class="hint" id="orders-hint">—</span>
+            </div>
+            <div class="tbl-wrap">
+                <table class="tbl">
+                    <thead><tr>
+                        <th>Pedido</th><th>Fecha</th><th>Cliente</th><th>Cupón</th>
+                        <th class="r">Importe</th><th class="r">Comisión</th><th>Estado</th>
+                    </tr></thead>
+                    <tbody id="orders-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card" style="margin-bottom:18px">
+            <div class="card-head">
+                <h2><i class="fa-solid fa-diagram-project"></i> Fuentes de datos</h2>
+                <span class="hint">GitHub + Supabase</span>
+            </div>
+            <div class="card-body">
+                <div class="src-grid">
+                    <div class="src-card">
+                        <div class="sh"><i class="gh"><i class="fa-brands fa-github"></i></i> GitHub · repositorio</div>
+                        <dl>
+                            <dt>Repositorio</dt><dd id="gh-repo">—</dd>
+                            <dt>Rama</dt><dd id="gh-branch">—</dd>
+                            <dt>Último commit</dt><dd id="gh-commit">—</dd>
+                            <dt>Archivos de datos</dt><dd id="gh-files">—</dd>
+                            <dt>Estado</dt><dd id="gh-state">—</dd>
+                        </dl>
+                        <p class="src-note" id="gh-note">Los JSON de <span class="mono">/data</span> se leen directamente del repositorio: es la copia de seguridad versionada de toda la analítica.</p>
+                    </div>
+                    <div class="src-card">
+                        <div class="sh"><i><i class="fa-solid fa-bolt"></i></i> Supabase · base de datos</div>
+                        <dl>
+                            <dt>Proyecto</dt><dd id="sb-proj">—</dd>
+                            <dt>Tabla</dt><dd class="mono">fija_data</dd>
+                            <dt>Registros</dt><dd id="sb-rows">—</dd>
+                            <dt>Última escritura</dt><dd id="sb-updated">—</dd>
+                            <dt>Estado</dt><dd id="sb-state">—</dd>
+                        </dl>
+                        <p class="src-note">Fuente en tiempo real que comparten la tienda y el back-office. Si Supabase no responde, el panel usa automáticamente GitHub.</p>
+                    </div>
+                </div>
+                <p class="src-note" id="src-compare" style="margin-top:14px"></p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="pf">
+        <span>© 2026 FIJA · Panel de analítica</span>
+        <span id="foot-src">—</span>
+    </footer>
+</div>
+
+<div id="tip"></div>
+
+<script>
+/* =====================================================================
+   FIJA · Analítica (panel independiente)
+   Fuentes: Supabase (tiempo real) → GitHub raw (respaldo versionado) → /data local
+   ===================================================================== */
+
+function loadCfg() {
+    let sc = {}, bc = {};
+    try { sc = JSON.parse(localStorage.getItem('fija_config') || '{}') || {}; } catch (e) {}
+    try { bc = JSON.parse(localStorage.getItem('fija_backend_config') || '{}') || {}; } catch (e) {}
+    return {
+        sbUrl: sc.supabaseUrl || 'https://kqjjekfqctbdebjsamhh.supabase.co',
+        sbKey: sc.supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtxampla2ZxY3RiZGVianNhbWhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI3NjY3MzYsImV4cCI6MjEwODM0MjczNn0.6druYfJKpEW3ws-jsOKMX63J76vDcwLekziMVnFwzIo',
+        ghOwner: bc.owner || 'cpdd-1314',
+        ghRepo: bc.repo || 'FIJA',
+        ghBranch: bc.branch || 'main',
+        ghToken: bc.token || ''
+    };
+}
+const CFG = loadCfg();
+const NAMES = ['products', 'orders', 'profiles', 'coupons', 'settings', 'reviews', 'visits', 'tickets', 'reports'];
+
+const S = {
+    data: {},            // colecciones
+    src: { sb: { ok: false }, gh: { ok: false } },
+    days: 30,
+    profile: null,
+    loadedAt: 0,
+    range: { from: 0, to: 0 }
+};
+
+/* ---------------- utils ---------------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+const eur = n => (Number(n) || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const eur0 = n => (Number(n) || 0).toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+const num = n => (Number(n) || 0).toLocaleString('es-ES');
+const pct = (n, d) => (!d ? '0%' : (n / d * 100).toFixed(n / d * 100 >= 10 ? 0 : 1).replace('.', ',') + '%');
+const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const fmtDT = ts => ts ? new Date(ts).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+
+/* ---------------- data access ---------------- */
+function timedFetch(url, opts, ms) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms || 9000);
+    return fetch(url, Object.assign({}, opts, { signal: ctrl.signal })).finally(() => clearTimeout(t));
+}
+async function sbFetch(name) {
+    const url = CFG.sbUrl + '/rest/v1/fija_data?name=eq.' + encodeURIComponent(name) + '&select=content,updated_at';
+    const res = await timedFetch(url, { headers: { apikey: CFG.sbKey, Authorization: 'Bearer ' + CFG.sbKey } }, 9000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (!rows.length) return { data: null };
+    return { data: rows[0].content, at: rows[0].updated_at };
+}
+async function ghFetchFile(name) {
+    const url = 'https://raw.githubusercontent.com/' + CFG.ghOwner + '/' + CFG.ghRepo + '/' + CFG.ghBranch + '/data/' + name + '.json';
+    const res = await timedFetch(url, { cache: 'no-store' }, 12000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return { data: await res.json() };
+}
+async function ghList() {
+    const h = CFG.ghToken ? { Authorization: 'Bearer ' + CFG.ghToken } : {};
+    const res = await timedFetch('https://api.github.com/repos/' + CFG.ghOwner + '/' + CFG.ghRepo + '/contents/data?ref=' + CFG.ghBranch, { headers: h, cache: 'no-store' }, 18000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    if (!Array.isArray(j)) throw new Error('respuesta inesperada');
+    return j.filter(x => x.name && x.name.endsWith('.json')).map(x => ({ name: x.name.replace('.json', ''), size: x.size }));
+}
+async function ghMeta() {
+    const h = CFG.ghToken ? { Authorization: 'Bearer ' + CFG.ghToken } : {};
+    const res = await fetch('https://api.github.com/repos/' + CFG.ghOwner + '/' + CFG.ghRepo + '/commits?sha=' + CFG.ghBranch + '&per_page=1', { headers: h });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const j = await res.json();
+    const c = j[0] || {};
+    return { sha: (c.sha || '').slice(0, 7), msg: ((c.commit || {}).message || '').split('\n')[0], date: (c.commit || {}).author ? (c.commit.author.date) : null };
+}
+
+async function loadAll(onPartial) {
+    const out = {};
+
+    const loadSb = async () => {
+        let ok = 0, at = null, rows = 0;
+        const res = await Promise.all(NAMES.map(n => sbFetch(n).catch(() => null)));
+        res.forEach((r, i) => {
+            if (r && r.data != null) {
+                out[NAMES[i]] = r.data; ok++;
+                if (Array.isArray(r.data)) rows += r.data.length;
+                if (r.at && (!at || r.at > at)) at = r.at;
+            }
+        });
+        S.src.sb = { ok: ok > 0, count: ok, at: at, rows: rows };
+    };
+    const loadGh = async () => {
+        let files = [];
+        try { files = await ghList(); } catch (e) { files = NAMES.map(n => ({ name: n })); }
+        const nombres = files.map(f => f.name).filter(n => NAMES.indexOf(n) >= 0);
+        let ok = 0; const gd = {};
+        const res = await Promise.all(nombres.map(n => ghFetchFile(n).catch(() => null)));
+        res.forEach((r, i) => { if (r && r.data != null) { gd[nombres[i]] = r.data; ok++; } });
+        S.src.gh = { ok: ok > 0, count: ok, files: files.length, data: gd };
+        NAMES.forEach(n => { if (out[n] == null && gd[n] != null) out[n] = gd[n]; });
+        try { S.src.gh.meta = await ghMeta(); } catch (e) { S.src.gh.metaErr = String(e.message || e); }
+    };
+
+    // Supabase y GitHub en paralelo: si uno tarda o falla, el otro rellena.
+    // En cuanto Supabase responde se aplican los datos (no esperamos a GitHub).
+    const applyOut = () => { buildFrom(out); onPartial && onPartial(); };
+    await Promise.all([
+        loadSb().then(applyOut).catch(e => { S.src.sb = { ok: false, err: String(e.message || e) }; }),
+        loadGh().catch(e => { S.src.gh = { ok: false, err: String(e.message || e) }; })
+    ]);
+    // rellena huecos de GitHub con lo que haya de Supabase (por si llegó después)
+    NAMES.forEach(n => { if (out[n] == null) out[n] = S.src.gh && S.src.gh.data ? S.src.gh.data[n] : undefined; });
+
+    // 3) local ./data
+    for (const n of NAMES) {
+        if (out[n] != null) continue;
+        try { const r = await timedFetch('./data/' + n + '.json', { cache: 'no-store' }, 6000); if (r.ok) out[n] = await r.json(); } catch (e) {}
+    }
+
+    buildFrom(out);
+    S.loadedAt = Date.now();
+    try {
+        sessionStorage.setItem('fija_analytics_cache', JSON.stringify({
+            at: S.loadedAt, src: { sb: S.src.sb.ok, gh: S.src.gh.ok },
+            data: { products: S.data.products, orders: S.data.orders, profiles: S.data.profiles, reviews: S.data.reviews, visits: S.data.visits, coupons: S.data.coupons, settings: S.data.settings }
+        }));
+    } catch (e) {}
+}
+
+function buildFrom(out) {
+    S.data = {
+        products: Array.isArray(out.products) ? out.products : [],
+        orders: Array.isArray(out.orders) ? out.orders : [],
+        profiles: Array.isArray(out.profiles) ? out.profiles : [],
+        reviews: Array.isArray(out.reviews) ? out.reviews : [],
+        visits: Array.isArray(out.visits) ? out.visits : [],
+        tickets: Array.isArray(out.tickets) ? out.tickets : [],
+        reports: Array.isArray(out.reports) ? out.reports : [],
+        coupons: (out.coupons && typeof out.coupons === 'object' && !Array.isArray(out.coupons)) ? out.coupons : {}
+    };
+    S.data.settings = (out.settings && typeof out.settings === 'object' && !Array.isArray(out.settings)) ? out.settings : {};
+}
+
+function restoreCache() {
+    try {
+        const c = JSON.parse(sessionStorage.getItem('fija_analytics_cache') || 'null');
+        if (!c || !c.at || Date.now() - c.at > 30 * 60000) return false;
+        S.data = Object.assign({ products: [], orders: [], profiles: [], reviews: [], visits: [], coupons: {}, settings: {} }, c.data);
+        S.loadedAt = c.at;
+        return true;
+    } catch (e) { return false; }
+}
+
+/* ---------------- auth ---------------- */
+async function sha256(txt) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function tryAutoLogin() {
+    let sess = null;
+    try { sess = JSON.parse(localStorage.getItem('fija_backend_session') || 'null'); } catch (e) {}
+    if (!sess || !sess.userId) return false;
+    try {
+        let profiles = S.data.profiles || [];
+        if (!profiles.length) { const r = await sbFetch('profiles').catch(() => null); profiles = (r && Array.isArray(r.data)) ? r.data : []; }
+        const p = profiles.find(x => x.userId === sess.userId || (x.email || '').toLowerCase() === String(sess.email || '').toLowerCase());
+        if (p && p.role === 'admin' && !p.banned) { S.profile = p; return true; }
+    } catch (e) {}
+    return false;
+}
+async function doLogin(e) {
+    e.preventDefault();
+    const btn = $('gate-btn'), err = $('gate-error');
+    err.style.display = 'none';
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-rotate spin"></i> Comprobando…';
+    try {
+        const u = $('gate-user').value.trim().toLowerCase();
+        const pw = $('gate-pass').value;
+        const r = await sbFetch('profiles').catch(() => null);
+        let profiles = (r && Array.isArray(r.data)) ? r.data : [];
+        if (!profiles.length) {
+            try { const g = await ghFetchFile('profiles'); profiles = Array.isArray(g.data) ? g.data : []; } catch (e2) {}
+        }
+        const hash = await sha256(pw);
+        const p = profiles.find(x => ((x.email || '').toLowerCase() === u) || ((x.username || '').toLowerCase() === u));
+        if (!p || p.pwHash !== hash) throw new Error('Credenciales incorrectas.');
+        if (p.banned) throw new Error('Cuenta suspendida.');
+        if (p.role !== 'admin') throw new Error('Esta cuenta no es de administrador.');
+        S.data.profiles = profiles;
+        S.profile = p;
+        localStorage.setItem('fija_backend_session', JSON.stringify({ userId: p.userId, email: p.email, role: 'admin' }));
+        await boot({ fresh: false });
+    } catch (ex) {
+        err.textContent = String(ex.message || ex);
+        err.style.display = 'block';
+    } finally {
+        btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+    }
+}
+
+/* ---------------- metrics ---------------- */
+function orderTotal(o) { return o.total != null ? Number(o.total) : (o.items || []).reduce((s, it) => s + (it.paid != null ? it.paid : (it.price || 0) * (it.quantity || 1)), 0); }
+function orderCommission(o) { return (o.items || []).reduce((s, it) => s + (Number(it.commission) || 0), 0); }
+function orderUnits(o) { return (o.items || []).reduce((s, it) => s + (Number(it.quantity) || 0), 0); }
+
+function setRange(days) {
+    S.days = days;
+    const to = Date.now();
+    S.range = { from: days ? to - days * 86400000 : 0, to };
+    document.querySelectorAll('#range-seg button').forEach(b => b.classList.toggle('on', Number(b.dataset.days) === days));
+}
+const inRange = ts => (!S.range.from || (ts && ts >= S.range.from)) && (!ts || ts <= S.range.to);
+
+function compute() {
+    const d = S.data;
+    const ordersAll = d.orders.filter(o => o.status !== 'cancelled');
+    const orders = ordersAll.filter(o => inRange(o.createdAt));
+    const visits = d.visits.filter(v => inRange(v.ts));
+    const paid = orders.reduce((s, o) => s + orderTotal(o), 0);
+    const commission = orders.reduce((s, o) => s + orderCommission(o), 0);
+    const units = orders.reduce((s, o) => s + orderUnits(o), 0);
+    const prevSpan = S.days || (Date.now() - 0);
+    const prevFrom = S.days ? S.range.from - S.days * 86400000 : 0;
+    const prevOrders = S.days ? ordersAll.filter(o => o.createdAt >= prevFrom && o.createdAt < S.range.from) : [];
+    const prevPaid = prevOrders.reduce((s, o) => s + orderTotal(o), 0);
+    const uniqVisitors = new Set(visits.map(v => v.uid && v.uid !== 'anon' ? 'u:' + v.uid : 'i:' + (v.ip || v.id))).size;
+    const conv = visits.length ? orders.length / visits.length * 100 : 0;
+    const ratings = [];
+    d.reviews.forEach(r => { if (r && (r.rating || r.stars)) ratings.push(Number(r.rating || r.stars)); });
+    d.products.forEach(p => { if (Array.isArray(p.reviews)) p.reviews.forEach(r => { if (r && (r.rating || r.stars)) ratings.push(Number(r.rating || r.stars)); }); });
+    const avgRating = ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
+    return {
+        orders, ordersAll, visits, paid, commission, units, uniqVisitors, conv, avgRating, ratingCount: ratings.length,
+        ticket: orders.length ? paid / orders.length : 0,
+        prevPaid, prevOrders: prevOrders.length,
+        delivered: orders.filter(o => ['collected', 'completed', 'delivered'].includes(o.status)).length,
+        pending: orders.filter(o => ['pending', 'click-collect', 'ready', 'preparing'].includes(o.status)).length
+    };
+}
+
+/* ---------------- SVG chart ---------------- */
+function trendSVG(m) {
+    const days = S.days || 30;
+    const from = S.range.from || (Date.now() - 30 * 86400000);
+    const buckets = [];
+    const dayMs = 86400000;
+    const start = new Date(from); start.setHours(0, 0, 0, 0);
+    for (let t = start.getTime(); t <= Date.now(); t += dayMs) {
+        buckets.push({ ts: t, key: dayKey(t), paid: 0, orders: 0, visits: 0 });
+    }
+    const idx = {}; buckets.forEach((b, i) => idx[b.key] = i);
+    m.orders.forEach(o => { const k = dayKey(o.createdAt || 0); if (k in idx) { buckets[idx[k]].paid += orderTotal(o); buckets[idx[k]].orders += 1; } });
+    m.visits.forEach(v => { const k = dayKey(v.ts || 0); if (k in idx) buckets[idx[k]].visits += 1; });
+    if (buckets.length < 2) buckets.push(Object.assign({}, buckets[0] || { ts: Date.now(), key: dayKey(Date.now()), paid: 0, orders: 0, visits: 0 }));
+
+    const W = 940, H = 300, PL = 52, PR = 46, PT = 18, PB = 34;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const maxPaid = Math.max(1, ...buckets.map(b => b.paid));
+    const maxOrd = Math.max(1, ...buckets.map(b => b.orders));
+    const maxVis = Math.max(1, ...buckets.map(b => b.visits));
+    const x = i => PL + (buckets.length === 1 ? iw / 2 : (i / (buckets.length - 1)) * iw);
+    const yPaid = v => PT + ih - (v / maxPaid) * ih;
+    const yOrd = v => PT + ih - (v / maxOrd) * ih;
+    const yVis = v => PT + ih - (v / maxVis) * ih;
+
+    const step = Math.max(1, Math.ceil(buckets.length / 10));
+    const bw = Math.max(2, Math.min(26, (iw / buckets.length) * 0.55));
+
+    let grid = '';
+    for (let g = 0; g <= 4; g++) {
+        const y = PT + (ih / 4) * g;
+        const v = maxPaid - (maxPaid / 4) * g;
+        grid += `<line x1="${PL}" y1="${y.toFixed(1)}" x2="${W - PR}" y2="${y.toFixed(1)}" stroke="#f1f1f3" stroke-width="1"/>`;
+        grid += `<text x="${PL - 10}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#a1a1aa">${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : Math.round(v)}</text>`;
+    }
+    const bars = buckets.map((b, i) => {
+        const bx = x(i) - bw / 2;
+        const by = yPaid(b.paid);
+        const h = Math.max(b.paid > 0 ? 1.5 : 0, PT + ih - by);
+        return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(3, bw / 3).toFixed(1)}" fill="url(#gpaid)"><title>${b.key} · ${eur(b.paid)} · ${b.orders} pedidos</title></rect>`;
+    }).join('');
+
+    const poly = (arr, yf, color, dash) => {
+        const pts = arr.map((b, i) => (buckets.length === 1 ? PL + iw / 2 : x(i)).toFixed(1) + ',' + yf(b).toFixed(1)).join(' ');
+        return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"${dash ? ' stroke-dasharray="4 4"' : ''}/>`;
+    };
+    const dots = (arr, yf, color) => buckets.map((b, i) => arr[i] == null ? '' : '').join('');
+
+    let labels = '';
+    buckets.forEach((b, i) => {
+        if (i % step === 0 || i === buckets.length - 1) {
+            const dt = new Date(b.ts);
+            labels += `<text x="${x(i).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="10" fill="#a1a1aa">${dt.getDate()}/${dt.getMonth() + 1}</text>`;
+        }
+    });
+    const rightTicks = [0, 0.5, 1].map(f => `<text x="${W - PR + 8}" y="${(PT + ih - ih * f + 3.5).toFixed(1)}" font-size="9.5" fill="#c4c4c9">${Math.round(maxOrd * f)}</text>`).join('');
+
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos y pedidos por día">
+        <defs>
+            <linearGradient id="gpaid" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e3c565"/><stop offset="100%" stop-color="#d4af37"/>
+            </linearGradient>
+        </defs>
+        ${grid}
+        <line x1="${PL}" y1="${PT + ih}" x2="${W - PR}" y2="${PT + ih}" stroke="#e4e4e7" stroke-width="1"/>
+        ${bars}
+        ${poly(buckets, b => yVis(b.visits), '#c7c7cc', true)}
+        ${poly(buckets, b => yOrd(b.orders), 'rgba(10,10,10,.55)', false)}
+        ${labels}
+        ${rightTicks}
+    </svg>`;
+}
+
+/* ---------------- renderers ---------------- */
+function renderKpis(m) {
+    const delta = m.prevPaid > 0 ? ((m.paid - m.prevPaid) / m.prevPaid) * 100 : null;
+    const dTxt = delta == null ? 'sin periodo anterior' : `<b class="${delta < 0 ? 'down' : ''}">${delta >= 0 ? '+' : ''}${delta.toFixed(1).replace('.', ',')}%</b> vs. periodo anterior`;
+    const cards = [
+        { l: 'Ingresos cobrados', v: eur(m.paid), s: dTxt, i: 'fa-euro-sign' },
+        { l: 'Pedidos', v: num(m.orders.length), s: `${num(m.units)} unidades vendidas`, i: 'fa-bag-shopping' },
+        { l: 'Ticket medio', v: eur(m.ticket), s: `comisión FIJA ${eur(m.commission)}`, i: 'fa-receipt' },
+        { l: 'Visitas', v: num(m.visits.length), s: `${num(m.uniqVisitors)} visitantes únicos`, i: 'fa-users' },
+        { l: 'Conversión', v: m.conv.toFixed(1).replace('.', ',') + '%', s: `${num(m.orders.length)} pedidos / ${num(m.visits.length)} visitas`, i: 'fa-arrow-trend-up' },
+        { l: 'Entregados', v: num(m.delivered), s: `${num(m.pending)} en curso`, i: 'fa-box-check' },
+        { l: 'Valoración media', v: m.avgRating ? m.avgRating.toFixed(2).replace('.', ',') : '—', s: `${num(m.ratingCount)} valoraciones`, i: 'fa-star' },
+        { l: 'Catálogo', v: num(S.data.products.length), s: `${num(S.data.profiles.filter(p => p.role === 'seller').length)} vendedores`, i: 'fa-boxes-stacked' }
+    ];
+    $('kpis').innerHTML = cards.map(c => `<div class="kpi">
+        <div class="k-top"><span class="k-label">${c.l}</span><span class="k-icon"><i class="fa-solid ${c.i}"></i></span></div>
+        <div class="k-val">${c.v}</div>
+        <div class="k-sub">${c.s}</div>
+    </div>`).join('');
+}
+
+function renderFunnel(m) {
+    const steps = [
+        { n: 'Visitas', v: m.visits.length, base: m.visits.length },
+        { n: 'Pedidos', v: m.orders.length, base: m.visits.length },
+        { n: 'Entregados', v: m.delivered, base: m.visits.length }
+    ];
+    const max = Math.max(1, m.visits.length);
+    $('funnel').innerHTML = `<div class="funnel">` + steps.map(s => {
+        const w = Math.max(2, (s.v / max) * 100);
+        return `<div class="fun-row">
+            <div class="fun-name">${s.n}</div>
+            <div class="fun-bar"><div class="fun-fill" style="width:${w.toFixed(1)}%"></div></div>
+            <div class="fun-val">${num(s.v)}<small>${s.base ? (s.v / s.base * 100).toFixed(1).replace('.', ',') + '%' : '—'}</small></div>
+        </div>`;
+    }).join('') + `</div>
+    <p class="src-note" style="margin-top:16px">${m.visits.length ? `Cada 100 visitas se cierran <b>${(m.orders.length / m.visits.length * 100).toFixed(1).replace('.', ',')}</b> pedidos.` : 'Aún no hay visitas registradas en este periodo.'}</p>`;
+}
+
+function renderDonut(m) {
+    const map = {};
+    m.orders.forEach(o => { const k = o.status || 'pendiente'; map[k] = (map[k] || 0) + 1; });
+    const labels = { pending: ['Pendiente', '#d97706'], 'click-collect': ['Listo para recoger', '#2563eb'], collected: ['Recogido', '#7c3aed'], completed: ['Completado', '#16a34a'], cancelled: ['Cancelado', '#dc2626'], preparing: ['Preparando', '#0891b2'] };
+    const entries = Object.entries(map).sort((a, b) => b[1] - a[1]);
+    const total = entries.reduce((s, e) => s + e[1], 0) || 1;
+    if (!entries.length) { $('donut').innerHTML = '<div class="empty">Sin pedidos en el periodo seleccionado.</div>'; $('donut-hint').textContent = '—'; return; }
+    let acc = 0;
+    const stops = entries.map(([k, v]) => {
+        const c = (labels[k] || ['Otro', '#71717a'])[1];
+        const a = acc / total * 100, b = (acc + v) / total * 100;
+        acc += v;
+        return `${c} ${a.toFixed(2)}% ${b.toFixed(2)}%`;
+    }).join(', ');
+    const legend = entries.map(([k, v]) => {
+        const [lb, c] = labels[k] || [k, '#71717a'];
+        return `<div><i style="background:${c}"></i><span>${esc(lb)}</span><b>${v}</b></div>`;
+    }).join('');
+    $('donut-hint').textContent = total + ' pedidos';
+    $('donut').innerHTML = `<div class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(${stops})"><div class="donut-center"><b>${total}</b><span>pedidos</span></div></div>
+        <div class="donut-legend">${legend}</div>
+    </div>`;
+}
+
+function barList(el, rows, fmt) {
+    if (!rows.length) { el.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+    const max = Math.max(...rows.map(r => r.v), 1);
+    el.innerHTML = '<div class="barlist">' + rows.map(r => `<div class="bar-row">
+        <span class="bl" title="${esc(r.n)}">${esc(r.n)}</span>
+        <span class="bv">${fmt(r.v)}</span>
+        <span class="bt"><i style="width:${Math.max(1.5, r.v / max * 100).toFixed(1)}%"></i></span>
+    </div>`).join('') + '</div>';
+}
+
+function renderBreakdowns(m) {
+    const cat = {};
+    const seller = {};
+    m.orders.forEach(o => (o.items || []).forEach(it => {
+        const p = S.data.products.find(x => x.id === it.productId);
+        const c = (p && p.category) || it.category || 'Sin categoría';
+        const v = it.paid != null ? it.paid : (it.price || 0) * (it.quantity || 1);
+        cat[c] = (cat[c] || 0) + v;
+        const s = it.sellerName || (p && p.sellerName) || 'Vendedor';
+        seller[s] = (seller[s] || 0) + v;
+    }));
+    barList($('by-cat'), Object.entries(cat).map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v).slice(0, 8), eur);
+    barList($('by-seller'), Object.entries(seller).map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v).slice(0, 8), eur);
+
+    const country = {};
+    m.visits.forEach(v => { const c = v.country || 'Desconocido'; country[c] = (country[c] || 0) + 1; });
+    barList($('by-country'), Object.entries(country).map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v).slice(0, 8), num);
+
+    const dev = {}, brw = {};
+    m.visits.forEach(v => { const k = v.device || 'Desconocido'; dev[k] = (dev[k] || 0) + 1; const b = v.browser || 'Otro'; brw[b] = (brw[b] || 0) + 1; });
+    const devRows = Object.entries(dev).sort((a, b) => b[1] - a[1]);
+    const brwRows = Object.entries(brw).sort((a, b) => b[1] - a[1]).slice(0, 4);
+    const tot = devRows.reduce((s, r) => s + r[1], 0) || 1;
+    $('dev-hint').textContent = m.visits.length + ' visitas';
+    $('by-device').innerHTML = `<div class="barlist">` + devRows.map(([n, v]) => `<div class="bar-row">
+            <span class="bl">${esc(n)} · <span style="font-weight:500;color:var(--muted)">${pct(v, tot)}</span></span>
+            <span class="bv">${num(v)}</span>
+            <span class="bt"><i style="width:${Math.max(1.5, v / tot * 100).toFixed(1)}%"></i></span>
+        </div>`).join('') + `</div>
+        <p class="src-note" style="margin-top:14px">Navegadores: ${brwRows.map(([n, v]) => `<b>${esc(n)}</b> ${num(v)}`).join(' · ') || '—'}</p>`;
+}
+
+function renderProducts(m) {
+    const map = {};
+    (m.orders || []).forEach(o => (o.items || []).forEach(it => {
+        const k = it.productId || it.title || '—';
+        if (!map[k]) map[k] = { id: k, title: it.title || k, cat: (S.data.products.find(p => p.id === k) || {}).category || '—', units: 0, paid: 0 };
+        map[k].units += Number(it.quantity) || 0;
+        map[k].paid += it.paid != null ? Number(it.paid) : (Number(it.price) || 0) * (Number(it.quantity) || 1);
+    }));
+    let rows = Object.values(map).sort((a, b) => b.paid - a.paid).slice(0, 10);
+
+    // Si aún no hay ventas, mostramos el catálogo por interés (vistas/clics)
+    if (!rows.length) {
+        rows = [...S.data.products].sort((a, b) => (b.views || b.clicks || 0) - (a.views || a.clicks || 0)).slice(0, 10)
+            .map(p => ({ id: p.id, title: p.title, cat: p.category || '—', units: p.unitsSold || 0, paid: 0, views: p.views || 0, noSales: true }));
+        $('prod-hint').textContent = 'Sin ventas aún · ordenado por interés';
+    } else {
+        $('prod-hint').textContent = Object.keys(map).length + ' productos vendidos';
+    }
+    $('prod-body').innerHTML = rows.length ? rows.map((r, i) => {
+        const p = S.data.products.find(x => x.id === r.id) || {};
+        const clicks = p.clicks || p.views || r.views || 0;
+        const avg = r.units ? r.paid / r.units : (p.price || 0);
+        return `<tr>
+            <td class="mono">${i + 1}</td>
+            <td style="font-weight:600">${esc(r.title)}</td>
+            <td style="color:var(--muted)">${esc(r.cat)}</td>
+            <td class="r">${num(r.units)}</td>
+            <td class="r" style="font-weight:700">${eur(r.paid)}</td>
+            <td class="r" style="color:var(--muted)">${num(clicks)}</td>
+            <td class="r" style="color:var(--muted)">${avg ? eur(avg) : '—'}</td>
+        </tr>`;
+    }).join('') : `<tr><td colspan="7" class="empty">Todavía no hay productos ni ventas.</td></tr>`;
+}
+
+function statusPill(st) {
+    const map = { pending: ['Pendiente', 'amber'], 'click-collect': ['Listo', 'blue'], collected: ['Recogido', 'gold'], completed: ['Completado', 'green'], cancelled: ['Cancelado', 'red'], preparing: ['Preparando', 'blue'] };
+    const [l, c] = map[st] || [st || '—', 'gray'];
+    return `<span class="pill ${c}">${esc(l)}</span>`;
+}
+function renderOrders(m) {
+    const list = [...m.orders].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 12);
+    $('orders-hint').textContent = m.orders.length + ' pedidos en el periodo';
+    $('orders-body').innerHTML = list.length ? list.map(o => `<tr>
+        <td class="mono">${esc(o.pickupCode || (o.id || '').slice(0, 8))}</td>
+        <td style="color:var(--muted);white-space:nowrap">${fmtDT(o.createdAt)}</td>
+        <td>${esc(o.buyerName || o.buyerEmail || '—')}</td>
+        <td>${o.couponCode ? `<span class="pill gold">${esc(o.couponCode)}</span>` : '<span style="color:var(--muted-2)">—</span>'}</td>
+        <td class="r" style="font-weight:700">${eur(orderTotal(o))}</td>
+        <td class="r" style="color:var(--muted)">${eur(orderCommission(o))}</td>
+        <td>${statusPill(o.status)}</td>
+    </tr>`).join('') : `<tr><td colspan="7" class="empty">Sin pedidos en el periodo seleccionado.</td></tr>`;
+}
+
+function renderSources() {
+    const sb = S.src.sb || {}, gh = S.src.gh || {};
+    // dots
+    const dot = (el, ok) => { el.className = 'src-dot ' + (ok ? 'ok' : 'bad'); };
+    dot($('dot-sb'), sb.ok); dot($('dot-gh'), gh.ok);
+
+    $('gh-repo').innerHTML = `<a href="https://github.com/${CFG.ghOwner}/${CFG.ghRepo}" target="_blank" rel="noopener">${CFG.ghOwner}/${CFG.ghRepo} <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:9px"></i></a>`;
+    $('gh-branch').textContent = CFG.ghBranch;
+    $('gh-commit').textContent = gh.meta ? (gh.meta.sha + ' · ' + (gh.meta.date ? new Date(gh.meta.date).toLocaleDateString('es-ES') : '')) : '—';
+    $('gh-files').textContent = gh.count ? gh.count + ' de ' + NAMES.length : '—';
+    $('gh-state').innerHTML = gh.ok ? `<span class="pill green">conectado</span>` : `<span class="pill red">sin conexión</span>`;
+    if (gh.meta && gh.meta.msg) $('gh-note').innerHTML = `Último commit: «${esc(gh.meta.msg)}». Los JSON de <span class="mono">/data</span> se leen directamente del repositorio: es la copia versionada de la analítica.`;
+
+    $('sb-proj').textContent = (CFG.sbUrl || '').replace('https://', '').split('.')[0];
+    $('sb-rows').textContent = sb.ok ? (sb.count + ' colecciones') : '—';
+    $('sb-updated').textContent = sb.at ? new Date(sb.at).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+    $('sb-state').innerHTML = sb.ok ? `<span class="pill green">en vivo</span>` : `<span class="pill amber">usando GitHub</span>`;
+
+    const sbO = (sb.ok && S.src.sb) ? null : null;
+    $('src-compare').innerHTML = `Fuente activa: <b>${sb.ok ? 'Supabase (tiempo real)' : (gh.ok ? 'GitHub (respaldo)' : 'datos locales')}</b>. ` +
+        `Pedidos leídos: <b>${S.data.orders.length}</b> · productos: <b>${S.data.products.length}</b> · visitas: <b>${S.data.visits.length}</b>.`;
+    $('foot-src').textContent = (sb.ok ? 'Supabase' : 'GitHub') + ' · ' + CFG.ghOwner + '/' + CFG.ghRepo;
+}
+
+function renderAll() {
+    const m = compute();
+    $('brand-sub').textContent = 'Marketplace Click & Collect · ' + (S.days ? S.days + ' días' : 'todo el histórico');
+    $('trend').innerHTML = trendSVG(m);
+    $('trend-hint').textContent = (S.days ? 'últimos ' + S.days + ' días' : 'histórico completo');
+    renderKpis(m); renderFunnel(m); renderDonut(m); renderBreakdowns(m); renderProducts(m); renderOrders(m); renderSources();
+    $('stamp').textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ---------------- boot ---------------- */
+async function boot(opts) {
+    $('gate').classList.add('hide');
+    $('app').classList.remove('hide');
+    setRange(S.days);
+    // 1) pinta lo que ya haya en memoria (o la caché de la sesión) para no dejar la pantalla vacía
+    const hasData = (S.data.products || []).length || (S.data.orders || []).length || (S.data.profiles || []).length;
+    if (!hasData) restoreCache();
+    renderAll();
+    // 2) refresca de verdad
+    if (!opts || opts.fresh !== false) { await loadAll(() => renderAll()); renderAll(); }
+    if (window.__timer) clearInterval(window.__timer);
+    window.__timer = setInterval(async () => { await loadAll(() => renderAll()); renderAll(); }, 60000);
+}
+
+/* ---------------- events ---------------- */
+document.querySelectorAll('#range-seg button').forEach(b => b.addEventListener('click', () => {
+    setRange(Number(b.dataset.days)); renderAll();
+}));
+$('btn-refresh').addEventListener('click', async () => {
+    const ic = $('refresh-icon'); ic.classList.add('spin');
+    await loadAll(() => renderAll()); renderAll();
+    setTimeout(() => ic.classList.remove('spin'), 500);
+});
+$('btn-out').addEventListener('click', () => {
+    localStorage.removeItem('fija_backend_session');
+    location.reload();
+});
+$('btn-csv').addEventListener('click', () => {
+    const m = compute();
+    const lines = [['pedido', 'fecha', 'cliente', 'cupon', 'importe', 'comision', 'estado']];
+    m.orders.forEach(o => lines.push([o.pickupCode || o.id, new Date(o.createdAt || 0).toISOString(), o.buyerName || o.buyerEmail || '', o.couponCode || '', orderTotal(o).toFixed(2), orderCommission(o).toFixed(2), o.status || '']));
+    const csv = lines.map(r => r.map(c => '"' + String(c).replace(/"/g, '""') + '"').join(';')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fija-analitica-' + dayKey(Date.now()) + '.csv';
+    a.click(); URL.revokeObjectURL(a.href);
+});
+$('gate-form').addEventListener('submit', doLogin);
+
+(async () => {
+    restoreCache();
+    try { await loadAll(); } catch (e) {}
+    const ok = await tryAutoLogin();
+    if (ok) { await boot({ fresh: false }); }
+})();
+</script>
+</body>
+</html>
