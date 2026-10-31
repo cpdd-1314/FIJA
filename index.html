@@ -1051,6 +1051,13 @@
             .fija-foot-grid { grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr)); gap: 2rem 1.75rem; }
             .fija-foot-brand { grid-column: auto; }
         }
+        /* Copyright: ultima linea del pie, centrada y discreta */
+        .fija-copyright {
+            margin-top: 2rem; padding-top: 1.25rem;
+            border-top: 1px solid rgba(255, 255, 255, .1);
+            text-align: center; font-size: 12px; letter-spacing: .04em;
+            color: rgba(255, 255, 255, .72);
+        }
     </style>
     <footer class="bg-fija-900 text-white mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -1144,6 +1151,8 @@
                     <button type="button" onclick="subscribeNewsletter()" class="bg-fija-gold hover:bg-yellow-600 text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm transition-colors shrink-0 ml-auto">Suscribirme</button>
                 </div>
             </div>
+            <!-- COPYRIGHT -->
+            <div class="fija-copyright">© 2026 FIJA</div>
         </div>
     </footer>
 
