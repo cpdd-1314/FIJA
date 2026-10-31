@@ -1145,8 +1145,39 @@
     <button type="button" onclick="scrollToTop()" id="back-to-top" class="hide fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full bg-fija-900 text-white shadow-lg hover:bg-fija-800 transition-all items-center justify-center"><i class="fa-solid fa-arrow-up"></i></button>
     
     <!-- Chatbot especializado FIJA -->
+    <style>
+        /* Ventana del chatbot: tamano FIJO (CSS propio, no depende de Tailwind) */
+        #chatbot-panel {
+            position: fixed; left: 1.5rem; bottom: 6rem; z-index: 60;
+            display: none; flex-direction: column;
+            width: 360px; height: 480px;
+            max-width: calc(100vw - 2rem); max-height: calc(100vh - 8rem);
+            background: #fff; border: 1px solid #e5e7eb; border-radius: 1rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,.25);
+            overflow: hidden;
+        }
+        #chatbot-panel.is-open { display: flex; }
+        #chatbot-panel > * { flex-shrink: 0; }
+        #chatbot-panel #chatbot-msgs {
+            flex: 1 1 auto; min-height: 0; overflow-y: auto;
+            overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+        }
+        #chatbot-panel #chatbot-chips { max-height: 84px; overflow-y: auto; }
+        /* Movil: pantalla completa, sin crecer nunca */
+        @media (max-width: 640px) {
+            #chatbot-panel {
+                top: 0; right: 0; bottom: 0; left: 0;
+                width: 100%; height: 100vh; height: 100dvh;
+                max-width: none; max-height: none;
+                border: 0; border-radius: 0; z-index: 80;
+            }
+            body.cb-open { overflow: hidden; }
+            #chatbot-panel > div:last-child { padding-bottom: calc(.625rem + env(safe-area-inset-bottom, 0px)); }
+            #chatbot-fab.cb-hidden { display: none; }
+        }
+    </style>
     <button type="button" onclick="toggleChatbot()" id="chatbot-fab" class="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-fija-900 text-fija-gold shadow-lg hover:bg-fija-800 transition-all flex items-center justify-center text-xl" title="Asistente FIJA"><i class="fa-solid fa-robot"></i></button>
-    <div id="chatbot-panel" class="fixed bottom-24 left-6 z-50 w-[340px] max-w-[calc(100vw-2rem)] h-[480px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 hidden flex-col overflow-hidden">
+    <div id="chatbot-panel">
         <div class="bg-fija-900 text-white px-4 py-3 flex items-center gap-3 shrink-0">
             <div class="w-9 h-9 rounded-full gold-gradient flex items-center justify-center"><i class="fa-solid fa-robot text-fija-900"></i></div>
             <div class="flex-1 min-w-0"><p class="font-bold text-sm leading-tight">Asistente FIJA</p><p class="text-[11px] text-fija-gold">Responde al instante · 24/7</p></div>
@@ -5790,9 +5821,21 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         // ---------- 48b. CHATBOT ESPECIALIZADO FIJA ----------
         window.toggleChatbot = () => {
             const p = document.getElementById('chatbot-panel');
-            p.classList.toggle('hidden'); p.classList.toggle('flex');
-            if (!p.classList.contains('hidden')) { renderChatChips(); if (!document.getElementById('chatbot-msgs').children.length) { botPush('bot', '¡Hola! 👋 Soy el asistente de FIJA. Puedo ayudarte con pedidos, ofertas del día, devoluciones, recogidas y más. ¿Qué necesitas?'); } }
+            if (!p) return;
+            p.classList.remove('hidden', 'flex');
+            const open = p.classList.toggle('is-open');
+            document.body.classList.toggle('cb-open', open);
+            const fab = document.getElementById('chatbot-fab');
+            if (fab) fab.classList.toggle('cb-hidden', open);
+            if (open) {
+                renderChatChips();
+                if (!document.getElementById('chatbot-msgs').children.length) { botPush('bot', '¡Hola! Soy el asistente de FIJA. Puedo ayudarte con pedidos, ofertas del día, devoluciones, recogidas y más. ¿Qué necesitas?'); }
+                setTimeout(() => { try { document.getElementById('chatbot-input').focus(); } catch(e){} }, 150);
+            }
         };
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { const p = document.getElementById('chatbot-panel'); if (p && p.classList.contains('is-open')) toggleChatbot(); }
+        });
         function botPush(who, html) {
             const box = document.getElementById('chatbot-msgs'); if (!box) return;
             const el = document.createElement('div');
@@ -5849,7 +5892,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 const top = botDealTop(3);
                 if (!top.length) return 'Hoy no hay ofertas destacadas, ¡pero vuelve mañana! Cada día renovamos <b>~25% del catálogo</b> con descuentos de hasta el <b>70%</b>.';
                 renderChatChips(['Buscar producto', 'Cupones']);
-                return '🔥 <b>Ofertas de hoy</b> (renovadas cada día, hasta -70%):<br>' + top.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · <span class="text-red-600 font-bold">-${dailyDiscountFor(p)}%</span> · ${fmtMoney(effectivePrice(p))}</button>`).join('');
+                return '<i class="fa-solid fa-fire" style="color:#ea580c"></i> <b>Ofertas de hoy</b> (renovadas cada día, hasta -70%):<br>' + top.map(p => `<button type="button" onclick="toggleChatbot();openProductDetail('${p.id}')" class="block w-full text-left mt-1 bg-gray-50 rounded-lg px-2 py-1.5 hover:bg-gray-100"><b>${escapeHtml(p.title)}</b> · <span class="text-red-600 font-bold">-${dailyDiscountFor(p)}%</span> · ${fmtMoney(effectivePrice(p))}</button>`).join('');
             }
             // Buscar producto / precio
             if (has('busca', 'buscar', 'tienes', 'cuesta', 'precio de', 'encontrar', 'catálogo', 'catalogo')) {
@@ -5880,12 +5923,12 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             }
             // Horario
             if (has('horario', 'abierto', 'hora', 'atienden')) {
-                return 'Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. El asistente (yo 😊) estamos 24/7.';
+                return 'Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. El asistente (yo <i class="fa-solid fa-robot"></i>) estamos 24/7.';
             }
             // Contacto / soporte humano
             if (has('humano', 'persona', 'agente', 'soporte', 'ayuda', 'contactar', 'teléfono', 'telefono', 'whatsapp')) {
                 renderChatChips(['Contactar soporte']);
-                return 'Puedes hablar con una persona: 💬 WhatsApp <b>633 616 054</b> o usar el <b>formulario de soporte</b> y te responde el equipo en menos de 24 h.';
+                return 'Puedes hablar con una persona: <i class="fa-brands fa-whatsapp" style="color:#25D366"></i> WhatsApp <b>633 616 054</b> o usar el <b>formulario de soporte</b> y te responde el equipo en menos de 24 h.';
             }
             // Web / presupuesto (el caso del dueño)
             if (has('presupuesto', 'web como', 'página web', 'pagina web', 'crear web', 'hacer web', 'tienda online como')) {
@@ -5898,7 +5941,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             }
             // Fallback
             renderChatChips(['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Contactar soporte']);
-            return 'No estoy seguro de haberlo entendido 🤔 Puedo ayudarte con: <b>ofertas del día</b>, <b>rastrear un pedido</b>, <b>devoluciones</b>, <b>recogida Click & Collect</b>, <b>pagos</b>, <b>buscar productos</b> o ponerte en contacto con soporte.';
+            return 'No estoy seguro de haberlo entendido <i class="fa-solid fa-circle-question"></i> Puedo ayudarte con: <b>ofertas del día</b>, <b>rastrear un pedido</b>, <b>devoluciones</b>, <b>recogida Click & Collect</b>, <b>pagos</b>, <b>buscar productos</b> o ponerte en contacto con soporte.';
         }
 
         window.openWhatsAppHelp = () => window.open('https://wa.me/34633616054?text=' + encodeURIComponent('Hola quiero una web como estas me puede dar presupuesto?'), '_blank');
