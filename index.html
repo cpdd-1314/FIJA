@@ -1127,16 +1127,8 @@
                     <button type="button" onclick="subscribeNewsletter()" class="bg-fija-gold hover:bg-yellow-600 text-fija-900 font-bold px-5 py-2.5 rounded-lg text-sm transition-colors shrink-0 ml-auto">Suscribirme</button>
                 </div>
             </div>
-            <div class="border-t border-white/10 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-white/40">
+            <div class="border-t border-white/10 mt-8 pt-6 flex items-center justify-center text-[11px] text-white/40">
                 <p>© 2026 FIJA Marketplace · Comisión del 4,7% gestionada por la plataforma</p>
-                <div class="flex flex-wrap gap-4">
-                    <button type="button" onclick="openInfoModal('terminos')" class="hover:text-white">Términos</button>
-                    <button type="button" onclick="openInfoModal('privacidad')" class="hover:text-white">Privacidad</button>
-                    <button type="button" onclick="openInfoModal('cookies')" class="hover:text-white">Cookies</button>
-                    <button type="button" onclick="openInfoModal('accesibilidad')" class="hover:text-white">Accesibilidad</button>
-                    <button type="button" onclick="openInfoModal('atajos')" class="hover:text-white">Atajos</button>
-                    <button type="button" onclick="openInfoModal('sobre')" class="hover:text-white">Sobre FIJA</button>
-                </div>
             </div>
         </div>
     </footer>
@@ -8970,20 +8962,8 @@ const FIJA_THEMES = {
                 b.innerHTML = '<i class="fa-solid fa-palette"></i>';
                 themeHost.parentNode.insertBefore(b, themeHost);
             }
-            // Footer: enlaces legales nuevos
-            const foot = document.querySelector('footer .border-t');
-            if (foot && !document.getElementById('fija-extra-links')) {
-                const d = document.createElement('div');
-                d.id = 'fija-extra-links';
-                d.className = 'flex flex-wrap gap-4 justify-center mt-6 text-[11px] text-white/50';
-                d.innerHTML = [
-                    ['Términos', 'openTerms()'], ['Privacidad', 'openPrivacyPolicy()'], ['Cookies', 'openCookiePolicy()'],
-                    ['Comisión', 'openCommissionInfo()'], ['Logros', 'openAchievements()'], ['Ranking', 'openSellerLeaderboard()'],
-                    ['Novedades', 'openChangelog()'], ['Opinión', 'openFeedback()'], ['Atajos', 'openKeyboardMap()'],
-                    ['Accesibilidad', 'openAccessibility()'], ['Apoyo', 'openSupportSchedule()'], ['Sobre FIJA', 'openAppInfo()']
-                ].map(([l, a]) => `<button type="button" onclick="${a}" class="hover:text-fija-gold transition-colors">${l}</button>`).join('');
-                foot.parentNode.appendChild(d);
-            }
+            // Footer: la barra extra de enlaces legales se ha eliminado (duplicaba los
+            // enlaces que ya están en las columnas del pie: Legal, Ayuda, Vender).
         }
 
         // ===================== Render: Cart =====================
