@@ -581,6 +581,15 @@
                         </div>
                         <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
                             <div class="flex items-start justify-between gap-3 mb-1">
+                                <h2 class="font-semibold">Acceso con código (卡密)</h2>
+                                <span id="kami-cfg-state" class="text-[11px] px-2 py-1 rounded-full bg-fija-100 text-fija-600">desactivado</span>
+                            </div>
+                            <p class="text-xs text-fija-500 mb-4 leading-relaxed">Muestra en la tienda una pantalla de <b>código de acceso</b> antes de dejar entrar: el visitante escribe su código y lo valida un servicio externo. Se guarda en su navegador y se revisa en cada visita (si caduca o se desactiva, se le vuelve a pedir). El <b>back-office nunca queda bloqueado</b> y el personal con sesión iniciada aquí entra a la tienda sin código.</p>
+                            <label class="flex items-center gap-2 text-sm text-fija-700"><input type="checkbox" id="set-kami-enabled" class="rounded border-fija-300" onchange="kamiState()"><span>Pedir código de acceso para entrar en la tienda</span></label>
+                            <p id="kami-cfg-hint" class="text-[11px] text-fija-400 mt-2 leading-relaxed">Servicio: <span class="font-mono">kami-5i14.onrender.com</span> · se aplica al pulsar «Guardar ajustes». Aviso: mientras esté activo, si ese servicio externo no responde nadie podrá entrar en la tienda; desactívalo aquí para desbloquearla al instante.</p>
+                        </div>
+                        <div class="bg-white rounded-xl border border-fija-200 p-6 mb-6">
+                            <div class="flex items-start justify-between gap-3 mb-1">
                                 <h2 class="font-semibold">Correo de agradecimiento al boletín</h2>
                                 <span id="email-cfg-state" class="text-[11px] px-2 py-1 rounded-full bg-fija-100 text-fija-600">sin configurar</span>
                             </div>
@@ -860,7 +869,7 @@ pagáis a plazos | Sí, con Sequra a partir de 30 €: 3, 6 o 12 meses sin inter
             welcomeSubject: '¡Gracias por suscribirte a {{tienda}}!', welcomeMessage: '',
             orderEmailEnabled: true, emailjsOrderTemplate: '', orderSubject: 'Tu pedido {{pedido}} en {{tienda}}', orderMessage: '',
             deliveredEmailEnabled: true, emailjsDeliveredTemplate: '', deliveredSubject: 'Tu pedido {{pedido}} ya está entregado · valóralo', deliveredMessage: '',
-            chatAiEnabled: true, chatAiEndpoint: '', chatAiModel: '', chatAiKey: '', chatAiPrompt: '', botFaqCustom: '' };
+            chatAiEnabled: true, chatAiEndpoint: '', chatAiModel: '', chatAiKey: '', chatAiPrompt: '', botFaqCustom: '', kamiEnabled: false };
         const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, coupons: DEFAULT_COUPONS, settings: DEFAULT_SETTINGS, reports: [], tickets: [] };
         // Ruta base de los JSON (carpeta data/ o raíz plana). Se rellena en el primer readDataFile.
         let _dataPathP = null;
@@ -2587,12 +2596,27 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             const m = map[st] || [st, 'bg-gray-100 text-gray-600', 'fa-envelope'];
             return `<span class="inline-block text-[11px] px-2 py-0.5 rounded-full ${m[1]}"><i class="fa-solid ${m[2]} mr-1"></i>${m[0]}</span>`;
         }
+        window.kamiState = () => {
+            const on = !!(document.getElementById('set-kami-enabled') || {}).checked;
+            const badge = document.getElementById('kami-cfg-state');
+            if (badge) {
+                badge.textContent = on ? 'activo en la tienda' : 'desactivado';
+                badge.className = 'text-[11px] px-2 py-1 rounded-full ' + (on ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-fija-100 text-fija-600');
+            }
+            const hint = document.getElementById('kami-cfg-hint');
+            if (hint) hint.innerHTML = on
+                ? 'Activo: al guardar, la tienda pedirá el código de acceso a todos los visitantes. Servicio: <span class="font-mono">kami-5i14.onrender.com</span> · si ese servicio cae, desmarca esta casilla y guarda para desbloquear la tienda.'
+                : 'Servicio: <span class="font-mono">kami-5i14.onrender.com</span> · al activarlo, la tienda pedirá un código de acceso antes de entrar. Se aplica al pulsar «Guardar ajustes».';
+        };
         function renderAdminSettings() {
             document.getElementById('set-commission').value = Math.round(commissionRate() * 1000) / 10;
             document.getElementById('set-freeship').value = state.settings.freeShipThreshold || 0;
             document.getElementById('set-storename').value = state.settings.storeName || 'FIJA';
             document.getElementById('set-support').value = state.settings.supportEmail || '';
             document.getElementById('set-maintenance').checked = !!state.settings.maintenance;
+            const kamiEl = document.getElementById('set-kami-enabled');
+            if (kamiEl) kamiEl.checked = state.settings.kamiEnabled === true;
+            kamiState();
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v == null ? '' : v; };
             set('set-emailjs-service', state.settings.emailjsService || '');
             set('set-emailjs-template', state.settings.emailjsTemplate || '');
@@ -2652,13 +2676,14 @@ Recibes este correo porque tu pedido se ha entregado con la cuenta ${escapeHtml(
             const chatAiKey = val('set-chat-ai-key');
             const chatAiPrompt = ((document.getElementById('set-chat-ai-prompt') || {}).value || '').trim();
             const botFaqCustom = ((document.getElementById('set-bot-faq') || {}).value || '').trim();
+            const kamiEnabled = !!(document.getElementById('set-kami-enabled') || {}).checked;
             try {
                 await mutateSettings(obj => { obj.commissionRate = commission; obj.freeShipThreshold = freeShip; obj.storeName = storeName; obj.supportEmail = supportEmail; obj.maintenance = maintenance;
                     obj.welcomeEmailEnabled = welcomeEnabled; obj.emailjsService = emailjsService; obj.emailjsTemplate = emailjsTemplate; obj.emailjsKey = emailjsKey;
                     obj.emailWebhookUrl = emailWebhookUrl; obj.welcomeSubject = welcomeSubject; obj.welcomeMessage = welcomeMessage;
                     obj.orderEmailEnabled = orderEnabled; obj.emailjsOrderTemplate = emailjsOrderTemplate; obj.orderSubject = orderSubject; obj.orderMessage = orderMessage;
                     obj.deliveredEmailEnabled = deliveredEnabled; obj.emailjsDeliveredTemplate = emailjsDeliveredTemplate; obj.deliveredSubject = deliveredSubject; obj.deliveredMessage = deliveredMessage;
-                    obj.chatAiEnabled = chatAiEnabled; obj.chatAiEndpoint = chatAiEndpoint; obj.chatAiModel = chatAiModel; obj.chatAiKey = chatAiKey; obj.chatAiPrompt = chatAiPrompt; obj.botFaqCustom = botFaqCustom; });
+                    obj.chatAiEnabled = chatAiEnabled; obj.chatAiEndpoint = chatAiEndpoint; obj.chatAiModel = chatAiModel; obj.chatAiKey = chatAiKey; obj.chatAiPrompt = chatAiPrompt; obj.botFaqCustom = botFaqCustom; obj.kamiEnabled = kamiEnabled; });
                 await loadAll(); showToast('Ajustes guardados');
             } catch (e) { console.error(e); showToast('Error al guardar los ajustes', true); }
         };

@@ -3785,6 +3785,7 @@
                         }
                         b.textContent = 'Tienda en mantenimiento — volvemos pronto.';
                     } else { const b = document.getElementById('fija-maint'); if (b) b.remove(); }
+                    try { applyKami(); } catch (e) {}
                 }
             } catch (e) { console.warn('hydrateCloudConfig', e); }
         }
@@ -6745,6 +6746,86 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             if (state.settings && typeof state.settings === 'object') s = Object.assign(s, state.settings);
             return s;
         }
+        // ===== Acceso con código (卡密) =====
+        // El gate se inyecta solo si el back-office lo activa (Ajustes → Acceso con código).
+        // Se puede desactivar en caliente: al guardar en el back, la tienda lo detecta en ~5 s.
+        const KAMI_SRC = 'https://kami-5i14.onrender.com/embed.js';
+        function kamiOn() {
+            try { return storeSettings().kamiEnabled === true; } catch (e) { return false; }
+        }
+        function kamiStaff() {
+            // El personal con sesión abierta en el back-office entra sin código (evita autobloqueos).
+            try { return !!JSON.parse(localStorage.getItem('fija_backend_session') || 'null'); } catch (e) { return false; }
+        }
+        function kamiEs(t) {
+            if (!t || !/[\u4e00-\u9fa5]/.test(t)) return t;
+            const map = [
+                [/网络|错误重试/, 'Error de conexión. Inténtalo de nuevo.'],
+                [/验证中/, 'Verificando...'],
+                [/请输入卡密/, 'Escribe el código'],
+                [/不存在|无效|验证失败/, 'Código no válido'],
+                [/过期|失效|已到期/, 'Este código ha caducado'],
+                [/已使用|已绑定|已被|占用/, 'Este código ya está en uso'],
+                [/禁用|停用|封禁/, 'Este código está desactivado'],
+                [/次数|配额|上限/, 'Este código ya no tiene usos disponibles']
+            ];
+            for (const [re, es] of map) if (re.test(t)) return es;
+            return 'No se pudo validar el código.';
+        }
+        function kamiLocalize() {
+            const ov = document.getElementById('kami-overlay');
+            if (!ov) return;
+            const h2 = ov.querySelector('h2');
+            if (h2 && /[\u4e00-\u9fa5]/.test(h2.textContent)) h2.textContent = 'Introduce tu código de acceso';
+            const tip = ov.querySelector('h2 + p');
+            if (tip && /[\u4e00-\u9fa5]/.test(tip.textContent)) tip.textContent = 'Escribe el código que te hemos facilitado para entrar en FIJA.';
+            const btn = ov.querySelector('#kami-btn');
+            if (btn && /[\u4e00-\u9fa5]/.test(btn.textContent)) btn.textContent = /验证中/.test(btn.textContent) ? 'Verificando...' : 'Verificar';
+            const msg = ov.querySelector('#kami-msg');
+            if (msg && /[\u4e00-\u9fa5]/.test(msg.textContent)) msg.textContent = kamiEs(msg.textContent);
+            const inp = ov.querySelector('#kami-code');
+            if (inp) inp.setAttribute('placeholder', 'XXXX-XXXX-XXXX-XXXX');
+            const icon = ov.querySelector('div[style*="font-size:40px"]');
+            if (icon && icon.dataset.fijaKey !== '1') {
+                icon.dataset.fijaKey = '1';
+                icon.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0f1b3d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"></circle><path d="M11 11l8 8"></path><path d="M15.5 15.5l2-2"></path><path d="M18.5 18.5l2-2"></path></svg>';
+            }
+        }
+        let _kamiBodyObs = null;
+        function kamiHookOverlay() {
+            const ov = document.getElementById('kami-overlay');
+            if (!ov) return;
+            kamiLocalize();
+            if (ov._kamiObs) return;
+            ov._kamiObs = new MutationObserver(kamiLocalize);
+            ov._kamiObs.observe(ov, { childList: true, subtree: true, characterData: true });
+        }
+        function kamiWatch() {
+            kamiHookOverlay();
+            if (_kamiBodyObs || !document.body) return;
+            _kamiBodyObs = new MutationObserver(kamiHookOverlay);
+            _kamiBodyObs.observe(document.body, { childList: true });
+        }
+        function applyKami() {
+            const on = kamiOn() && !kamiStaff();
+            const cur = document.getElementById('kami-embed');
+            if (on) {
+                if (cur) return;
+                const s = document.createElement('script');
+                s.id = 'kami-embed';
+                s.src = KAMI_SRC;
+                s.async = false;
+                s.onload = kamiWatch;
+                s.onerror = () => console.warn('Kami: no se pudo cargar el servicio de códigos');
+                (document.head || document.documentElement).appendChild(s);
+            } else {
+                if (cur) cur.remove();
+                const ov = document.getElementById('kami-overlay');
+                if (ov) ov.remove();
+            }
+        }
+        window.applyKami = applyKami;
+        try { applyKami(); } catch (e) { console.warn('kami', e); }
         function welcomeFill(tpl, to) {
             const s = storeSettings();
             return String(tpl || '')
