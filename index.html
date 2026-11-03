@@ -6205,6 +6205,150 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             const box = document.getElementById('bot-tk-msg'); if (box) box.value = '';
             botPush('bot', `<i class="fa-solid fa-circle-check" style="color:#059669"></i> Registrado con referencia <b>${escapeHtml(String(t.id).slice(0, 6).toUpperCase())}</b>. Te escribimos a <b>${escapeHtml(email)}</b> en menos de 24 h.`);
         };
+        // ===== Hora, fecha y tiempo (respuestas en vivo) =====
+        const BOT_TZ = [
+            [/canaria|tenerife|gran canaria|las palmas/, 'Atlantic/Canary', 'Canarias'],
+            [/espa|madrid|peninsul|baleares|mallorca|valencia|sevilla|bilbao/, 'Europe/Madrid', 'España'],
+            [/mexic|cdmx|guadalajara|monterrey/, 'America/Mexico_City', 'México'],
+            [/argentin|buenos aires|cordoba/, 'America/Argentina/Buenos_Aires', 'Argentina'],
+            [/colombia|bogota|medellin/, 'America/Bogota', 'Colombia'],
+            [/peru|lima/, 'America/Lima', 'Perú'],
+            [/chile|santiago/, 'America/Santiago', 'Chile'],
+            [/venezuela|caracas/, 'America/Caracas', 'Venezuela'],
+            [/uruguay|montevideo/, 'America/Montevideo', 'Uruguay'],
+            [/ecuador|quito|guayaquil/, 'America/Guayaquil', 'Ecuador'],
+            [/brasil|sao paulo|rio de janeiro/, 'America/Sao_Paulo', 'Brasil'],
+            [/nueva york|new york|eeuu|estados unidos|washington|miami/, 'America/New_York', 'EE. UU. (este)'],
+            [/los angeles|california|san francisco/, 'America/Los_Angeles', 'EE. UU. (oeste)'],
+            [/londres|london|reino unido|inglaterra/, 'Europe/London', 'Reino Unido'],
+            [/paris|francia/, 'Europe/Paris', 'Francia'],
+            [/berlin|alemania|munich/, 'Europe/Berlin', 'Alemania'],
+            [/roma|milan|italia/, 'Europe/Rome', 'Italia'],
+            [/lisboa|oporto|portugal/, 'Europe/Lisbon', 'Portugal'],
+            [/marruecos|casablanca|rabat/, 'Africa/Casablanca', 'Marruecos'],
+            [/china|shanghai|beijing|pekin/, 'Asia/Shanghai', 'China'],
+            [/japon|tokio|osaka/, 'Asia/Tokyo', 'Japón'],
+            [/india|delhi|mumbai|bangalore/, 'Asia/Kolkata', 'India'],
+            [/dubai|emiratos|abu dabi/, 'Asia/Dubai', 'Emiratos Árabes'],
+            [/rusia|moscu/, 'Europe/Moscow', 'Rusia'],
+            [/canada|toronto|montreal/, 'America/Toronto', 'Canadá'],
+            [/australia|sydney|melbourne/, 'Australia/Sydney', 'Australia']
+        ];
+        function botTzPick(t) {
+            for (const [re, tz, label] of BOT_TZ) if (re.test(t)) return { tz: tz, label: label };
+            return null;
+        }
+        function botTzLocal() {
+            try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Madrid'; } catch (e) { return 'Europe/Madrid'; }
+        }
+        function botClockAt(tz) {
+            const d = new Date();
+            const hora = new Intl.DateTimeFormat('es-ES', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+            const fecha = new Intl.DateTimeFormat('es-ES', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+            let off = '';
+            try {
+                const p = new Intl.DateTimeFormat('es-ES', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(d).find(x => x.type === 'timeZoneName');
+                off = p ? p.value.replace('GMT', 'GMT') : '';
+            } catch (e) {}
+            return { hora: hora, fecha: fecha, off: off };
+        }
+        function botClockAnswer(q, t) {
+            const wantsTime = /(que|qué)?\s*hora|hora (es|son)|hora actual|sabes la hora/.test(t) || /hora/.test(t);
+            const wantsDate = /(que|qué)?\s*dia|fecha|a cuanto estamos|dia es/.test(t);
+            const picked = botTzPick(t);
+            const own = botTzLocal();
+            const zone = picked ? picked.tz : own;
+            const label = picked ? picked.label : (own === 'Europe/Madrid' ? 'España' : 'tu zona horaria');
+            const c = botClockAt(zone);
+            const rows = [];
+            if (wantsTime || !wantsDate) {
+                rows.push(`<i class="fa-regular fa-clock" style="color:#0f1b3d"></i> Son las <b>${c.hora}</b> en <b>${escapeHtml(label)}</b> (${escapeHtml(zone)}${c.off ? ' · ' + escapeHtml(c.off) : ''}).`);
+                if (!picked && own !== 'Europe/Madrid') {
+                    const es = botClockAt('Europe/Madrid');
+                    rows.push(`En España son las <b>${es.hora}</b>.`);
+                }
+            }
+            if (wantsDate) {
+                rows.push(`<i class="fa-regular fa-calendar" style="color:#0f1b3d"></i> Hoy es <b>${c.fecha}</b>${picked ? ' en ' + escapeHtml(label) : ''}.`);
+            }
+            return rows.join('<br>');
+        }
+        const BOT_WMO = {
+            0: ['despejado', 'fa-sun'], 1: ['mayormente despejado', 'fa-cloud-sun'], 2: ['parcialmente nublado', 'fa-cloud-sun'], 3: ['nublado', 'fa-cloud'],
+            45: ['niebla', 'fa-smog'], 48: ['niebla helada', 'fa-smog'],
+            51: ['llovizna débil', 'fa-cloud-rain'], 53: ['llovizna', 'fa-cloud-rain'], 55: ['llovizna fuerte', 'fa-cloud-rain'],
+            56: ['llovizna helada', 'fa-cloud-rain'], 57: ['llovizna helada', 'fa-cloud-rain'],
+            61: ['lluvia débil', 'fa-cloud-rain'], 63: ['lluvia', 'fa-cloud-rain'], 65: ['lluvia fuerte', 'fa-cloud-showers-heavy'],
+            66: ['lluvia helada', 'fa-cloud-rain'], 67: ['lluvia helada', 'fa-cloud-rain'],
+            71: ['nieve débil', 'fa-snowflake'], 73: ['nieve', 'fa-snowflake'], 75: ['nieve fuerte', 'fa-snowflake'], 77: ['aguanieve', 'fa-snowflake'],
+            80: ['chubascos', 'fa-cloud-showers-heavy'], 81: ['chubascos', 'fa-cloud-showers-heavy'], 82: ['chubascos fuertes', 'fa-cloud-showers-heavy'],
+            85: ['chubascos de nieve', 'fa-snowflake'], 86: ['chubascos de nieve', 'fa-snowflake'],
+            95: ['tormenta', 'fa-cloud-bolt'], 96: ['tormenta con granizo', 'fa-cloud-bolt'], 99: ['tormenta con granizo', 'fa-cloud-bolt']
+        };
+        function botWeatherCity(t) {
+            const m = t.match(/(?:en|para|de)\s+([a-z\s]{3,28})$/);
+            let city = m ? m[1] : '';
+            city = city.replace(/\b(hoy|ahora|manana|esta|este|semana|por favor|aqui|aqui)\b/g, '').trim();
+            return city || '';
+        }
+        async function botWeatherAnswer(q, t) {
+            const city = botWeatherCity(t) || 'Madrid';
+            const showTomorrow = /manana|proximos dias|finde|semana/.test(t);
+            const ctrl = new AbortController();
+            const tmr = setTimeout(() => ctrl.abort(), 9000);
+            try {
+                const g = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(city) + '&count=1&language=es&format=json', { signal: ctrl.signal }).then(r => r.json());
+                const hit = (g.results || [])[0];
+                if (!hit) return { html: `No encuentro «${escapeHtml(city)}». Dime una ciudad más grande (por ejemplo «el tiempo en Barcelona») y te lo miro.`, chips: ['Ofertas del día'] };
+                const u = 'https://api.open-meteo.com/v1/forecast?latitude=' + hit.latitude + '&longitude=' + hit.longitude
+                    + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m'
+                    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=2';
+                const f = await fetch(u, { signal: ctrl.signal }).then(r => r.json());
+                const cur = f.current || {};
+                const day = k => (f.daily && f.daily[k] && f.daily[k][0]) || null;
+                const w = BOT_WMO[cur.weather_code] || ['sin datos', 'fa-cloud'];
+                const nm = hit.name || '';
+                let region = (hit.admin1 || '').replace(/^(comunidad aut[oó]noma de |comunidad de |provincia de |regi[oó]n de )/i, '');
+                if (region && (region.toLowerCase() === nm.toLowerCase() || region.toLowerCase().includes(nm.toLowerCase()))) region = '';
+                const place = [nm, region, (hit.country_code && hit.country_code !== 'ES') ? hit.country : ''].filter(Boolean).join(', ');
+                const tmin = day('temperature_2m_min'), tmax = day('temperature_2m_max'), pr = day('precipitation_probability_max');
+                let html = `<b>${escapeHtml(place)}</b> · <i class="fa-solid ${w[1]}" style="color:#f59e0b"></i> ${Math.round(cur.temperature_2m)} °C, ${w[0]}.`;
+                html += `<br>Sensación ${Math.round(cur.apparent_temperature)} °C · viento ${Math.round(cur.wind_speed_10m)} km/h.`;
+                html += `<br>Hoy: máx <b>${Math.round(tmax)} °C</b> / mín <b>${Math.round(tmin)} °C</b>${pr != null ? ' · ' + pr + '% de lluvia' : ''}.`;
+                if (showTomorrow && f.daily && f.daily.time && f.daily.time[1]) {
+                    const tw = BOT_WMO[f.daily.weather_code[1]] || ['', 'fa-cloud'];
+                    html += `<br>Mañana: ${tw[0]}, máx ${Math.round(f.daily.temperature_2m_max[1])} °C / mín ${Math.round(f.daily.temperature_2m_min[1])} °C.`;
+                }
+                html += `<div class="text-[10px] text-gray-400 mt-1">Datos de Open-Meteo</div>`;
+                return { html: html, chips: ['Ofertas del día', 'Rastrear pedido'] };
+            } catch (e) {
+                return { html: `Ahora mismo no puedo consultar el tiempo (el servicio meteorológico no responde). Puedes verlo en <a class="underline" href="https://www.eltiempo.es/${encodeURIComponent(city)}" target="_blank" rel="noopener">eltiempo.es</a>.`, chips: ['Ofertas del día'] };
+            } finally { clearTimeout(tmr); }
+        }
+        function botMadridNow() {
+            const parts = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+            const get = t => (parts.find(p => p.type === t) || {}).value || '';
+            const wd = get('weekday'), hh = get('hour'), mm = get('minute');
+            const mins = parseInt(hh, 10) * 60 + parseInt(mm, 10);
+            const sunday = /domingo/.test(wd);
+            return { wd: wd, hora: hh + ':' + mm, open: !sunday && mins >= 540 && mins < 1260 };
+        }
+        function botHoursAnswer() {
+            const st = botMadridNow();
+            return `<i class="fa-regular fa-clock" style="color:#0f1b3d"></i> Atención al cliente: <b>lunes a sábado, 9:00–21:00</b>. Son las <b>${st.hora}</b> del ${st.wd}: ${st.open ? 'ahora estamos <b>abiertos</b>.' : 'ahora está <b>cerrado</b>' + (/(domingo)/.test(st.wd) ? ' (los domingos no abrimos).' : ', abrimos a las 9:00.')}<br>Yo contesto <b>24/7</b>. El horario de recogida de cada tienda lo tienes en su ficha.`;
+        }
+        // Detecta preguntas de hora / fecha / tiempo y evita que caigan en búsqueda de productos
+        async function botSpecial(q, t) {
+            const isWeather = /(que|qué)?\s*tiempo (hace|va a hacer|haran|hace hoy)|hace (frio|calor|viento)|el tiempo en|tiempo en [a-z]|clima|temperatura|va a llover|llovera|lluvia|pronostico|meteorolog/.test(t);
+            if (isWeather) return Object.assign({ score: 1.6 }, await botWeatherAnswer(q, t));
+            const isHours = /(a que hora (abri|cerr|abr|cier|aten))|horario|esta abierto|abierto ahora|estais abiertos|estan abiertos/.test(t);
+            if (isHours) return { html: botHoursAnswer(), chips: ['Ofertas del día', 'Contactar soporte'], score: 1.6 };
+            const noClock = /abri|abren|cerr|horario|cierra|apertura|entrega|tarda|envio|plazo/.test(t);
+            const isTime = !noClock && (/(que|qué)\s*hora|hora (es|son|teneis|tienes|esta|actual)|^hora\b|sabes la hora|dime la hora/.test(t));
+            const isDate = !noClock && (/(que|qué)\s*dia|dia (es|de hoy|estamos)|fecha( de)? hoy|a cuanto estamos|que fecha/.test(t));
+            if (isTime || isDate) return { html: botClockAnswer(q, t), chips: ['Ofertas del día', 'Contactar soporte'], score: 1.6 };
+            return null;
+        }
         function botLocal(q) {
             const tokens = botTokens(q);
             const t = botNorm(q);
@@ -6251,7 +6395,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 chips: ['Hablar con una persona', 'Rastrear pedido']
             }));
             if (/que (puedes|sabes) hacer|tus funciones|para que sirves|en que me puedes ayudar|que sabes/.test(t)) add('help', 1.7, () => ({
-                html: '<b>Esto es lo que sé hacer</b><br>· Buscar productos y filtrar por precio o categoría<br>· Rastrear pedidos y darte el código de recogida<br>· Enseñarte las ofertas del día y los cupones<br>· Comparar productos o buscar algo más barato<br>· Resolver dudas de recogida, pagos y devoluciones<br>· Abrir una incidencia para soporte<br><br>Pregúntame como quieras, entiendo erratas y acentos.',
+                html: '<b>Esto es lo que sé hacer</b><br>· Buscar productos y filtrar por precio o categoría<br>· Rastrear pedidos y darte el código de recogida<br>· Enseñarte las ofertas del día y los cupones<br>· Comparar productos o buscar algo más barato<br>· Decirte <b>qué hora es</b>, <b>qué día es</b> y <b>qué tiempo hace</b> (en España o donde me digas)<br>· Resolver dudas de recogida, pagos y devoluciones<br>· Abrir una incidencia para soporte<br><br>Pregúntame como quieras, entiendo erratas y acentos.',
                 chips: ['Ofertas del día', 'Rastrear pedido', 'Buscar producto']
             }));
             if (/^(hola|buenas|hey|buenos dias|buenas tardes|que tal)\b/.test(t) && tokens.length <= 4) add('greet', 1.6, () => ({
@@ -6477,7 +6621,8 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             } finally { clearTimeout(tmr); }
         }
         async function botRespond(q) {
-            const local = botLocal(q);
+            const special = await botSpecial(q, botNorm(q));
+            const local = special || botLocal(q);
             BOT.ctx.lastQuery = q;
             BOT.ctx.turns.push({ role: 'user', content: q });
             let html = local.html;
@@ -6502,7 +6647,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
                 if (st) st.innerHTML = botAiCfg().enabled ? '<i class="fa-solid fa-bolt"></i> IA conectada · 24/7' : 'Responde al instante · 24/7';
                 renderChatChips();
                 if (!document.getElementById('chatbot-msgs').children.length) {
-                    botPush('bot', '¡Hola! Soy el asistente de FIJA. Puedo <b>buscar productos</b>, decirte las <b>ofertas del día</b>, <b>rastrear tu pedido</b>, comparar precios o abrir una incidencia para soporte. ¿Qué necesitas?');
+                    botPush('bot', '¡Hola! Soy el asistente de FIJA. Puedo <b>buscar productos</b>, decirte las <b>ofertas del día</b>, <b>rastrear tu pedido</b>, comparar precios, <b>decirte la hora, el día o el tiempo que hace</b> o abrir una incidencia para soporte. ¿Qué necesitas?');
                 }
                 setTimeout(() => { try { document.getElementById('chatbot-input').focus(); } catch (e) {} }, 150);
             }
@@ -6531,7 +6676,7 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         }
         function renderChatChips(list) {
             const box = document.getElementById('chatbot-chips'); if (!box) return;
-            const chips = list || ['Ofertas del día', 'Rastrear pedido', 'Devoluciones', 'Recogida', 'Buscar producto'];
+            const chips = list || ['Ofertas del día', 'Qué tiempo hace', 'Rastrear pedido', 'Devoluciones', 'Buscar producto'];
             box.innerHTML = chips.map(c => `<button type="button" data-q="${escapeHtml(c)}" onclick="chatbotQuick(this.dataset.q)" class="text-[11px] border border-fija-900/30 text-fija-900 rounded-full px-2.5 py-1 hover:bg-fija-50">${escapeHtml(c)}</button>`).join('');
         }
         window.chatbotQuick = (t) => {
@@ -6548,9 +6693,13 @@ create policy "escritura publica" on fija_data for all using (true) with check (
             if (inp) inp.value = '';
             botPush('user', escapeHtml(q));
             BOT.busy = true; botTyping(true);
+            const t0 = Date.now();
             let out;
             try { out = await botRespond(q); }
             catch (e) { console.warn(e); out = { html: 'Se me ha ido el hilo. ¿Puedes repetirlo?', chips: ['Ofertas del día', 'Rastrear pedido'] }; }
+            // Pausa natural: el asistente «piensa» al menos 3 segundos antes de contestar
+            const wait = 3000 - (Date.now() - t0);
+            if (wait > 0) await new Promise(r => setTimeout(r, wait));
             botTyping(false);
             botPush('bot', out.html);
             if (out.chips) renderChatChips(out.chips);
