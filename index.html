@@ -693,7 +693,7 @@
                 </section>
 
                 <!-- NIVEL / PROGRESO -->
-                <section id="level-section" class="mb-10"></section>
+                <section id="level-section" class="mb-10" style="display:none"></section>
 
                 <!-- BARRA DE CATEGORÍAS + FILTRO DE BÚSQUEDA -->
                 <div id="catalog-tools" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-8">
@@ -961,6 +961,7 @@
                         </div>
                         <div class="border-t border-gray-100 pt-4 space-y-3 text-sm">
                             <div class="flex justify-between"><span class="text-gray-500">Tipo de cuenta</span><span class="font-medium text-fija-900 capitalize" id="ud-role">Cliente</span></div>
+                            <div class="flex justify-between items-center"><span class="text-gray-500">Nivel</span><span class="flex items-center gap-1.5 font-medium text-fija-900" id="ud-level" title="Ver los 7 niveles" style="cursor:pointer" onclick="openLevelBenefits()">—</span></div>
                             <div class="flex justify-between"><span class="text-gray-500">Pedidos realizados</span><span class="font-medium text-fija-900" id="ud-order-count">0</span></div>
                             <div class="flex justify-between"><span class="text-gray-500">Total gastado</span><span class="font-medium text-fija-900" id="ud-total-spent">0,00 €</span></div>
                             <div class="flex justify-between items-center border-t border-gray-100 pt-3"><span class="text-gray-500">Saldo FIJA</span><span class="font-bold text-emerald-600" id="ud-balance">0,00 €</span></div>
@@ -1076,6 +1077,24 @@
         @media (min-width: 1024px) {
             .fija-foot-grid { grid-template-columns: 1.6fr repeat(5, minmax(0, 1fr)); gap: 2rem 1.75rem; }
             .fija-foot-brand { grid-column: auto; }
+        }
+        /* ---- Carné de nivel (escudos Bronce → Master) ---- */
+        .fija-lvl-card { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .fija-lvl-main { flex: 1 1 auto; min-width: 0; width: 100%; text-align: center; }
+        .fija-lvl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 0 0 auto; width: 100%; }
+        .fija-lvl-track { display: flex; gap: 5px; margin-top: 16px; align-items: flex-end; justify-content: center; overflow-x: auto; padding-bottom: 2px; }
+        .fija-lvl-name { font-size: 26px; font-weight: 900; line-height: 1.15; margin: 0 0 4px; }
+        .fija-lvl-hint { font-size: 13px; color: rgba(255, 255, 255, .72); margin: 0 0 12px; }
+        .fija-lvl-bar { width: 100%; max-width: 420px; margin: 0 auto; }
+        .fija-lvl-btn { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); color: #fff; border-radius: 999px; padding: 9px 18px; font-size: 12px; font-weight: 700; }
+        .fija-lvl-btn:hover { background: rgba(255,255,255,.2); }
+        @media (min-width: 820px) {
+            .fija-lvl-card { flex-direction: row; align-items: center; gap: 30px; }
+            .fija-lvl-main { text-align: left; max-width: 640px; }
+            .fija-lvl-stats { margin-left: auto; }
+            .fija-lvl-track { justify-content: flex-start; }
+            .fija-lvl-bar { margin-left: 0; margin-right: 0; }
+            .fija-lvl-stats { width: auto; }
         }
         /* Copyright: ultima linea del pie, centrada y discreta */
         .fija-copyright {
@@ -7501,12 +7520,50 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         };
 
         // ---------- 32. NIVEL Y PROGRESO DEL USUARIO ----------
+        // 7 niveles con escudo propio, de Bronce a Master.
         const FIJA_LEVELS = [
-            { min: 0, name: 'Bronce', icon: 'fa-medal', color: '#a16207' },
-            { min: 3, name: 'Plata', icon: 'fa-medal', color: '#64748b' },
-            { min: 8, name: 'Oro', icon: 'fa-crown', color: '#d4af37' },
-            { min: 15, name: 'Platino', icon: 'fa-gem', color: '#0ea5e9' }
+            { min: 0, key: 'bronce', name: 'Bronce', icon: 'fa-medal', c1: '#8a5a2b', c2: '#dfa96a', edge: '#6b4423',
+                perks: ['1 punto por cada euro gastado', 'Ofertas del día y cupones abiertos'] },
+            { min: 20, key: 'plata', name: 'Plata', icon: 'fa-shield-halved', c1: '#66727f', c2: '#d3dce6', edge: '#8b98a6',
+                perks: ['+10% de puntos en cada compra', 'Sorteos y ruleta con una tirada extra'] },
+            { min: 60, key: 'oro', name: 'Oro', icon: 'fa-crown', c1: '#a97a08', c2: '#f7dd8a', edge: '#87600a',
+                perks: ['Acceso anticipado a novedades', 'Soporte prioritario en tus incidencias'] },
+            { min: 120, key: 'platino', name: 'Platino', icon: 'fa-award', c1: '#2f5d8a', c2: '#bedcf3', edge: '#48779f',
+                perks: ['Reservas de recogida en 1 hora', 'Doble giro diario en la ruleta'] },
+            { min: 250, key: 'diamante', name: 'Diamante', icon: 'fa-gem', c1: '#12698a', c2: '#a3ecff', edge: '#0e5a73',
+                perks: ['Atención preferente en tienda', 'Regalo de cumpleaños en tu saldo'] },
+            { min: 420, key: 'elite', name: 'Élite', icon: 'fa-bolt', c1: '#4c1d95', c2: '#b9a4fb', edge: '#3b1573',
+                perks: ['Acceso al outlet privado FIJA', 'Invitaciones a eventos y lanzamientos'] },
+            { min: 650, key: 'master', name: 'Master', icon: 'fa-trophy', c1: '#0f1b3d', c2: '#e9c85a', edge: '#c9a227',
+                perks: ['Concierge FIJA en cada pedido', 'Escudo Master exclusivo en tu perfil'] }
         ];
+        // Escudo SVG de cada nivel (mismo dibujo, materiales distintos).
+        function levelShieldHTML(lv, size, opts) {
+            const o = opts || {};
+            const s = Number(size) || 64;
+            const h = Math.round(s * 1.14);
+            const uid = 'fs' + (lv.key || 'x') + Math.random().toString(36).slice(2, 8);
+            const shine = lv.key === 'master' ? 'opacity:.9' : 'opacity:.55';
+            return `<span style="position:relative;display:inline-block;width:${s}px;height:${h}px;vertical-align:middle;line-height:0;${o.dim ? 'opacity:.62;' : ''}">
+                <svg viewBox="0 0 100 114" width="${s}" height="${h}" style="display:block;overflow:visible" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="${uid}a" x1="0.1" y1="0" x2="0.9" y2="1">
+                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="52%" stop-color="${lv.c1}"/><stop offset="100%" stop-color="${lv.c2}"/>
+                        </linearGradient>
+                        <linearGradient id="${uid}b" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity=".7"/><stop offset="65%" stop-color="#ffffff" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" fill="url(#${uid}a)" stroke="${lv.edge}" stroke-width="3.2"/>
+                    <path d="M50 12 L86 24 V54 C86 77 69 94 50 103 C31 94 14 77 14 54 V24 Z" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
+                    <path d="M50 3 L94 17 V29 C70 21 30 21 6 29 V17 Z" fill="url(#${uid}b)" style="${shine}"/>
+                    <circle cx="50" cy="8" r="3.2" fill="#fff" fill-opacity=".75"/>
+                </svg>
+                <i class="fa-solid ${lv.icon}" style="position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(s * 0.33)}px;text-shadow:0 2px 5px rgba(0,0,0,.5)"></i>
+                ${o.rank ? `<span style="position:absolute;right:-7px;bottom:-5px;background:#0f1b3d;color:#fff;border:2px solid #fff;border-radius:999px;min-width:19px;height:19px;font-size:10px;font-weight:800;line-height:15px;text-align:center;padding:0 4px">${o.rank}</span>` : ''}
+                ${o.locked ? `<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(15,27,61,.72);color:#fff;border-radius:999px;width:${Math.round(s * 0.4)}px;height:${Math.round(s * 0.4)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s * 0.17)}px"><i class="fa-solid fa-lock"></i></span>` : ''}
+            </span>`;
+        }
         function userStats() {
             const mine = state.orders.filter(o => o.buyerUid === (state.profile || {}).userId);
             const spent = mine.reduce((s, o) => s + (Number(o.total) || 0), 0);
@@ -7526,24 +7583,38 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         }
         function renderLevelSection() {
             const el = document.getElementById('level-section'); if (!el) return;
-            if (!state.session || !state.profile) { el.classList.add('hide'); return; }
-            el.classList.remove('hide');
+            if (!state.session || !state.profile) { el.classList.add('hide'); el.style.display = 'none'; el.innerHTML = ''; return; }
+            el.classList.remove('hide'); el.style.display = 'block';
             const s = userStats(); const lv = currentLevel(s.points);
+            const total = FIJA_LEVELS.length;
             const prevMin = lv.min, nextMin = lv.next ? lv.next.min : lv.min + 10;
             const pct = lv.next ? Math.min(100, Math.round((s.points - prevMin) / (nextMin - prevMin) * 100)) : 100;
-            const ring = progressRingHTML(pct, 64);
-            el.innerHTML = `<div class="bg-fija-900 text-white rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6">
-                <div class="relative shrink-0">${ring}</div>
-                <div class="flex-1 text-center sm:text-left">
-                    <p class="text-fija-gold text-xs font-bold uppercase tracking-widest mb-1">Tu nivel en FIJA</p>
-                    <h3 class="text-2xl font-black mb-1"><i class="fa-solid ${lv.icon} mr-2"></i>${lv.name}</h3>
-                    <p class="text-sm text-white/70 mb-3">${s.points} puntos${lv.next ? ` · te faltan ${nextMin - s.points} para ${lv.next.name}` : ' · nivel máximo alcanzado'}</p>
-                    <div class="w-full bg-white/15 rounded-full h-2 overflow-hidden max-w-md"><div class="bg-fija-gold h-full" style="width:${pct}%"></div></div>
+            const track = FIJA_LEVELS.map((l, i) => {
+                const cur = i === lv.index, on = i <= lv.index;
+                return `<div>
+                    ${levelShieldHTML(l, cur ? 44 : 30, { dim: !on })}
+                    <div style="font-size:9px;margin-top:2px;white-space:nowrap;color:${cur ? '#e9c85a' : on ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.32)'};font-weight:${cur ? 800 : 600}">${escapeHtml(l.name)}</div>
+                </div>`;
+            }).join('');
+            el.innerHTML = `<div class="bg-fija-900 text-white rounded-2xl p-6">
+                <div class="fija-lvl-card">
+                    <div style="flex:0 0 auto">${levelShieldHTML(lv, 92)}</div>
+                    <div class="fija-lvl-main">
+                        <p class="text-fija-gold text-xs font-bold uppercase tracking-widest" style="margin-bottom:4px">Tu nivel en FIJA · ${lv.index + 1} de ${total}</p>
+                        <h3 class="fija-lvl-name">${escapeHtml(lv.name)}</h3>
+                        <p class="fija-lvl-hint">${s.points} puntos${lv.next ? ` · te faltan <b class="text-white">${Math.max(0, nextMin - s.points)}</b> para ${escapeHtml(lv.next.name)}` : ' · nivel máximo alcanzado'}</p>
+                        <div class="fija-lvl-bar bg-white/15 rounded-full h-2 overflow-hidden"><div class="bg-fija-gold h-full" style="width:${pct}%"></div></div>
+                        <div class="fija-lvl-track">${track}</div>
+                    </div>
+                    <div class="fija-lvl-stats">
+                        ${[["fa-box", s.orders, 'Pedidos'], ["fa-heart", s.favorites, 'Favoritos'], ["fa-list-check", s.lists, 'Listas'], ["fa-star", s.reviews, 'Opiniones']]
+                    .map(([ic, v, lb]) => `<div class="bg-white/10 rounded-xl px-2 py-3 text-center"><i class="fa-solid ${ic} text-fija-gold mb-1 block"></i><p class="text-lg font-black">${v}</p><p class="text-[10px] text-white/60">${lb}</p></div>`).join('')}
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-                    ${[["fa-box", s.orders, 'Pedidos'], ["fa-heart", s.favorites, 'Favoritos'], ["fa-list-check", s.lists, 'Listas'], ["fa-star", s.reviews, 'Opiniones']]
-                .map(([ic, v, lb]) => `<div class="bg-white/10 rounded-xl px-4 py-3 text-center"><i class="fa-solid ${ic} text-fija-gold mb-1 block"></i><p class="text-lg font-black">${v}</p><p class="text-[10px] text-white/60">${lb}</p></div>`).join('')}
-                </div></div>`;
+                <div style="margin-top:18px;display:flex;justify-content:center">
+                    <button type="button" class="fija-lvl-btn" onclick="openLevelBenefits()"><i class="fa-solid fa-shield-halved" style="margin-right:6px;color:#e9c85a"></i>Ver los ${total} niveles y sus ventajas</button>
+                </div>
+            </div>`;
         }
         function progressRingHTML(pct, size) {
             const r = (size - 8) / 2, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
@@ -8890,7 +8961,7 @@ const FIJA_THEMES = {
                         return months.map(m => { const n = mine.filter(o => new Date(o.createdAt).getMonth() === m).length;
                             return `<div class="flex-1 flex flex-col items-center gap-1"><div class="w-full bg-fija-400 rounded-t" style="height:${Math.max(4, n * 18)}px"></div><span class="text-[9px] text-gray-400">${new Date(2000, m, 1).toLocaleDateString('es-ES', { month: 'short' })}</span></div>`; }).join('');
                     })()}</div></div>
-                <div class="text-sm text-gray-600">Total gastado: <strong>${formatEuro(s.spent)}</strong> · Nivel: <strong>${currentLevel(s.points).name}</strong></div>`);
+                <div class="text-sm text-gray-600 flex items-center flex-wrap gap-2">Total gastado: <strong>${formatEuro(s.spent)}</strong> <span class="text-gray-300">·</span> ${(() => { const lv = currentLevel(s.points); return `<span class="inline-flex items-center gap-1.5">${levelShieldHTML(lv, 22)}<span>Nivel <strong>${escapeHtml(lv.name)}</strong></span></span>`; })()}</div>`);
         };
         window.openUserReviews = () => {
             if (!state.profile) { openAuthModal(); return; }
@@ -9373,6 +9444,8 @@ const FIJA_THEMES = {
             const balBox = document.getElementById('ud-balance');
             if (balBox) balBox.textContent = formatEuro(balNow);
             document.getElementById('ud-order-count').textContent = myOrders.length;
+            const lvlBox = document.getElementById('ud-level');
+            if (lvlBox) { try { const lv = currentLevel(userStats().points); lvlBox.innerHTML = levelShieldHTML(lv, 20) + '<span>' + escapeHtml(lv.name) + '</span>'; } catch (e) {} }
             const spent = myOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0);
             document.getElementById('ud-total-spent').textContent = formatEuro(spent);
             const list = document.getElementById('user-orders-list');
@@ -9746,8 +9819,33 @@ const FIJA_THEMES = {
         window.redeemPoints = (cost) => { if (pointsAvailable() < cost) return showToast('No tienes puntos suficientes', true);
             addPoints(-cost); showToast('Canjeado: se aplicará en el próximo pedido'); openPointsStore(); };
         window.levelProgress = () => { const lv = currentLevel(pointsAvailable()); return { level: lv.name, next: lv.next ? lv.next.min : null, missing: lv.next ? Math.max(0, lv.next.min - pointsAvailable()) : 0 }; };
-        window.openLevelBenefits = () => showGenericModal('Niveles FIJA', `<div class="space-y-2">${FIJA_LEVELS.map(l =>
-            `<div class="f-card p-3 flex items-center justify-between"><span class="text-sm font-medium">${escapeHtml(l.name)}</span><span class="text-xs text-gray-500">${l.min} pts</span></div>`).join('')}</div>`);
+        window.openLevelBenefits = () => {
+            let s = { points: 0 };
+            try { s = userStats(); } catch (e) {}
+            const cur = currentLevel(s.points || 0);
+            const cards = FIJA_LEVELS.map((l, i) => {
+                const on = i === cur.index, got = i <= cur.index;
+                const miss = Math.max(0, l.min - (s.points || 0));
+                return `<div style="border:1.5px solid ${on ? '#c9a227' : '#e5e7eb'};background:${on ? '#fffdf5' : '#ffffff'};border-radius:16px;padding:14px;display:flex;gap:12px;align-items:flex-start">
+                    <div style="flex:0 0 auto">${levelShieldHTML(l, 54, { dim: !got })}</div>
+                    <div style="min-width:0;flex:1">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                            <b style="font-size:14px;color:#0f1b3d">${escapeHtml(l.name)}</b>
+                            ${on ? `<span style="background:#c9a227;color:#0f1b3d;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px">TU NIVEL</span>` : ''}
+                            ${(!got && l.min > 0) ? `<span style="background:#f3f4f6;color:#6b7280;font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px">faltan ${miss} pts</span>` : ''}
+                        </div>
+                        <div style="font-size:11px;color:#9ca3af;margin-top:2px">${l.min} puntos${i === 0 ? ' · nivel de bienvenida' : ''}</div>
+                        <ul style="margin:8px 0 0;padding-left:16px;font-size:11.5px;color:#4b5563;line-height:1.6">
+                            ${(l.perks || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>`;
+            }).join('');
+            showGenericModal('Niveles FIJA', `
+                <div style="font-size:13px;color:#4b5563;margin-bottom:14px">Cada <b>1 €</b> gastado suma <b>1 punto</b> y cada pedido <b>2 puntos</b> extra. Hay <b>${FIJA_LEVELS.length} escudos</b>: de Bronce a Master.</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${cards}</div>
+                <div style="margin-top:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px;font-size:12px;color:#4b5563"><i class="fa-solid fa-circle-info" style="color:#0f1b3d;margin-right:6px"></i>Tu escudo se ve en el carné de nivel de la tienda y en Mi cuenta. Ahora mismo estás en <b>${escapeHtml(cur.name)}</b>.</div>`);
+        };
         window.openMyAchievements = () => openAchievements();
         window.openStreakInfo = () => { const days = JSON.parse(localStorage.getItem('fija_streak') || '[]');
             showGenericModal('Racha de visitas', `<div class="text-center py-4"><p class="text-4xl font-black text-fija-900">${days.length}</p><p class="text-sm text-gray-500">días seguidos entrando en FIJA</p></div>`); };
@@ -11305,7 +11403,7 @@ window.favCount22 = () => Array.isArray(state.profile&&state.profile.favorites)?
 window.recentCount22 = () => (state.recent||[]).length;
 window.alertCount22 = () => (state.alerts||[]).length;
 window.pointsBalance22 = () => (state.profile&&state.profile.points)||0;
-window.levelName22 = () => { const p=(state.profile&&state.profile.points)||0; if(p>=350) return 'Platino'; if(p>=150) return 'Oro'; if(p>=60) return 'Plata'; return 'Bronce'; };
+window.levelName22 = () => { try { return currentLevel(pointsAvailable()).name; } catch (e) { return 'Bronce'; } };
 window.savingsTotal2 = () => (state.cart||[]).reduce((s,i)=>{ const p=state.products.find(x=>x.id===i.id); return s+(p?(Number(p.oldPrice||p.price)-effectivePrice(p))*(Number(i.qty)||0):0); },0);
 window.bestDealProduct2 = () => { const ps=(state.products||[]).filter(p=>(Number(p.discountPercent)||0)>0); ps.sort((a,b)=>(Number(b.discountPercent)||0)-(Number(a.discountPercent)||0)); return ps[0]||null; };
 window.worstRatedProduct2 = () => { const ps=(state.products||[]).filter(p=>productRating(p).count>0); ps.sort((a,b)=>productRating(a).avg-productRating(b).avg); return ps[0]||null; };
@@ -11653,7 +11751,7 @@ Object.assign(INFO_PAGES, {
         </tbody>
       </table>
       <h2 class="text-lg font-bold text-fija-900 mt-4">Niveles</h2>
-      <p>Tus puntos determinan tu nivel (Bronce, Plata, Oro, Platino). Cada euro gastado suma 1 punto y cada compra 2 puntos extra. Los niveles superiores desbloquean descuentos y acceso anticipado a novedades.</p>
+      <p>Tus puntos determinan tu nivel. Hay siete escudos: <strong>Bronce, Plata, Oro, Platino, Diamante, Élite y Master</strong>. Cada euro gastado suma 1 punto y cada pedido 2 puntos extra, así que el escudo sube solo con comprar. Los niveles superiores desbloquean ventajas: más puntos por compra, acceso anticipado a novedades, atención prioritaria y, en Master, un escudo exclusivo en tu perfil.</p>
       <p class="mt-3"><button class="f-btn f-btn-primary" onclick="if(window.openAchievements){closeModal('generic-modal');openAchievements();}">Ver mis logros</button></p>
     `
   },
