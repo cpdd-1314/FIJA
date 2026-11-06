@@ -477,6 +477,8 @@
                                 <span id="dd-role" class="inline-block mt-1.5 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">cliente</span>
                             </div>
                             <button onclick="switchView('user-dashboard')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-user mr-3 text-gray-400 w-4"></i> Mi Cuenta</button>
+                            <button type="button" onclick="openGiftCards()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-gift mr-3 text-fija-gold w-4"></i> Tarjetas regalo y saldo</button>
+                            <button type="button" onclick="openRoulette()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-dharmachakra mr-3 text-fija-gold w-4"></i> Ruleta de premios</button>
                             <button type="button" onclick="openNotifications()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-regular fa-bell mr-3 text-gray-400 w-4"></i> Notificaciones <span id="dd-notif-badge" class="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full h-4 min-w-[16px] px-1 flex items-center justify-center hide">0</span></button>
                             <button type="button" id="dd-sync-btn" onclick="openSyncSettings()" class="hide hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-database mr-3 text-gray-400 w-4"></i> Sincronización</button>
                             <button type="button" onclick="requestRemoveWatermark()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center"><i class="fa-solid fa-droplet mr-3 text-gray-400 w-4"></i> Quitar marca de agua</button>
@@ -905,6 +907,7 @@
                         <div class="space-y-3 mb-6">
                             <div class="flex justify-between text-gray-600"><span>Subtotal</span><span id="cart-subtotal">0,00 €</span></div>
                             <div class="flex justify-between text-gray-600"><span>Recogida en tienda (Click & Collect)</span><span class="text-green-600 font-medium">Gratis</span></div>
+                            <label id="cart-balance-row" class="hide items-center justify-between gap-2 border border-emerald-200 bg-emerald-50 rounded-lg px-3 py-2 text-sm text-emerald-800"><span class="flex items-center gap-2"><input type="checkbox" id="cart-use-balance" class="rounded border-emerald-300" onchange="toggleUseBalance(this.checked)"><span>Usar mi saldo FIJA</span></span><span id="cart-balance-amt" class="font-semibold">0,00 €</span></label>
                             <div class="border-t pt-3 mt-3 flex justify-between font-bold text-lg"><span>Total a pagar</span><span id="cart-total">0,00 €</span></div>
                         </div>
                         <div class="bg-gray-50 border border-gray-200 text-gray-700 p-4 rounded-lg mb-6 text-sm flex items-start">
@@ -960,6 +963,11 @@
                             <div class="flex justify-between"><span class="text-gray-500">Tipo de cuenta</span><span class="font-medium text-fija-900 capitalize" id="ud-role">Cliente</span></div>
                             <div class="flex justify-between"><span class="text-gray-500">Pedidos realizados</span><span class="font-medium text-fija-900" id="ud-order-count">0</span></div>
                             <div class="flex justify-between"><span class="text-gray-500">Total gastado</span><span class="font-medium text-fija-900" id="ud-total-spent">0,00 €</span></div>
+                            <div class="flex justify-between items-center border-t border-gray-100 pt-3"><span class="text-gray-500">Saldo FIJA</span><span class="font-bold text-emerald-600" id="ud-balance">0,00 €</span></div>
+                        </div>
+                        <div class="pt-4 grid grid-cols-2 gap-2">
+                            <button type="button" onclick="openGiftCards()" class="text-sm font-medium rounded-lg py-2.5 bg-fija-900 text-white hover:bg-fija-800 transition-colors"><i class="fa-solid fa-gift mr-1.5"></i>Tarjetas regalo</button>
+                            <button type="button" onclick="openRoulette()" class="text-sm font-medium rounded-lg py-2.5 border border-fija-gold text-fija-900 bg-fija-50 hover:bg-fija-100 transition-colors"><i class="fa-solid fa-dharmachakra mr-1.5"></i>Ruleta</button>
                         </div>
                         <div class="border-t border-gray-100 pt-4 mt-4">
                             <p class="text-sm font-semibold text-fija-900 mb-3"><i class="fa-solid fa-user-pen mr-2 text-fija-gold"></i>Editar perfil</p>
@@ -983,6 +991,8 @@
                                 <button type="button" class="ud-tab-btn" data-tab="alerts" onclick="switchUserTab('alerts')"><i class="fa-solid fa-bell mr-1"></i>Alertas</button>
                                 <button type="button" class="ud-tab-btn" data-tab="addresses" onclick="switchUserTab('addresses')"><i class="fa-solid fa-location-dot mr-1"></i>Direcciones</button>
                                 <button type="button" class="ud-tab-btn" data-tab="returns" onclick="switchUserTab('returns')"><i class="fa-solid fa-rotate-left mr-1"></i>Devoluciones</button>
+                                <button type="button" class="ud-tab-btn" data-tab="giftcards" onclick="switchUserTab('giftcards')"><i class="fa-solid fa-gift mr-1"></i>Tarjetas y saldo</button>
+                                <button type="button" class="ud-tab-btn" data-tab="roulette" onclick="switchUserTab('roulette')"><i class="fa-solid fa-dharmachakra mr-1"></i>Ruleta</button>
                             </div>
                         </div>
                         <div class="p-6">
@@ -1021,6 +1031,22 @@
                             <div id="ud-panel-returns" class="hide hidden">
                                 <div class="flex items-center gap-2 mb-4"><i class="fa-solid fa-rotate-left text-fija-gold"></i><h2 class="font-semibold text-fija-900">Solicitar devolución</h2></div>
                                 <div id="user-returns-list"></div>
+                            </div>
+                            <!-- TARJETAS REGALO Y SALDO -->
+                            <div id="ud-panel-giftcards" class="hide hidden">
+                                <div class="flex items-center gap-2 mb-4"><i class="fa-solid fa-gift text-fija-gold"></i><h2 class="font-semibold text-fija-900">Tarjetas regalo y saldo</h2>
+                                    <button type="button" onclick="openGiftCards()" class="ml-auto text-xs bg-fija-900 text-white px-3 py-1.5 rounded-lg hover:bg-fija-800"><i class="fa-solid fa-plus mr-1"></i>Comprar tarjeta</button>
+                                </div>
+                                <div id="ud-balance-card" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 mb-4 flex items-center justify-between">
+                                    <div><p class="text-xs uppercase tracking-wide text-emerald-700 font-semibold">Saldo disponible</p><p class="text-2xl font-bold text-emerald-700" id="ud-balance-big">0,00 €</p></div>
+                                    <button type="button" onclick="openGiftCards('redeem')" class="text-sm bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100 rounded-lg px-3 py-2 font-medium"><i class="fa-solid fa-ticket mr-1"></i>Canjear código</button>
+                                </div>
+                                <div id="user-giftcards-list" class="space-y-3"></div>
+                            </div>
+                            <!-- RULETA -->
+                            <div id="ud-panel-roulette" class="hide hidden">
+                                <div class="flex items-center gap-2 mb-4"><i class="fa-solid fa-dharmachakra text-fija-gold"></i><h2 class="font-semibold text-fija-900">Ruleta de premios</h2></div>
+                                <div id="user-roulette-panel"></div>
                             </div>
                         </div>
                     </div>
@@ -1446,6 +1472,7 @@
             _sha: { products: null, orders: null, profiles: null },
             regRole: 'seller',
             payMethod: null, lastOrderId: null,
+            useBalance: false,
             recent: [],
             // ---- Módulos tipo Amazon ----
             compare: [],                    // ids comparados (máx. 4)
@@ -3491,7 +3518,7 @@
             { userId: "demo-seller", username: "Audio Lux SL", email: "ventas@audiolux.com", role: "seller", verificationStatus: "approved", companyName: "Audio Lux SL", cif: "B12345678", address: "Calle Demo 1, Madrid", ivaType: "general", commissionRate: 0.047, createdAt: 1700000000000 }
         ];
         const DEFAULT_ORDERS = [];
-        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [], reports: [], tickets: [] };
+        const DEFAULTS = { products: DEFAULT_PRODUCTS, orders: DEFAULT_ORDERS, profiles: DEFAULT_PROFILES, visits: [], reports: [], tickets: [], giftcards: [] };
 
         const DOM = {
             loginBtn: document.getElementById('nav-login-btn'),
@@ -4732,7 +4759,15 @@
             const couponPercent = promo ? promo.value : 0;
             const couponDiscount = couponCode ? +(items.reduce((s, it) => s + it.paid, 0) * couponPercent / 100).toFixed(2) : 0;
             const giftWrapFee = state.giftWrap ? GIFT_WRAP_PRICE : 0;
-            const total = +(items.reduce((s, it) => s + it.paid, 0) - couponDiscount + giftWrapFee).toFixed(2);
+            const beforeTotal = +(items.reduce((s, it) => s + it.paid, 0) - couponDiscount + giftWrapFee).toFixed(2);
+            // Descuento pendiente ganado en la ruleta (se consume en esta compra)
+            const pendPct = Math.max(0, Math.min(50, Number((state.profile || {}).pendingDiscountPct || 0)));
+            const pendDiscount = pendPct > 0 ? +(items.reduce((s, it) => s + it.paid, 0) * pendPct / 100).toFixed(2) : 0;
+            const totalBeforeBalance = Math.max(0, +(beforeTotal - pendDiscount).toFixed(2));
+            // Saldo FIJA (tarjetas regalo): se descuenta de lo que paga el cliente
+            const balAvail = Math.max(0, Number((state.profile || {}).balance || 0));
+            const balanceUsed = (state.useBalance && balAvail > 0) ? Math.min(balAvail, totalBeforeBalance) : 0;
+            const total = +(totalBeforeBalance - balanceUsed).toFixed(2);
             const commissionTotal = +items.reduce((s, it) => s + it.commission, 0).toFixed(2);
             const netTotal = +items.reduce((s, it) => s + it.sellerNet, 0).toFixed(2);
             const discountTotal = +items.reduce((s, it) => s + it.discount, 0).toFixed(2);
@@ -4742,9 +4777,22 @@
             const pickupCode = 'FIJA-' + Array.from(rnd, b => codeAlphabet[b % codeAlphabet.length]).join('');
             const order = { id: uid(), items, total, commissionRate: COMMISSION_RATE, commissionTotal, netTotal, discountTotal,
                 couponCode, couponPercent, couponDiscount, giftWrapFee, pickupCode,
-                method, buyerUid: state.profile.userId, buyerName: state.profile.username, buyerEmail: state.profile.email, status: 'pending', createdAt: Date.now() };
+                balanceUsed, rouletteDiscount: pendDiscount, roulettePct: pendPct,
+                method: (balanceUsed > 0 && total === 0) ? 'Saldo FIJA' : method, buyerUid: state.profile.userId, buyerName: state.profile.username, buyerEmail: state.profile.email, status: 'pending', createdAt: Date.now() };
             try {
                 await mutateCollection('orders', arr => arr.push(order));
+                // Descontar el saldo y consumir el descuento de la ruleta
+                if (balanceUsed > 0 || pendPct > 0) {
+                    await mutateCollection('profiles', arr => {
+                        const p = arr.find(x => x.userId === state.profile.userId);
+                        if (!p) return;
+                        if (balanceUsed > 0) p.balance = +(Math.max(0, (Number(p.balance) || 0) - balanceUsed)).toFixed(2);
+                        if (pendPct > 0) p.pendingDiscountPct = 0;
+                    });
+                    if (balanceUsed > 0) state.profile.balance = +(Math.max(0, balAvail - balanceUsed)).toFixed(2);
+                    if (pendPct > 0) state.profile.pendingDiscountPct = 0;
+                    state.useBalance = false;
+                }
                 state.cart = []; updateCartBadge();
                 state.lastOrderId = order.id;
                 // Consumir el cupón (un solo uso) y limpiar extras de la cesta
@@ -7275,7 +7323,7 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         // ---------- 24. PESTAÑAS DE MI CUENTA ----------
         window.switchUserTab = (tab) => {
             document.querySelectorAll('#ud-tabs .ud-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-            ['orders', 'favorites', 'lists', 'alerts', 'addresses', 'returns'].forEach(t => {
+            ['orders', 'favorites', 'lists', 'alerts', 'addresses', 'returns', 'giftcards', 'roulette'].forEach(t => {
                 const el = document.getElementById('ud-panel-' + t);
                 if (!el) return;
                 const on = t === tab;
@@ -7285,6 +7333,8 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             if (tab === 'alerts') renderAlertsPanel();
             if (tab === 'addresses') renderAddressesPanel();
             if (tab === 'returns') renderReturnsPanel();
+            if (tab === 'giftcards') renderMyGiftCards();
+            if (tab === 'roulette') renderRoulettePanel();
         };
         window.switchUserTabSafe = (tab) => { if (tab === 'reviews') { /* la pestaña de opiniones vive en la ficha del producto */ } };
         function renderAlertsPanel() {
@@ -9220,6 +9270,7 @@ const FIJA_THEMES = {
         }
 
         // ===================== Render: Cart =====================
+        window.toggleUseBalance = (v) => { state.useBalance = !!v; try { renderCart(); } catch (e) {} };
         function renderCart() {
             if (state.cart.length === 0) {
                 DOM.cartItems.innerHTML = `<div class="bg-white rounded-xl border border-gray-200 p-12 text-center"><i class="fa-solid fa-cart-shopping text-4xl text-gray-300 mb-4"></i><h3 class="text-xl font-medium text-gray-900 mb-2">Tu cesta está vacía</h3><button onclick="switchView('storefront')" class="text-fija-gold font-medium hover:underline">Continuar comprando</button></div>`;
@@ -9255,7 +9306,22 @@ const FIJA_THEMES = {
             const disc = promoDiscount(total);
             const grand = Math.max(0, +(total - disc).toFixed(2));
             DOM.cartSubtotal.textContent = formatEuro(total);
-            const totEl = DOM.cartTotal; if (totEl) totEl.textContent = formatEuro(grand);
+            // --- Saldo FIJA (tarjetas regalo) ---
+            const bal = Math.max(0, Number((state.profile || {}).balance || 0));
+            const wrapFee0 = state.giftWrap ? GIFT_WRAP_PRICE : 0;
+            const withWrap = +(grand + wrapFee0).toFixed(2);
+            const balUsed = (state.useBalance && bal > 0) ? Math.min(bal, withWrap) : 0;
+            const rowBal = document.getElementById('cart-balance-row');
+            if (rowBal) {
+                const show = bal > 0;
+                rowBal.classList.toggle('hide', !show);
+                rowBal.classList.toggle('flex', show);
+                const amt = document.getElementById('cart-balance-amt');
+                if (amt) amt.textContent = formatEuro(bal) + (balUsed > 0 ? ' · aplicado -' + formatEuro(balUsed) : '');
+                const cb = document.getElementById('cart-use-balance');
+                if (cb) cb.checked = !!state.useBalance;
+            }
+            const totEl = DOM.cartTotal; if (totEl) totEl.textContent = formatEuro(+(withWrap - balUsed).toFixed(2));
             const pc = document.getElementById('cart-pay-count'); if (pc) pc.textContent = String(state.cart.reduce((s, c) => s + c.quantity, 0));
             // breakdown de descuento en el resumen lateral
             const sum = document.querySelector('#view-cart .sticky');
@@ -9286,7 +9352,7 @@ const FIJA_THEMES = {
                 if (wrap) wrap.innerHTML = `<span><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span>${formatEuro(GIFT_WRAP_PRICE)}</span>`;
             } else if (wrap) wrap.remove();
             const tEl = DOM.cartTotal;
-            if (tEl && (wrap || state.giftWrap)) tEl.textContent = formatEuro(+(grand + (state.giftWrap ? GIFT_WRAP_PRICE : 0)).toFixed(2));
+            if (tEl && (wrap || state.giftWrap)) tEl.textContent = formatEuro(+(withWrap - balUsed).toFixed(2));
         }
 
         // ===================== Render: Seller Dashboard =====================
@@ -9301,7 +9367,11 @@ const FIJA_THEMES = {
             if (state.profile.photo) av.innerHTML = `<img src="${state.profile.photo}" alt="Foto de perfil" class="w-full h-full object-cover">`;
             else av.textContent = (name[0] || 'U').toUpperCase();
             document.getElementById('ud-role').textContent = { user: 'Cliente', seller: 'Vendedor', admin: 'Administrador' }[state.profile.role] || 'Cliente';
-            const myOrders = state.orders.filter(o => o.buyerUid === state.profile.userId);
+            const myOrders = state.orders.filter(o => o.buyerUid === state.profile.userId)
+                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); // del más nuevo al más viejo
+            const balNow = Math.max(0, Number(state.profile.balance || 0));
+            const balBox = document.getElementById('ud-balance');
+            if (balBox) balBox.textContent = formatEuro(balNow);
             document.getElementById('ud-order-count').textContent = myOrders.length;
             const spent = myOrders.filter(o => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0);
             document.getElementById('ud-total-spent').textContent = formatEuro(spent);
@@ -9311,12 +9381,14 @@ const FIJA_THEMES = {
                 <div class="flex justify-between items-center mb-3"><div><span class="font-mono text-xs text-gray-500">#${o.id.slice(0,8).toUpperCase()}</span><span class="text-xs text-gray-400 ml-2">${new Date(o.createdAt).toLocaleDateString('es-ES')}</span></div>${statusBadge(o.status)}</div>
                 <div class="space-y-2">${o.items.map(it => `<div class="flex items-center gap-3"><img src="${escapeHtml(it.imageUrl)}" class="w-10 h-10 rounded object-cover bg-gray-100" onerror="this.src='https://placehold.co/100x100/f4f4f5/a1a1aa?text=Img'"><div class="flex-1 text-sm"><div class="font-medium text-gray-900 truncate">${escapeHtml(it.title)}</div><div class="text-gray-500 text-xs">${it.quantity} × ${formatEuro(it.price)} · ${escapeHtml(it.sellerName || '')}</div></div><div class="font-medium text-sm">${formatEuro(it.price * it.quantity)}</div></div>`).join('')}</div>
                 <div class="border-t border-gray-100 mt-3 pt-3 flex items-center justify-between gap-3">
-                    <span class="text-xs text-gray-500">Pago: ${escapeHtml(o.method)} · Click &amp; Collect · <button type="button" onclick="event.stopPropagation(); openOrderQR('${o.id}')" class="text-fija-gold font-semibold hover:underline inline-flex items-center"><i class="fa-solid fa-qrcode mr-1"></i>Ver QR</button></span>
+                    <span class="text-xs text-gray-500">Pago: ${escapeHtml(o.method)} · ${o.type === 'giftcard' ? 'Tarjeta regalo' : 'Click &amp; Collect'} · ${o.type === 'giftcard'
+                        ? `<button type="button" onclick="event.stopPropagation(); openGiftCardByOrder('${o.id}')" class="text-fija-gold font-semibold hover:underline inline-flex items-center"><i class="fa-solid fa-gift mr-1"></i>Ver tarjeta</button>`
+                        : `<button type="button" onclick="event.stopPropagation(); openOrderQR('${o.id}')" class="text-fija-gold font-semibold hover:underline inline-flex items-center"><i class="fa-solid fa-qrcode mr-1"></i>Ver QR</button>`}</span>
                     <span class="flex items-center gap-2">
-                        <button type="button" onclick="event.stopPropagation(); openOrderTimeline('${o.id}')" class="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 font-medium transition-colors"><i class="fa-solid fa-timeline mr-1"></i>Seguimiento</button>
+                        ${o.type === 'giftcard' ? '' : `<button type="button" onclick="event.stopPropagation(); openOrderTimeline('${o.id}')" class="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 font-medium transition-colors"><i class="fa-solid fa-timeline mr-1"></i>Seguimiento</button>`}
                         <button type="button" onclick="event.stopPropagation(); openOrderDetail('${o.id}')" class="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 font-medium transition-colors"><i class="fa-solid fa-file-invoice mr-1"></i>Detalle</button>
-                        <button type="button" onclick="event.stopPropagation(); contactSeller('${escapeHtml((o.items[0] || {}).sellerName || '')}')" class="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 font-medium transition-colors"><i class="fa-solid fa-envelope mr-1"></i>Vendedor</button>
-                        <button type="button" onclick="event.stopPropagation(); buyItAgain('${o.id}')" class="text-sm text-fija-900 border border-gray-200 hover:bg-gray-50 rounded-lg px-3 py-1.5 font-medium transition-colors"><i class="fa-solid fa-rotate-right mr-1"></i>Comprar de nuevo</button>
+                        ${o.type === 'giftcard' ? '' : `<button type="button" onclick="event.stopPropagation(); contactSeller('${escapeHtml((o.items[0] || {}).sellerName || '')}')" class="text-xs text-gray-600 border border-gray-200 hover:bg-gray-50 rounded-lg px-2.5 py-1.5 font-medium transition-colors"><i class="fa-solid fa-envelope mr-1"></i>Vendedor</button>`}
+                        ${o.type === 'giftcard' ? '' : `<button type="button" onclick="event.stopPropagation(); buyItAgain('${o.id}')" class="text-sm text-fija-900 border border-gray-200 hover:bg-gray-50 rounded-lg px-3 py-1.5 font-medium transition-colors"><i class="fa-solid fa-rotate-right mr-1"></i>Comprar de nuevo</button>`}
                         <span class="font-bold text-fija-900">${formatEuro(o.total)}</span>
                     </span>
                 </div>
@@ -10594,11 +10666,15 @@ function renderPaymentPageUI() {
     const disc = promoDiscount(total);
     const grand = Math.max(0, +(total - disc).toFixed(2));
     const payTotal = +(grand + (state.giftWrap ? GIFT_WRAP_PRICE : 0)).toFixed(2);
+    const balAvail = Math.max(0, Number((state.profile || {}).balance || 0));
+    const balUsed = (state.useBalance && balAvail > 0) ? Math.min(balAvail, payTotal) : 0;
+    const payFinal = +(payTotal - balUsed).toFixed(2);
     const couponRow = (state.promo && disc > 0) ? `<div class="flex justify-between text-green-600"><span class="truncate pr-3"><i class="fa-solid fa-ticket mr-1"></i>Cupón ${escapeHtml(state.promo.code)} (${state.promo.value}%)</span><span class="font-medium">-${formatEuro(disc)}</span></div>` : '';
     const wrapRow = state.giftWrap ? `<div class="flex justify-between"><span class="text-gray-700 truncate pr-3"><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span class="font-medium">${formatEuro(GIFT_WRAP_PRICE)}</span></div>` : '';
+    const balRow = balUsed > 0 ? `<div class="flex justify-between text-emerald-700"><span><i class="fa-solid fa-wallet mr-1"></i>Saldo FIJA</span><span class="font-medium">-${formatEuro(balUsed)}</span></div>` : '';
     document.getElementById('pay-summary').innerHTML = state.cart.map(c => `<div class="flex justify-between"><span class="text-gray-700 truncate pr-3">${escapeHtml(c.product.title)} × ${c.quantity}</span><span class="font-medium">${formatEuro(effectivePrice(c.product) * c.quantity)}</span></div>`).join('')
-        + couponRow + wrapRow
-        + `<div class="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold"><span>Total</span><span>${formatEuro(payTotal)}</span></div>`;
+        + couponRow + wrapRow + balRow
+        + `<div class="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold"><span>Total</span><span>${formatEuro(payFinal)}</span></div>`;
     const first = state.cart[0].product;
     const addr = pickupAddressFor(first) || 'Punto central FIJA, Madrid';
     document.getElementById('pay-address').textContent = addr;
@@ -10606,7 +10682,7 @@ function renderPaymentPageUI() {
     if (mapEl) mapEl.src = `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&output=embed&z=16`;
     const link = document.getElementById('pay-map-link');
     if (link) link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
-    document.getElementById('pay-total').textContent = formatEuro(payTotal);
+    document.getElementById('pay-total').textContent = formatEuro(payFinal);
     document.getElementById('pay-methods').innerHTML = PAYMENT_METHODS.map(m =>
         `<button type="button" data-method="${m.id}" onclick="selectPayment('${m.id}')" class="border rounded-lg p-3 flex items-center justify-center transition-all ${state.payMethod === m.id ? 'border-fija-900 bg-fija-50 ring-2 ring-fija-900/20' : 'border-gray-300 hover:border-fija-900'}">${m.html}</button>`).join('');
 }
@@ -11850,6 +11926,369 @@ window.nxScrollCatalog = () => { const e = document.getElementById('storefront-g
 window.nxSharePage = () => { try { const u = location.href; if (navigator.share) navigator.share({title:document.title,url:u}); else if (navigator.clipboard) { safeClip(u); showToast && showToast('Enlace copiado'); } else showToast && showToast(u); } catch(e){ showToast && showToast('No se pudo compartir'); } };
 window.__LOTE9_OK = true;
 /* <<<FIJA_LOTE9_END>>> */
+
+
+        /* ===================== FIJA: TARJETAS REGALO, SALDO Y RULETA ===================== */
+        const GC_MIN = 10, GC_MAX = 300;
+        const GCF = { amount: 25, mode: 'self', toName: '', toEmail: '', msg: '', amountTxt: '25' };
+
+        function gcEnabled() { const s = storeSettings() || {}; return s.giftCardsEnabled !== false; }
+        function rouletteEnabled() { const s = storeSettings() || {}; return s.rouletteEnabled !== false; }
+        function myBalance() { return Math.max(0, Number((state.profile || {}).balance || 0)); }
+        function paintBalance() {
+            const v = formatEuro(myBalance());
+            ['ud-balance', 'ud-balance-big', 'gc-balance-now'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = v; });
+        }
+        function setBalanceLocal(v) { if (state.profile) state.profile.balance = +Math.max(0, v).toFixed(2); paintBalance(); }
+        async function creditBalance(amount) {
+            const val = +Number(amount || 0).toFixed(2);
+            if (!state.profile || !(val > 0)) return;
+            await mutateCollection('profiles', arr => {
+                const p = arr.find(x => x.userId === state.profile.userId);
+                if (p) p.balance = +(Math.max(0, Number(p.balance) || 0) + val).toFixed(2);
+            });
+            setBalanceLocal(myBalance() + val);
+        }
+        function gcCode() {
+            const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            const g = n => Array.from({ length: n }, () => A[Math.floor(Math.random() * A.length)]).join('');
+            return 'FIJA-' + g(4) + '-' + g(4) + '-' + g(4);
+        }
+        function gcCardHtml(o) {
+            const amt = formatEuro(Number(o.amount) || 0);
+            const to = o.toName ? escapeHtml(o.toName) : 'Para ti';
+            const code = escapeHtml(o.code || 'FIJA-••••-••••-••••');
+            return `<div style="position:relative;overflow:hidden;border-radius:20px;padding:22px 22px 18px;color:#fff;background:linear-gradient(135deg,#0f1b3d 0%,#1b2e5a 55%,#7c6212 100%);box-shadow:0 14px 34px rgba(15,27,61,.28)">
+                <div style="position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:50%;background:rgba(201,162,39,.22)"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;position:relative">
+                    <span style="font-weight:800;letter-spacing:.22em;font-size:15px">FIJA</span>
+                    <span style="font-size:10px;letter-spacing:.16em;opacity:.75">TARJETA REGALO</span>
+                </div>
+                <div style="font-size:38px;font-weight:800;letter-spacing:-.02em;margin:20px 0 2px;position:relative">${amt}</div>
+                <div style="font-size:12px;opacity:.8;position:relative">${to}</div>
+                <div style="margin-top:16px;display:inline-block;font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);padding:7px 11px;border-radius:9px;position:relative">${code}</div>
+            </div>`;
+        }
+        window.openGiftCards = (view) => {
+            if (!gcEnabled()) { showToast('Las tarjetas regalo están desactivadas', true); return; }
+            if (!state.session || !state.profile) { showToast('Inicia sesión para usar tarjetas regalo', true); openAuthModal(); return; }
+            gcRender(view === 'redeem' ? 'redeem' : 'buy');
+        };
+        function gcRender(view, extra) {
+            GCF.view = view;
+            const bal = formatEuro(myBalance());
+            const amtChips = [15, 25, 50, 100].map(v => `<button type="button" onclick="gcSetAmount(${v})" style="border:1.5px solid ${GCF.amount === v ? '#0f1b3d' : '#e5e7eb'};background:${GCF.amount === v ? '#0f1b3d' : '#fff'};color:${GCF.amount === v ? '#fff' : '#111827'};border-radius:12px;padding:10px 0;font-weight:700;font-size:14px">${v} €</button>`).join('');
+            const head = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:10px 14px;margin-bottom:16px">
+                <span style="font-size:12px;color:#047857"><i class="fa-solid fa-wallet" style="margin-right:6px"></i>Tu saldo FIJA</span>
+                <b style="color:#047857;font-size:15px" id="gc-balance-now">${bal}</b></div>`;
+            let body = '';
+            if (view === 'redeem') {
+                body = `<p style="font-size:13px;color:#6b7280;margin:0 0 10px">Escribe el código de tu tarjeta regalo y el importe se sumará a tu saldo al instante.</p>
+                <input id="gc-redeem-code" placeholder="FIJA-XXXX-XXXX-XXXX" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid #d1d5db;border-radius:12px;font-family:ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;font-size:14px;text-align:center">
+                <button type="button" onclick="gcRedeem()" style="margin-top:12px;width:100%;background:#0f1b3d;color:#fff;font-weight:700;padding:12px;border-radius:12px;border:0">Canjear en mi saldo</button>
+                <button type="button" onclick="gcRender('buy')" style="margin-top:10px;width:100%;background:#fff;border:1px solid #e5e7eb;color:#374151;padding:10px;border-radius:12px">Comprar una tarjeta</button>`;
+            } else {
+                const selfOn = GCF.mode === 'self', friendOn = GCF.mode === 'friend';
+                body = `${head}
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">${amtChips}</div>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+                    <span style="font-size:12px;color:#6b7280;white-space:nowrap">Otro importe</span>
+                    <input id="gc-amount" type="number" min="${GC_MIN}" max="${GC_MAX}" value="${GCF.amount}" oninput="gcAmountInput(this.value)" style="flex:1;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                    <button type="button" onclick="gcMode('self')" style="display:block;width:100%;text-align:left;border:1.5px solid ${selfOn ? '#0f1b3d' : '#e5e7eb'};background:${selfOn ? '#f8fafc' : '#fff'};border-radius:14px;padding:12px">
+                        <div style="height:18px;line-height:18px;color:#0f1b3d;font-size:14px"><i class="fa-solid fa-user"></i></div>
+                        <div style="font-weight:700;font-size:13px;color:#0f1b3d;margin-top:8px">Para mí</div>
+                        <div style="font-size:11px;color:#6b7280;line-height:1.35;margin-top:2px">Se suma a tu saldo al momento</div>
+                    </button>
+                    <button type="button" onclick="gcMode('friend')" style="display:block;width:100%;text-align:left;border:1.5px solid ${friendOn ? '#0f1b3d' : '#e5e7eb'};background:${friendOn ? '#f8fafc' : '#fff'};border-radius:14px;padding:12px">
+                        <div style="height:18px;line-height:18px;color:#0f1b3d;font-size:14px"><i class="fa-solid fa-paper-plane"></i></div>
+                        <div style="font-weight:700;font-size:13px;color:#0f1b3d;margin-top:8px">Para un amigo</div>
+                        <div style="font-size:11px;color:#6b7280;line-height:1.35;margin-top:2px">Se envía por correo automático</div>
+                    </button>
+                </div>
+                ${friendOn ? `<div style="border:1px dashed #e5e7eb;border-radius:14px;padding:12px;margin-bottom:14px">
+                    <label style="font-size:11px;color:#6b7280;font-weight:600">Nombre de quien lo recibe</label>
+                    <input id="gc-to-name" value="${escapeHtml(GCF.toName)}" oninput="gcField('toName',this.value)" placeholder="María" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;margin:4px 0 10px">
+                    <label style="font-size:11px;color:#6b7280;font-weight:600">Su correo (le llega la tarjeta)</label>
+                    <input id="gc-to-email" type="email" value="${escapeHtml(GCF.toEmail)}" oninput="gcField('toEmail',this.value)" placeholder="maria@correo.com" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;margin:4px 0 10px">
+                    <label style="font-size:11px;color:#6b7280;font-weight:600">Mensaje (opcional)</label>
+                    <textarea id="gc-msg" rows="2" oninput="gcField('msg',this.value)" placeholder="¡Felicidades! Elige lo que más te guste." style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:10px;font-size:14px;margin-top:4px">${escapeHtml(GCF.msg)}</textarea>
+                </div>` : ''}
+                <div style="margin-bottom:14px">${gcCardHtml({ amount: GCF.amount, code: '', toName: friendOn ? (GCF.toName || 'Para un amigo') : 'Para ti' })}</div>
+                <button type="button" onclick="gcBuy()" style="width:100%;background:#c9a227;color:#0f1b3d;font-weight:800;padding:13px;border-radius:12px;border:0">Pagar ${formatEuro(Number(GCF.amount) || 0)}</button>
+                <div style="display:flex;justify-content:space-between;margin-top:10px">
+                    <button type="button" onclick="gcRender('redeem')" style="background:none;border:0;color:#0f1b3d;font-size:12px;text-decoration:underline">Tengo un código para canjear</button>
+                    <span style="font-size:11px;color:#9ca3af">Pago simulado (demo)</span>
+                </div>`;
+            }
+            showGenericModal('Tarjetas regalo FIJA', `<div style="font-size:14px">${body}</div>`);
+            if (extra) { const box = document.getElementById('generic-modal'); if (box) box.scrollTop = 0; }
+        }
+        window.gcSetAmount = (v) => { GCF.amount = Math.max(GC_MIN, Math.min(GC_MAX, Number(v) || GC_MIN)); GCF.amountTxt = String(GCF.amount); gcRender('buy'); };
+        window.gcAmountInput = (v) => { GCF.amount = Math.max(GC_MIN, Math.min(GC_MAX, Number(v) || GC_MIN)); };
+        window.gcMode = (m) => { GCF.mode = m; gcRender('buy'); };
+        window.gcField = (k, v) => { GCF[k] = v; };
+        let _gcBusy = false;
+        window.gcBuy = async () => {
+            if (_gcBusy) return;
+            const amount = Math.max(GC_MIN, Math.min(GC_MAX, Number(GCF.amount) || 0));
+            const friend = GCF.mode === 'friend';
+            if (friend) {
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((GCF.toEmail || '').trim())) { showToast('Escribe un correo válido del destinatario', true); return; }
+                if (!(GCF.toName || '').trim()) { showToast('Escribe el nombre de quien lo recibe', true); return; }
+            }
+            if (!state.profile) return;
+            const code = gcCode();
+            const now = Date.now();
+            const card = {
+                id: uid(), code: code, amount: amount, initial: amount,
+                buyerUid: state.profile.userId, buyerName: state.profile.username || '', buyerEmail: state.profile.email || '',
+                recipientEmail: friend ? (GCF.toEmail || '').trim().toLowerCase() : (state.profile.email || ''),
+                recipientName: friend ? (GCF.toName || '').trim() : (state.profile.username || ''),
+                message: friend ? (GCF.msg || '').trim() : '',
+                forFriend: friend, createdAt: now,
+                status: friend ? 'sent' : 'used', redeemedAt: friend ? null : now,
+                redeemedBy: friend ? null : state.profile.userId
+            };
+            const order = {
+                id: uid(), type: 'giftcard',
+                items: [{ productId: 'giftcard', title: 'Tarjeta regalo FIJA · ' + formatEuro(amount), price: amount, basePrice: amount, discountPercent: 0, quantity: 1,
+                    imageUrl: 'https://placehold.co/100x100/0f1b3d/c9a227?text=FIJA', sellerId: 'fija', sellerName: 'FIJA',
+                    paid: amount, gross: amount, commission: 0, sellerNet: amount, discount: 0 }],
+                total: amount, commissionRate: 0, commissionTotal: 0, netTotal: amount, discountTotal: 0,
+                couponCode: null, couponPercent: 0, couponDiscount: 0, giftWrapFee: 0, balanceUsed: 0,
+                pickupCode: null, method: 'Tarjeta',
+                gift: { code: code, forFriend: friend, to: card.recipientName, email: card.recipientEmail, message: card.message },
+                buyerUid: state.profile.userId, buyerName: state.profile.username, buyerEmail: state.profile.email,
+                status: 'completed', createdAt: now
+            };
+            _gcBusy = true;
+            try {
+                await mutateCollection('giftcards', arr => arr.push(card));
+                await mutateCollection('orders', arr => arr.push(order));
+                state.orders = (state.orders || []).concat([order]);
+                if (!friend) await creditBalance(amount);
+                const mail = friend ? await gcSendEmail(card).catch(() => ({ status: 'error' })) : { status: 'saldo' };
+                gcScreen(card, mail);
+            } catch (e) {
+                console.error(e);
+                showToast('No se pudo crear la tarjeta. Inténtalo otra vez.', true);
+            } finally { _gcBusy = false; }
+        };
+        function gcScreen(card, mail) {
+            const ok = card.forFriend ? (mail && mail.status === 'enviado') : true;
+            const pend = mail && mail.status === 'pendiente';
+            const head = card.forFriend
+                ? (ok ? `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px"><i class="fa-solid fa-paper-plane"></i> Enviada a <b>${escapeHtml(card.recipientEmail)}</b>. Le llegará en unos segundos.</div>`
+                      : pend ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px"><i class="fa-solid fa-circle-info"></i> Tarjeta creada. El envío automático no está configurado (Ajustes → EmailJS): copia el código y envíaselo tú.</div>`
+                      : `<div style="background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px"><i class="fa-solid fa-triangle-exclamation"></i> Tarjeta creada, pero el correo no ha salido. Copia el código y envíaselo tú.</div>`)
+                : `<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:12px;padding:12px;font-size:13px;margin-bottom:14px"><i class="fa-solid fa-circle-check"></i> Ya está en tu saldo: puedes usarla al pagar.</div>`;
+            const html = `<div style="font-size:14px">${head}
+                ${gcCardHtml({ amount: card.amount, code: card.code, toName: card.recipientName || 'Para ti' })}
+                <div style="display:flex;gap:8px;margin-top:14px">
+                    <button type="button" onclick="gcCopy('${card.code}')" style="flex:1;border:1px solid #e5e7eb;background:#fff;border-radius:12px;padding:11px;font-weight:600"><i class="fa-regular fa-copy" style="margin-right:6px"></i>Copiar código</button>
+                    <button type="button" onclick="exitPageTo('user-dashboard'); setTimeout(function(){ switchUserTab('orders'); }, 80)" style="flex:1;background:#0f1b3d;color:#fff;border:0;border-radius:12px;padding:11px;font-weight:600">Ver en mis pedidos</button>
+                </div>
+                <p style="font-size:11px;color:#9ca3af;margin:12px 0 0">Guardada en tus pedidos y en el panel del administrador.</p></div>`;
+            showGenericModal('¡Tarjeta regalo lista!', html);
+        }
+        window.gcCopy = (code) => {
+            try { navigator.clipboard.writeText(code); } catch (e) {}
+            showToast('Código copiado: ' + code);
+        };
+        async function gcSendEmail(card) {
+            const s = storeSettings() || {};
+            const store = s.storeName || 'FIJA';
+            const who = card.buyerName || 'Alguien';
+            const subject = who + ' te ha regalado una tarjeta ' + store;
+            const html = `<!doctype html><html><body style="margin:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:24px 12px">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
+                <tr><td style="background:#0f1b3d;padding:18px 24px;color:#fff;font-weight:800;letter-spacing:.2em">FIJA</td></tr>
+                <tr><td style="padding:24px">
+                    <h1 style="margin:0 0 6px;font-size:20px;color:#0f1b3d">¡Tienes una tarjeta regalo!</h1>
+                    <p style="margin:0 0 16px;color:#6b7280;font-size:14px"><b>${escapeHtml(who)}</b> te regala <b>${formatEuro(card.amount)}</b> para gastar en ${escapeHtml(store)}.</p>
+                    ${card.message ? `<p style="margin:0 0 16px;padding:12px;background:#f9fafb;border-left:3px solid #c9a227;color:#374151;font-size:14px;font-style:italic">“${escapeHtml(card.message)}”</p>` : ''}
+                    <div style="background:linear-gradient(135deg,#0f1b3d,#1b2e5a 55%,#7c6212);border-radius:16px;padding:20px;color:#fff;text-align:center">
+                        <div style="font-size:11px;letter-spacing:.16em;opacity:.8">TARJETA REGALO</div>
+                        <div style="font-size:32px;font-weight:800;margin:8px 0 12px">${formatEuro(card.amount)}</div>
+                        <div style="font-family:ui-monospace,monospace;letter-spacing:.14em;background:rgba(255,255,255,.16);display:inline-block;padding:8px 12px;border-radius:9px">${escapeHtml(card.code)}</div>
+                    </div>
+                    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Canjéala en Mi Cuenta → Tarjetas y saldo (o al pagar, con «Tengo un código»). No caduca.</p>
+                    <div style="text-align:center;margin-top:18px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#c9a227;color:#0f1b3d;text-decoration:none;font-weight:800;padding:12px 24px;border-radius:10px">Ir a la tienda</a></div>
+                </td></tr></table></body></html>`;
+            const text = `${who} te regala ${formatEuro(card.amount)} en ${store}. Código: ${card.code}. ${card.message || ''}`;
+            return deliverEmail(card.recipientEmail, subject, html, text, { kind: 'order' });
+        }
+        window.gcRedeem = async () => {
+            const inp = document.getElementById('gc-redeem-code');
+            const code = ((inp && inp.value) || '').trim().toUpperCase();
+            if (!code) { showToast('Escribe el código', true); return; }
+            try {
+                const res = await readDataFile('giftcards');
+                const all = Array.isArray(res.data) ? res.data : [];
+                const card = all.find(c => String(c.code || '').toUpperCase() === code);
+                if (!card) { showToast('Ese código no existe', true); return; }
+                if (card.status !== 'active') { showToast('Ese código ya se ha canjeado', true); return; }
+                const myMail = (state.profile.email || '').toLowerCase();
+                if (card.recipientEmail && card.recipientEmail.toLowerCase() !== myMail) { showToast('Esta tarjeta es para ' + card.recipientEmail, true); return; }
+                await mutateCollection('giftcards', arr => {
+                    const c = arr.find(x => String(x.code || '').toUpperCase() === code);
+                    if (c) { c.status = 'used'; c.redeemedAt = Date.now(); c.redeemedBy = state.profile.userId; }
+                });
+                await creditBalance(card.amount);
+                showToast('¡' + formatEuro(card.amount) + ' añadidos a tu saldo!');
+                gcRender('buy');
+                renderMyGiftCards();
+            } catch (e) { console.error(e); showToast('No se pudo canjear el código', true); }
+        };
+        window.openGiftCardByOrder = (orderId) => {
+            const o = (state.orders || []).find(x => x.id === orderId);
+            if (!o || !o.gift) { showToast('Esta compra no tiene tarjeta', true); return; }
+            gcScreen({ amount: o.total, code: o.gift.code, recipientName: o.gift.to, recipientEmail: o.gift.email, forFriend: o.gift.forFriend }, { status: o.gift.forFriend ? 'enviado' : 'saldo' });
+        };
+        window.renderMyGiftCards = async () => {
+            paintBalance();
+            const wrap = document.getElementById('user-giftcards-list');
+            if (!wrap) return;
+            wrap.innerHTML = '<div style="color:#9ca3af;font-size:13px;padding:8px 0">Cargando tarjetas…</div>';
+            try {
+                const res = await readDataFile('giftcards');
+                const all = (Array.isArray(res.data) ? res.data : []).filter(c => state.profile && (c.buyerUid === state.profile.userId || (c.recipientEmail || '') === (state.profile.email || '').toLowerCase()));
+                all.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                if (!all.length) { wrap.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:26px 0"><i class="fa-solid fa-gift" style="font-size:26px;display:block;margin-bottom:10px"></i>Todavía no tienes tarjetas regalo.</div>'; return; }
+                wrap.innerHTML = all.map(c => {
+                    const used = c.status !== 'active';
+                    const st = used ? '<span style="font-size:11px;background:#f3f4f6;color:#6b7280;border-radius:999px;padding:3px 9px">Canjeada</span>' : '<span style="font-size:11px;background:#ecfdf5;color:#047857;border-radius:999px;padding:3px 9px">Disponible</span>';
+                    const dest = c.forFriend ? 'Para ' + escapeHtml(c.recipientName || c.recipientEmail || '') : 'Para mí';
+                    return `<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                        <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#0f1b3d;color:#c9a227"><i class="fa-solid fa-gift"></i></div>
+                        <div style="flex:1;min-width:150px"><div style="font-weight:700;color:#0f1b3d">${formatEuro(c.amount)} · ${dest}</div>
+                        <div style="font-size:12px;color:#6b7280;font-family:ui-monospace,monospace">${escapeHtml(c.code)}</div></div>
+                        <div style="display:flex;align-items:center;gap:8px">${st}
+                        <button type="button" onclick="gcCopy('${escapeHtml(c.code)}')" style="border:1px solid #e5e7eb;background:#fff;border-radius:9px;padding:6px 10px;font-size:12px"><i class="fa-regular fa-copy"></i></button></div>
+                    </div>`;
+                }).join('');
+            } catch (e) { wrap.innerHTML = '<p style="color:#9ca3af;font-size:13px">No se pudieron cargar tus tarjetas.</p>'; }
+        };
+
+        /* ---------------- RULETA ---------------- */
+        const ROULETTE = [
+            { k: 'saldo', v: 2, w: 20, label: '2 €', color: '#0f1b3d' },
+            { k: 'saldo', v: 5, w: 16, label: '5 €', color: '#c9a227' },
+            { k: 'pct', v: 5, w: 15, label: '5% dto', color: '#1b2e5a' },
+            { k: 'spin', v: 1, w: 12, label: 'Otro giro', color: '#0f1b3d' },
+            { k: 'saldo', v: 10, w: 8, label: '10 €', color: '#c9a227' },
+            { k: 'none', v: 0, w: 14, label: 'Casi…', color: '#1b2e5a' },
+            { k: 'pct', v: 10, w: 7, label: '10% dto', color: '#c9a227' },
+            { k: 'saldo', v: 20, w: 3, label: '20 €', color: '#0f1b3d' }
+        ];
+        function rouletteWheel(size) {
+            const n = ROULETTE.length, seg = 360 / n;
+            const stops = ROULETTE.map((p, i) => `${p.color} ${i * seg}deg ${(i + 1) * seg}deg`).join(', ');
+            const labels = ROULETTE.map((p, i) => {
+                const ang = i * seg + seg / 2;
+                const col = p.color === '#c9a227' ? '#0f1b3d' : '#ffffff';
+                return `<div style="position:absolute;left:50%;top:50%;transform:rotate(${ang}deg) translateY(-${size * 0.32}px) rotate(${-ang}deg);transform-origin:0 0;margin-left:-28px;margin-top:-8px;width:56px;text-align:center;font-size:11px;font-weight:800;color:${col};letter-spacing:.02em">${p.label}</div>`;
+            }).join('');
+            return `<div style="position:relative;width:${size}px;height:${size}px;margin:0 auto">
+                <div id="roulette-wheel" style="position:absolute;inset:0;border-radius:50%;background:conic-gradient(${stops});box-shadow:0 0 0 8px #fff,0 0 0 11px #c9a227,0 12px 30px rgba(15,27,61,.25);transition:transform 4.2s cubic-bezier(.16,.9,.16,1);will-change:transform">
+                    ${labels}
+                    <div style="position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:#fff;border:3px solid #c9a227;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;color:#0f1b3d;letter-spacing:.04em">FIJA</div>
+                </div>
+                <div style="position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:18px solid #ef4444;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))"></div>
+            </div>`;
+        }
+        function rouletteState() {
+            const r = (state.profile || {}).roulette || {};
+            const today = new Date().toDateString();
+            const last = r.last ? new Date(r.last).toDateString() : '';
+            const extra = Number(r.extra || 0);
+            return { fresh: last !== today, extra: extra, can: (last !== today) || extra > 0, last: r.last || 0 };
+        }
+        function roulettePanelHtml() {
+            const st = rouletteState();
+            const status = st.can
+                ? (st.fresh ? '<b style="color:#047857">Tienes 1 tirada gratis hoy</b>' : '<b style="color:#047857">Tienes ' + st.extra + ' giro(s) extra</b>')
+                : '<b style="color:#92400e">Ya has tirado hoy.</b> Vuelve mañana para otra tirada gratis.';
+            const pend = Number((state.profile || {}).pendingDiscountPct || 0);
+            return `<div style="text-align:center">
+                ${rouletteWheel(260)}
+                <div style="margin-top:18px;font-size:13px;color:#374151">${status}</div>
+                ${pend > 0 ? `<div style="margin-top:6px;font-size:12px;color:#047857"><i class="fa-solid fa-percent"></i> Tienes un <b>${pend}%</b> de descuento para tu próxima compra (se aplica solo en el pago).</div>` : ''}
+                <button type="button" id="roulette-btn" onclick="rouletteSpin()" ${st.can ? '' : 'disabled'} style="margin-top:14px;width:100%;max-width:260px;background:${st.can ? '#c9a227' : '#e5e7eb'};color:${st.can ? '#0f1b3d' : '#9ca3af'};font-weight:800;padding:13px;border-radius:12px;border:0">${st.can ? 'Girar la ruleta' : 'Vuelve mañana'}</button>
+                ${(_lastPrize && Date.now() - _lastPrize.at < 120000) ? `<div style="margin-top:12px;font-size:14px;font-weight:600;color:#0f1b3d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px">${_lastPrize.msg}</div>` : `<div id="roulette-result" style="margin-top:12px;font-size:14px;min-height:22px;font-weight:600;color:#0f1b3d"></div>`}
+                <p style="margin-top:14px;font-size:11px;color:#9ca3af">Premios: saldo FIJA de 2 a 20 €, descuentos del 5% y 10% para tu próxima compra y giros extra. Una tirada gratis al día.</p>
+            </div>`;
+        }
+        window.openRoulette = () => {
+            if (!rouletteEnabled()) { showToast('La ruleta está desactivada', true); return; }
+            if (!state.session || !state.profile) { showToast('Inicia sesión para jugar', true); openAuthModal(); return; }
+            showGenericModal('Ruleta de premios', `<div style="font-size:14px">${roulettePanelHtml()}</div>`);
+        };
+        window.renderRoulettePanel = () => {
+            const el = document.getElementById('user-roulette-panel');
+            if (!el) return;
+            el.innerHTML = roulettePanelHtml();
+        };
+        let _rouletteBusy = false;
+        let _lastPrize = null;
+        window.rouletteSpin = async () => {
+            if (_rouletteBusy) return;
+            const st = rouletteState();
+            if (!st.can) { showToast('Ya has tirado hoy. Vuelve mañana.', true); return; }
+            _rouletteBusy = true;
+            const wheel = document.getElementById('roulette-wheel');
+            const btn = document.getElementById('roulette-btn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '.7'; }
+            // sorteo ponderado
+            const totalW = ROULETTE.reduce((s, p) => s + p.w, 0);
+            let r = Math.random() * totalW, idx = 0;
+            for (let i = 0; i < ROULETTE.length; i++) { r -= ROULETTE[i].w; if (r <= 0) { idx = i; break; } }
+            const seg = 360 / ROULETTE.length;
+            const center = idx * seg + seg / 2;
+            const turns = 5 + Math.floor(Math.random() * 2);
+            const target = turns * 360 + (360 - center);
+            if (wheel) { wheel.style.transform = 'rotate(' + target + 'deg)'; }
+            await new Promise(res => setTimeout(res, 4400));
+            const prize = ROULETTE[idx];
+            const today = new Date().toDateString();
+            const isFresh = st.fresh;
+            const extraLeft = isFresh ? st.extra : st.extra - 1;
+            // aplicar premio + estado de la tirada
+            try {
+                await mutateCollection('profiles', arr => {
+                    const p = arr.find(x => x.userId === state.profile.userId);
+                    if (!p) return;
+                    p.roulette = { last: Date.now(), extra: Math.max(0, prize.k === 'spin' ? extraLeft + 1 : extraLeft) };
+                    if (prize.k === 'saldo') p.balance = +(Math.max(0, Number(p.balance) || 0) + prize.v).toFixed(2);
+                    if (prize.k === 'pct') p.pendingDiscountPct = Math.max(Number(p.pendingDiscountPct) || 0, prize.v);
+                });
+                if (prize.k === 'saldo') setBalanceLocal(myBalance() + prize.v);
+                if (prize.k === 'pct') state.profile.pendingDiscountPct = Math.max(Number(state.profile.pendingDiscountPct) || 0, prize.v);
+                state.profile.roulette = { last: Date.now(), extra: Math.max(0, prize.k === 'spin' ? extraLeft + 1 : extraLeft) };
+            } catch (e) { console.warn('ruleta', e); }
+            const res = document.getElementById('roulette-result');
+            const msg = prize.k === 'saldo' ? `<i class="fa-solid fa-coins" style="color:#047857"></i> ¡Has ganado <b>${formatEuro(prize.v)}</b> de saldo!`
+                : prize.k === 'pct' ? `<i class="fa-solid fa-percent" style="color:#047857"></i> ¡<b>${prize.v}%</b> de descuento en tu próxima compra!`
+                : prize.k === 'spin' ? `<i class="fa-solid fa-rotate" style="color:#047857"></i> ¡Tienes <b>otro giro</b>!`
+                : `<i class="fa-solid fa-face-smile" style="color:#92400e"></i> Casi… esta vez no hay premio. Mañana tienes otra tirada.`;
+            if (res) res.innerHTML = msg;
+            _lastPrize = { msg: msg, at: Date.now() };
+            setTimeout(() => { try { openRoulette(); } catch (e) {} }, 900);
+            if (typeof showToast === 'function') showToast(prize.k === 'none' ? 'Esta vez no hay premio' : '¡Premio conseguido!');
+            const btn2 = document.getElementById('roulette-btn');
+            const st2 = rouletteState();
+            if (btn2) {
+                btn2.disabled = !st2.can;
+                btn2.textContent = st2.can ? 'Girar otra vez' : 'Vuelve mañana';
+                btn2.style.background = st2.can ? '#c9a227' : '#e5e7eb';
+                btn2.style.color = st2.can ? '#0f1b3d' : '#9ca3af';
+                btn2.style.opacity = '1';
+            }
+            _rouletteBusy = false;
+            renderRoulettePanel();
+        };
 
 
 </script>
