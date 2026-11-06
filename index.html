@@ -7624,31 +7624,68 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         // `pct` = descuento real aplicado en la cesta · `mult` = multiplicador de puntos
         // `spins` = tiradas extra de ruleta al día · `wrapFree` = embalaje regalo gratis.
         const FIJA_LEVELS = [
-            { min: 0, key: 'bronce', name: 'Bronce', icon: 'fa-medal', c1: '#8a5a2b', c2: '#dfa96a', edge: '#6b4423', relief: 0.06,
+            { min: 0, key: 'bronce', name: 'Bronce', icon: 'fa-medal', c1: '#8a5a2b', c2: '#dfa96a', edge: '#6b4423', relief: 0.06, wings: 0,
                 pct: 0, mult: 1, spins: 0, wrapFree: false,
                 perks: ['1 punto por cada 10 € (+2 por pedido)', 'Ofertas del día y cupones abiertos'] },
-            { min: 120, key: 'plata', name: 'Plata', icon: 'fa-shield-halved', c1: '#66727f', c2: '#d3dce6', edge: '#8b98a6', relief: 0.24,
+            { min: 120, key: 'plata', name: 'Plata', icon: 'fa-shield-halved', c1: '#66727f', c2: '#d3dce6', edge: '#8b98a6', relief: 0.24, wings: 0,
                 pct: 2, mult: 1.1, spins: 1, wrapFree: false,
                 perks: ['-2% en todas tus compras (automático)', '+10% de puntos en cada pedido', '+1 tirada de ruleta al día'] },
-            { min: 380, key: 'oro', name: 'Oro', icon: 'fa-crown', c1: '#a97a08', c2: '#f7dd8a', edge: '#87600a', relief: 0.42,
+            { min: 380, key: 'oro', name: 'Oro', icon: 'fa-crown', c1: '#a97a08', c2: '#f7dd8a', edge: '#87600a', relief: 0.42, wings: 0,
                 pct: 4, mult: 1.25, spins: 1, wrapFree: false,
                 perks: ['-4% en todas tus compras (automático)', '+25% de puntos en cada pedido', '+1 tirada de ruleta al día', 'Soporte prioritario en incidencias'] },
-            { min: 900, key: 'platino', name: 'Platino', icon: 'fa-award', c1: '#2f5d8a', c2: '#bedcf3', edge: '#48779f', relief: 0.58,
+            { min: 900, key: 'platino', name: 'Platino', icon: 'fa-award', c1: '#2f5d8a', c2: '#bedcf3', edge: '#48779f', relief: 0.58, wings: 0,
                 pct: 6, mult: 1.4, spins: 2, wrapFree: true,
                 perks: ['-6% en todas tus compras (automático)', '+40% de puntos en cada pedido', 'Embalaje regalo gratis', '+2 tiradas de ruleta al día'] },
-            { min: 1700, key: 'diamante', name: 'Diamante', icon: 'fa-gem', c1: '#12698a', c2: '#a3ecff', edge: '#0e5a73', relief: 0.72,
+            { min: 1700, key: 'diamante', name: 'Diamante', icon: 'fa-gem', c1: '#12698a', c2: '#a3ecff', edge: '#0e5a73', relief: 0.72, wings: 0.62,
                 pct: 8, mult: 1.6, spins: 2, wrapFree: true,
                 perks: ['-8% en todas tus compras (automático)', '+60% de puntos en cada pedido', 'Embalaje regalo gratis', '+2 tiradas de ruleta al día', 'Atención preferente en tienda'] },
-            { min: 3000, key: 'elite', name: 'Élite', icon: 'fa-bolt', c1: '#4c1d95', c2: '#b9a4fb', edge: '#3b1573', relief: 0.86,
+            { min: 3000, key: 'elite', name: 'Élite', icon: 'fa-bolt', c1: '#4c1d95', c2: '#b9a4fb', edge: '#3b1573', relief: 0.86, wings: 0.84,
                 pct: 10, mult: 1.8, spins: 3, wrapFree: true,
                 perks: ['-10% en todas tus compras (automático)', '+80% de puntos en cada pedido', 'Embalaje regalo gratis', '+3 tiradas de ruleta al día', 'Acceso al outlet privado FIJA'] },
-            { min: 5000, key: 'master', name: 'Master', icon: 'fa-trophy', c1: '#0f1b3d', c2: '#e9c85a', edge: '#c9a227', relief: 1,
+            { min: 5000, key: 'master', name: 'Master', icon: 'fa-trophy', c1: '#0f1b3d', c2: '#e9c85a', edge: '#c9a227', relief: 1, wings: 1,
                 pct: 15, mult: 2, spins: 3, wrapFree: true,
                 perks: ['-15% en todas tus compras (automático)', 'El doble de puntos (×2) en cada pedido', 'Embalaje regalo gratis', '+3 tiradas de ruleta al día', 'Concierge FIJA y escudo Master exclusivo'] }
         ];
         // Escudo SVG de cada nivel (mismo dibujo, materiales distintos).
         // El relieve crece con el nivel: grosor lateral, bisel interior, brillo
         // metálico, remaches y sombra proyectada son proporcionales a `relief`.
+        // Alas de gala: solo Diamante, Élite y Master. Se dibujan por detrás del
+        // escudo, con tres plumas superpuestas por lado (más una cuarta en Master).
+        function levelWingsSVG(lv, WG, uid, s0) {
+            // Ala heráldica clásica: el borde superior sube en arco y el inferior
+            // se abre en puntas de pluma. Nace dentro del escudo para no quedar suelta.
+            const k = 0.74 + 0.26 * Math.min(1, s0 / 92);       // alas algo más cortas en tamaños pequeños
+            const reach = (26 + WG * 26) * k;                   // cuánto se separa del escudo
+            const R0 = 20;                                       // raíz x
+            const topY = 10 + (1 - WG) * 6, botY = 66 + WG * 10;
+            const P = (u, v) => [R0 - u * reach, topY + v * (botY - topY)];
+            const pts = [P(0.60, 0.14), P(0.90, 0.36), P(0.70, 0.50), P(0.98, 0.62), P(0.76, 0.74), P(1.00, 0.86), P(0.64, 0.98)];
+            const f = q => `${q[0].toFixed(1)} ${q[1].toFixed(1)}`;
+            let edge = `L ${f(pts[0])}`;
+            for (let i = 1; i < pts.length; i++) edge += ` L ${f(pts[i])}`;
+            const root = P(0, 0.42), rootB = P(0, 1.0);
+            const outline = `M${f(root)}`
+                + ` C ${f(P(-0.10, 0.06))}, ${f(P(0.34, -0.02))}, ${f(pts[0])}`
+                + edge
+                + ` C ${f(P(0.30, 1.02))}, ${f(P(-0.12, 0.98))}, ${f(rootB)} Z`;
+            const ribs = [0.34, 0.52, 0.70].map((v, i) => `M${f(P(0.02, v + 0.06))} L ${f(P(0.82 - i * 0.05, v * 0.96))}`);
+            const one = `<path d="${outline}" fill="url(#${uid}w)" stroke="${lv.edge}" stroke-width="${(1.2 + WG * 0.9).toFixed(2)}" stroke-opacity="${(0.7 + WG * 0.3).toFixed(2)}" stroke-linejoin="round"/>`
+                + `<g clip-path="url(#${uid}wc)"><rect x="${(R0 - reach - 8).toFixed(1)}" y="${(topY - 8).toFixed(1)}" width="${(reach + 20).toFixed(1)}" height="${((botY - topY) * 0.62).toFixed(1)}" fill="url(#${uid}wh)"/></g>`
+                + ribs.map(q => `<path d="${q}" fill="none" stroke="${lv.edge}" stroke-opacity="${(0.28 + WG * 0.26).toFixed(2)}" stroke-width="${(0.8 + WG * 0.5).toFixed(1)}" stroke-linecap="round"/>`).join('');
+            const defs = `<linearGradient id="${uid}w" x1="0.96" y1="0.04" x2="0.06" y2="0.96">
+                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="38%" stop-color="${lv.c2}"/>
+                            <stop offset="62%" stop-color="${lv.edge}"/><stop offset="80%" stop-color="${lv.c2}"/><stop offset="100%" stop-color="${lv.edge}"/>
+                        </linearGradient>
+                        <linearGradient id="${uid}wh" x1="0.1" y1="0" x2="0.2" y2="1">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="${(0.42 + WG * 0.26).toFixed(2)}"/>
+                            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+                        </linearGradient>
+                        <clipPath id="${uid}wc"><path d="${outline}"/></clipPath>`;
+            // Sombra propia del ala: da profundidad y hace el conjunto más rico.
+            const back = WG >= 0.8 ? `<g transform="translate(-3.5 5)"><path d="${outline}" fill="${lv.edge}" fill-opacity=".55"/></g>` : '';
+            const body = `<g>${back}${one}</g><g transform="translate(100 0) scale(-1 1)"><g>${back}${one}</g></g>`;
+            return { defs, body };
+        }
         function levelShieldHTML(lv, size, opts) {
             const o = opts || {};
             const s = Number(size) || 64;
@@ -7664,9 +7701,19 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             const shadow = `${(0.3 + R * 2.4).toFixed(1)}px ${(0.5 + R * 7).toFixed(1)}px ${(1 + R * 8).toFixed(1)}px rgba(15,27,61,${glowOp})`
                 + (R >= 0.55 ? `,0 0 ${Math.round(3 + R * 12)}px rgba(233,200,90,${(0.10 + R * 0.32).toFixed(2)})` : '');
             const iconShadow = `0 ${(1 + R * 2).toFixed(1)}px ${(2.5 + R * 4).toFixed(1)}px rgba(0,0,0,${(0.35 + R * 0.4).toFixed(2)})` + (R >= 0.8 ? `,0 0 ${Math.round(6 + R * 10)}px rgba(233,200,90,${(R * 0.55).toFixed(2)})` : '');
-            return `<span style="position:relative;display:inline-block;width:${s}px;height:${h}px;vertical-align:middle;line-height:0;filter:drop-shadow(${shadow});${o.dim ? 'opacity:.6;' : ''}">
-                <svg viewBox="0 0 100 114" width="${s}" height="${h}" style="display:block;overflow:visible" aria-hidden="true">
+            const WG = Math.max(0, Math.min(1, typeof lv.wings === 'number' ? lv.wings : 0));
+            const showWings = WG > 0 && s >= 80 && !o.noWings;
+            const wg = showWings ? levelWingsSVG(lv, WG, uid, s) : { defs: '', body: '' };
+            // Con alas el lienzo se ensancha a los lados; el margen negativo evita
+            // que el escudo "empuje" el layout de las tarjetas donde se usa.
+            const vw = showWings ? 168 : 100;
+            const vx = showWings ? -34 : 0;
+            const dispW = Math.round(s * vw / 100);
+            const mgn = +((dispW - s) / -2).toFixed(1);
+            return `<span style="position:relative;display:inline-block;width:${dispW}px;height:${h}px;margin:0 ${mgn}px;vertical-align:middle;line-height:0;filter:drop-shadow(${shadow});${o.dim ? 'opacity:.6;' : ''}">
+                <svg viewBox="${vx} 0 ${vw} 114" width="${dispW}" height="${h}" style="display:block;overflow:visible;position:relative;z-index:1" aria-hidden="true">
                     <defs>
+                        ${wg.defs}
                         <linearGradient id="${uid}a" x1="0.12" y1="0" x2="0.88" y2="1">
                             <stop offset="0%" stop-color="${lv.c2}"/><stop offset="26%" stop-color="${lv.c1}"/>
                             <stop offset="44%" stop-color="${lv.c1}"/><stop offset="52%" stop-color="${lv.c2}"/>
@@ -7700,6 +7747,7 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
                         </linearGradient>
                         <clipPath id="${uid}c"><path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z"/></clipPath>
                     </defs>
+                    ${wg.body}
                     ${R > 0.12 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="${lv.edge}" fill-opacity="${(0.45 + R * 0.5).toFixed(2)}"/>` : ''}
                     ${R >= 0.35 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(50 57) scale(${(1 + R * 0.075).toFixed(3)}) translate(-50 -57)" fill="${lv.edge}" fill-opacity="${(0.28 + R * 0.5).toFixed(2)}"/>` : ''}
                     ${R > 0.2 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="none" stroke="${lv.c2}" stroke-opacity="${(0.25 + R * 0.5).toFixed(2)}" stroke-width="${(0.9 + R * 1.2).toFixed(1)}" stroke-linejoin="round"/>` : ''}
@@ -7717,7 +7765,7 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
                     ${R >= 0.45 ? `<circle cx="22" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/><circle cx="78" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/>` : ''}
                     ${R >= 0.72 ? `<circle cx="50" cy="8.5" r="${(2 + R * 1.6).toFixed(1)}" fill="#fff" fill-opacity="${(0.6 + R * 0.35).toFixed(2)}" stroke="${lv.edge}" stroke-width=".7"/><circle cx="16" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/><circle cx="84" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/>` : ''}
                 </svg>
-                <i class="fa-solid ${lv.icon}" style="position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(s * 0.33)}px;text-shadow:${iconShadow}"></i>
+                <i class="fa-solid ${lv.icon}" style="position:absolute;left:0;top:0;right:0;bottom:0;z-index:2;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(s * 0.33)}px;text-shadow:${iconShadow}"></i>
                 ${o.rank ? `<span style="position:absolute;right:-7px;bottom:-5px;background:#0f1b3d;color:#fff;border:2px solid #fff;border-radius:999px;min-width:19px;height:19px;font-size:10px;font-weight:800;line-height:15px;text-align:center;padding:0 4px">${o.rank}</span>` : ''}
                 ${o.locked ? `<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(15,27,61,.72);color:#fff;border-radius:999px;width:${Math.round(s * 0.4)}px;height:${Math.round(s * 0.4)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s * 0.17)}px"><i class="fa-solid fa-lock"></i></span>` : ''}
             </span>`;
@@ -7774,13 +7822,13 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             const track = FIJA_LEVELS.map((l, i) => {
                 const cur = i === lv.index, on = i <= lv.index;
                 return `<div style="width:${cur ? 50 : 40}px;text-align:center;flex:0 0 auto">
-                    ${levelShieldHTML(l, cur ? 44 : 30, { dim: !on })}
+                    ${levelShieldHTML(l, cur ? 44 : 30, { dim: !on, noWings: true })}
                     <div style="font-size:8.5px;margin-top:3px;line-height:1.15;white-space:nowrap;color:${cur ? '#e9c85a' : on ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.32)'};font-weight:${cur ? 800 : 600}">${escapeHtml(l.name)}</div>
                 </div>`;
             }).join('');
             el.innerHTML = `<div class="bg-fija-900 text-white rounded-2xl p-6">
                 <div class="fija-lvl-card">
-                    <div style="flex:0 0 auto">${levelShieldHTML(lv, 92)}</div>
+                    <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:2px 42px">${levelShieldHTML(lv, 92)}</div>
                     <div class="fija-lvl-main">
                         <p class="text-fija-gold text-xs font-bold uppercase tracking-widest" style="margin-bottom:4px">Tu nivel en FIJA · ${lv.index + 1} de ${total}</p>
                         <h3 class="fija-lvl-name">${escapeHtml(lv.name)}</h3>
@@ -10038,6 +10086,7 @@ const FIJA_THEMES = {
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
                             <b style="font-size:14px;color:#0f1b3d">${escapeHtml(l.name)}</b>
                             ${on ? `<span style="background:#c9a227;color:#0f1b3d;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px">TU NIVEL</span>` : ''}
+                            ${l.wings ? `<span style="background:#0f1b3d;color:#f6e3a1;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap;flex:0 0 auto">ALAS</span>` : ''}
                             ${(!got && l.min > 0) ? `<span style="background:#f3f4f6;color:#6b7280;font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px">faltan ${miss} pts</span>` : ''}
                         </div>
                         <div style="font-size:11px;color:#9ca3af;margin-top:2px">${l.min} puntos${i === 0 ? ' · nivel de bienvenida' : ''}</div>
