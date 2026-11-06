@@ -4607,6 +4607,7 @@
                 state.profile = newUser;
                 closeModal('auth-modal');
                 await loadAll(); showToast('Cuenta creada. ¡Bienvenido a FIJA!');
+                if (location.hash && location.hash !== '#') { setTimeout(() => { try { applyDeepLink(); } catch (e) {} }, 350); return; }
                 switchView('user-dashboard');
                 if (!onboardingShown()) setTimeout(openOnboarding, 500);
             } catch (error) {
@@ -4634,6 +4635,12 @@
                 state.profile = profile;
                 closeModal('auth-modal'); await loadAll();
                 showToast("Sesión iniciada correctamente");
+                // Enlaces de los correos (#tarjeta=, #pedido=, #saldo, #pedidos…)
+                if (location.hash && location.hash !== '#') {
+                    state.pendingReview = null;
+                    setTimeout(() => { try { applyDeepLink(); } catch (e) {} }, 350);
+                    return;
+                }
                 // Si venía de un enlace "valorar" del correo, vuelve al producto y a sus opiniones
                 const fromReview = state.pendingReview;
                 state.pendingReview = null;
@@ -7242,6 +7249,7 @@ Recibes este correo porque te suscribiste al boletín de ${escapeHtml(store)}. S
             }).join('');
             const lines = [];
             if (o.couponDiscount) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#059669">Cupón ${escapeHtml(o.couponCode || '')}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#059669">− ${formatEuro(o.couponDiscount)}</td></tr>`);
+            if (o.levelDiscount) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#059669">Descuento nivel ${escapeHtml(o.levelName || '')}${o.levelPct ? ' (−' + o.levelPct + '%)' : ''}</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#059669">− ${formatEuro(o.levelDiscount)}</td></tr>`);
             if (o.giftWrapFee) lines.push(`<tr><td style="padding:4px 0;font-size:13px;color:#4b5563">Embalaje regalo</td><td style="padding:4px 0;font-size:13px;text-align:right;color:#4b5563">${formatEuro(o.giftWrapFee)}</td></tr>`);
             return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(store)}</title></head><body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
@@ -7256,7 +7264,8 @@ ${emailHeaderHtml('Confirmación de pedido')}
 <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:2px;color:#111827;margin-top:6px">${escapeHtml(code)}</div>
 ${addr ? `<div style="font-size:12px;color:#6b7280;margin-top:8px;line-height:1.5">${escapeHtml(addr)}</div>` : ''}
 </div>
-<div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver mi pedido</a></div>
+<div style="text-align:center;margin:22px 0 4px"><a href="https://cpdd-1314.github.io/FIJA/#pedido=${encodeURIComponent(String(o.id || ''))}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px">Ver mi pedido y su QR</a>
+<div style="font-size:11px;color:#9ca3af;margin-top:10px">También en <a href="https://cpdd-1314.github.io/FIJA/#pedidos" style="color:#0f1b3d;font-weight:700;text-decoration:underline">Mi Cuenta → Pedidos</a></div></div>
 </td></tr>
 <tr><td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.6">
 Pedido ${escapeHtml('#' + String(o.id || '').slice(0, 8).toUpperCase())} · ${escapeHtml(new Date(o.createdAt || Date.now()).toLocaleString('es-ES'))} · ${escapeHtml(o.method || '')}<br>
@@ -7313,12 +7322,63 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
         // cliente no tiene sesión, al publicar se le pedirá y volverá aquí mismo.
         window.applyDeepLink = () => {
             const h = location.hash || '';
-            const m = /^#valorar=(.+)$/.exec(h);
-            if (!m) return;
-            const id = decodeURIComponent(m[1]);
-            if (!(state.products || []).some(p => p.id === id)) { showToast('Ese producto ya no está disponible', true); return; }
-            state.pendingReview = id;
-            openProductDetail(id, 'reviews');
+            const dec = (s) => { try { return decodeURIComponent(s); } catch (e) { return s; } };
+            const clearHash = () => { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} };
+            const needAuth = () => { state.pendingDeepLink = h; try { openAuthModal(); } catch (e) {} };
+            const logged = !!(state.session && state.profile);
+            let m;
+            // --- valorar un producto (correos antiguos) ---
+            if ((m = /^#valorar=(.+)$/.exec(h))) {
+                const id = dec(m[1]);
+                if (!(state.products || []).some(p => p.id === id)) { showToast('Ese producto ya no está disponible', true); return; }
+                state.pendingReview = id;
+                openProductDetail(id, 'reviews');
+                return;
+            }
+            // --- tarjeta regalo: canjear el código recibido por correo ---
+            if ((m = /^#tarjeta=([A-Za-z0-9\-]+)$/.exec(h))) {
+                if (!logged) return needAuth();
+                clearHash();
+                const code = dec(m[1]).toUpperCase();
+                GCF.prefill = code;
+                try { openGiftCards('redeem'); } catch (e) {}
+                showToast('Tarjeta cargada: pulsa «Canjear en mi saldo»');
+                return;
+            }
+            // --- mi saldo / tarjetas ---
+            if (h === '#saldo' || h === '#tarjetas' || h === '#tarjeta-regalo') {
+                if (!logged) return needAuth();
+                clearHash();
+                try { openGiftCards('buy'); } catch (e) {}
+                return;
+            }
+            // --- mis pedidos ---
+            if (h === '#pedidos' || h === '#mis-pedidos') {
+                if (!logged) return needAuth();
+                clearHash();
+                try { switchView('user-dashboard'); switchUserTab('orders'); } catch (e) {}
+                return;
+            }
+            // --- un pedido concreto (QR y detalle) ---
+            if ((m = /^#pedido=(.+)$/.exec(h))) {
+                if (!logged) return needAuth();
+                clearHash();
+                const id = dec(m[1]);
+                try { openOrderQR(id); } catch (e) {}
+                return;
+            }
+            // --- nivel / ventajas ---
+            if (h === '#nivel' || h === '#niveles') {
+                clearHash();
+                if (logged) { try { openLevelBenefits(); } catch (e) {} } else { try { openAuthModal(); } catch (e) {} }
+                return;
+            }
+            // --- ruleta ---
+            if (h === '#ruleta') {
+                clearHash();
+                try { openRoulette(); } catch (e) {}
+                return;
+            }
         };
         try { window.addEventListener('hashchange', () => { try { applyDeepLink(); } catch (e) {} }); } catch (e) {}
 
@@ -7596,24 +7656,27 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             const uid = 'fs' + (lv.key || 'x') + Math.random().toString(36).slice(2, 8);
             const R = Math.max(0, Math.min(1, typeof lv.relief === 'number' ? lv.relief : 0.3));
             // profundidad del relieve (en unidades del viewBox 100×114)
-            const depth = +(0.4 + R * 7).toFixed(2);       // grosor del canto inferior
+            const depth = +(0.3 + R * 9).toFixed(2);       // grosor del canto inferior
             const bevel = +(0.8 + R * 2.6).toFixed(2);   // bisel interior
             const glowOp = +(0.08 + R * 0.5).toFixed(2); // sombra proyectada
-            const shadow = `0 ${(0.5 + R * 7).toFixed(1)}px ${(1 + R * 8).toFixed(1)}px rgba(15,27,61,${glowOp})`
+            // La luz entra por arriba a la izquierda: el escudo se despega hacia fuera
+            // (sombra desplazada a la derecha y abajo, borde iluminado arriba-izquierda).
+            const shadow = `${(0.3 + R * 2.4).toFixed(1)}px ${(0.5 + R * 7).toFixed(1)}px ${(1 + R * 8).toFixed(1)}px rgba(15,27,61,${glowOp})`
                 + (R >= 0.55 ? `,0 0 ${Math.round(3 + R * 12)}px rgba(233,200,90,${(0.10 + R * 0.32).toFixed(2)})` : '');
             const iconShadow = `0 ${(1 + R * 2).toFixed(1)}px ${(2.5 + R * 4).toFixed(1)}px rgba(0,0,0,${(0.35 + R * 0.4).toFixed(2)})` + (R >= 0.8 ? `,0 0 ${Math.round(6 + R * 10)}px rgba(233,200,90,${(R * 0.55).toFixed(2)})` : '');
             return `<span style="position:relative;display:inline-block;width:${s}px;height:${h}px;vertical-align:middle;line-height:0;filter:drop-shadow(${shadow});${o.dim ? 'opacity:.6;' : ''}">
                 <svg viewBox="0 0 100 114" width="${s}" height="${h}" style="display:block;overflow:visible" aria-hidden="true">
                     <defs>
                         <linearGradient id="${uid}a" x1="0.12" y1="0" x2="0.88" y2="1">
-                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="34%" stop-color="${lv.c1}"/>
-                            <stop offset="58%" stop-color="${lv.c2}"/><stop offset="100%" stop-color="${lv.c1}"/>
+                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="26%" stop-color="${lv.c1}"/>
+                            <stop offset="44%" stop-color="${lv.c1}"/><stop offset="52%" stop-color="${lv.c2}"/>
+                            <stop offset="74%" stop-color="${lv.c2}"/><stop offset="100%" stop-color="${lv.c1}"/>
                         </linearGradient>
                         <linearGradient id="${uid}v" x1="0" y1="0" x2="1" y2="0">
                             <stop offset="0%" stop-color="#000" stop-opacity="${(0.06 + R * 0.22).toFixed(2)}"/>
-                            <stop offset="26%" stop-color="#fff" stop-opacity="${(0.04 + R * 0.3).toFixed(2)}"/>
+                            <stop offset="26%" stop-color="#fff" stop-opacity="${(0.03 + R * 0.18).toFixed(2)}"/>
                             <stop offset="50%" stop-color="#000" stop-opacity="${(0.02 + R * 0.1).toFixed(2)}"/>
-                            <stop offset="76%" stop-color="#fff" stop-opacity="${(0.05 + R * 0.26).toFixed(2)}"/>
+                            <stop offset="76%" stop-color="#fff" stop-opacity="${(0.04 + R * 0.16).toFixed(2)}"/>
                             <stop offset="100%" stop-color="#000" stop-opacity="${(0.08 + R * 0.26).toFixed(2)}"/>
                         </linearGradient>
                         <linearGradient id="${uid}b" x1="0" y1="0" x2="0" y2="1">
@@ -7625,18 +7688,32 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
                             <stop offset="55%" stop-color="#fff" stop-opacity="0.02"/>
                             <stop offset="100%" stop-color="#000" stop-opacity="${(0.12 + R * 0.34).toFixed(2)}"/>
                         </linearGradient>
+                        <radialGradient id="${uid}g" cx="0.36" cy="0.24" r="0.86">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="${(0.08 + R * 0.22).toFixed(2)}"/>
+                            <stop offset="52%" stop-color="#ffffff" stop-opacity="${(0.02 + R * 0.10).toFixed(2)}"/>
+                            <stop offset="100%" stop-color="#000000" stop-opacity="${(0.04 + R * 0.26).toFixed(2)}"/>
+                        </radialGradient>
+                        <linearGradient id="${uid}r" x1="0.08" y1="0" x2="0.92" y2="1">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="${(0.34 + R * 0.62).toFixed(2)}"/>
+                            <stop offset="45%" stop-color="#ffffff" stop-opacity="0.05"/>
+                            <stop offset="100%" stop-color="#000000" stop-opacity="${(0.10 + R * 0.30).toFixed(2)}"/>
+                        </linearGradient>
                         <clipPath id="${uid}c"><path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z"/></clipPath>
                     </defs>
-                    ${R > 0.12 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="${lv.edge}" fill-opacity="${(0.35 + R * 0.5).toFixed(2)}"/>` : ''}
+                    ${R > 0.12 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="${lv.edge}" fill-opacity="${(0.45 + R * 0.5).toFixed(2)}"/>` : ''}
                     ${R >= 0.35 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(50 57) scale(${(1 + R * 0.075).toFixed(3)}) translate(-50 -57)" fill="${lv.edge}" fill-opacity="${(0.28 + R * 0.5).toFixed(2)}"/>` : ''}
+                    ${R > 0.2 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="none" stroke="${lv.c2}" stroke-opacity="${(0.25 + R * 0.5).toFixed(2)}" stroke-width="${(0.9 + R * 1.2).toFixed(1)}" stroke-linejoin="round"/>` : ''}
                     <path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" fill="url(#${uid}a)" stroke="${lv.edge}" stroke-width="${(2.6 + R * 1.1).toFixed(1)}" stroke-linejoin="round"/>
                     <g clip-path="url(#${uid}c)">
                         <rect x="0" y="0" width="100" height="114" fill="url(#${uid}v)"/>
+                        <rect x="0" y="0" width="100" height="114" fill="url(#${uid}g)"/>
                         ${R > 0.2 ? `<path d="M50 3 L94 17 V29 C70 21 30 21 6 29 V17 Z" fill="url(#${uid}b)"/>` : ''}
                         ${R > 0.55 ? `<ellipse cx="${(30 - R * 8).toFixed(1)}" cy="${(30 + R * 6).toFixed(1)}" rx="${(9 + R * 5).toFixed(1)}" ry="${(26 + R * 10).toFixed(1)}" fill="#fff" fill-opacity="${(0.06 + R * 0.16).toFixed(2)}" transform="rotate(-18 40 40)"/>` : ''}
                     </g>
                     <path d="M50 12 L86 24 V54 C86 77 69 94 50 103 C31 94 14 77 14 54 V24 Z" fill="none" stroke="url(#${uid}i)" stroke-width="${bevel.toFixed(1)}" stroke-linejoin="round"/>
-                    ${R > 0.3 ? `<path d="M50 6.4 L91.2 19.3 V54 C91.2 79.6 72.4 97.9 50 107.4 C27.6 97.9 8.8 79.6 8.8 54 V19.3 Z" fill="none" stroke="#fff" stroke-opacity="${(0.18 + R * 0.4).toFixed(2)}" stroke-width="${(0.7 + R * 0.9).toFixed(1)}" stroke-linejoin="round"/>` : ''}
+                    ${R > 0.14 ? `<path d="M50 6.4 L91.2 19.3 V54 C91.2 79.6 72.4 97.9 50 107.4 C27.6 97.9 8.8 79.6 8.8 54 V19.3 Z" fill="none" stroke="url(#${uid}r)" stroke-width="${(0.9 + R * 1.7).toFixed(1)}" stroke-linejoin="round"/>` : ''}
+                    <path d="M15 24 Q50 9.5 85 24" fill="none" stroke="#ffffff" stroke-opacity="${(0.10 + R * 0.34).toFixed(2)}" stroke-width="${(0.7 + R * 1.4).toFixed(1)}" stroke-linecap="round"/>
+                    ${R >= 0.7 ? `<path d="M50 1.2 L96.4 15.8 V54 C96.4 83.2 75.4 102.8 50 113 C24.6 102.8 3.6 83.2 3.6 54 V15.8 Z" fill="none" stroke="${lv.c2}" stroke-opacity="${(0.25 + R * 0.35).toFixed(2)}" stroke-width="${(0.8 + R * 0.8).toFixed(1)}" stroke-linejoin="round"/>` : ''}
                     ${R >= 0.45 ? `<circle cx="22" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/><circle cx="78" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/>` : ''}
                     ${R >= 0.72 ? `<circle cx="50" cy="8.5" r="${(2 + R * 1.6).toFixed(1)}" fill="#fff" fill-opacity="${(0.6 + R * 0.35).toFixed(2)}" stroke="${lv.edge}" stroke-width=".7"/><circle cx="16" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/><circle cx="84" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/>` : ''}
                 </svg>
@@ -12175,7 +12252,7 @@ window.__LOTE9_OK = true;
 
         /* ===================== FIJA: TARJETAS REGALO, SALDO Y RULETA ===================== */
         const GC_MIN = 10, GC_MAX = 300;
-        const GCF = { amount: 25, mode: 'self', toName: '', toEmail: '', msg: '', amountTxt: '25' };
+        const GCF = { amount: 25, mode: 'self', toName: '', toEmail: '', msg: '', amountTxt: '25', prefill: '' };
 
         function gcEnabled() { const s = storeSettings() || {}; return s.giftCardsEnabled !== false; }
         function rouletteEnabled() { const s = storeSettings() || {}; return s.rouletteEnabled !== false; }
@@ -12228,8 +12305,10 @@ window.__LOTE9_OK = true;
                 <b style="color:#047857;font-size:15px" id="gc-balance-now">${bal}</b></div>`;
             let body = '';
             if (view === 'redeem') {
+                const pre = escapeHtml(GCF.prefill || '');
+                GCF.prefill = '';
                 body = `<p style="font-size:13px;color:#6b7280;margin:0 0 10px">Escribe el código de tu tarjeta regalo y el importe se sumará a tu saldo al instante.</p>
-                <input id="gc-redeem-code" placeholder="FIJA-XXXX-XXXX-XXXX" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid #d1d5db;border-radius:12px;font-family:ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;font-size:14px;text-align:center">
+                <input id="gc-redeem-code" value="${pre}" placeholder="FIJA-XXXX-XXXX-XXXX" style="width:100%;box-sizing:border-box;padding:12px 14px;border:1.5px solid #d1d5db;border-radius:12px;font-family:ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;font-size:14px;text-align:center">${pre ? '<p style="font-size:11px;color:#047857;margin:8px 0 0"><i class="fa-solid fa-circle-check"></i> Código cargado desde tu correo. Pulsa «Canjear en mi saldo».</p>' : ''}
                 <button type="button" onclick="gcRedeem()" style="margin-top:12px;width:100%;background:#0f1b3d;color:#fff;font-weight:700;padding:12px;border-radius:12px;border:0">Canjear en mi saldo</button>
                 <button type="button" onclick="gcRender('buy')" style="margin-top:10px;width:100%;background:#fff;border:1px solid #e5e7eb;color:#374151;padding:10px;border-radius:12px">Comprar una tarjeta</button>`;
             } else {
@@ -12351,27 +12430,60 @@ window.__LOTE9_OK = true;
             try { navigator.clipboard.writeText(code); } catch (e) {}
             showToast('Código copiado: ' + code);
         };
+        function giftEmailHtml(card) {
+            const s = storeSettings() || {};
+            const store = s.storeName || 'FIJA';
+            const support = s.supportEmail || 'jchenw02@gmail.com';
+            const who = card.buyerName || 'Alguien';
+            const home = 'https://cpdd-1314.github.io/FIJA/';
+            const redeemUrl = home + '#tarjeta=' + encodeURIComponent(String(card.code || ''));
+            const code = escapeHtml(card.code || '');
+            const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(store)}</title></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:24px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e5e7eb">
+${emailHeaderHtml('Tarjeta regalo')}
+<tr><td style="padding:26px 24px 8px">
+    <h1 style="margin:0 0 6px;font-size:21px;color:#0f1b3d">¡Tienes una tarjeta regalo!</h1>
+    <p style="margin:0 0 16px;color:#6b7280;font-size:14px;line-height:1.6"><b style="color:#0f1b3d">${escapeHtml(who)}</b> te regala <b style="color:#0f1b3d">${formatEuro(card.amount)}</b> para gastar en ${escapeHtml(store)}.</p>
+    ${card.message ? `<div style="margin:0 0 16px;padding:12px 14px;background:#f9fafb;border-left:3px solid #c9a227;color:#374151;font-size:14px;font-style:italic;line-height:1.6">“${escapeHtml(card.message)}”</div>` : ''}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-radius:16px;overflow:hidden">
+      <tr><td style="background:#0f1b3d;background-image:linear-gradient(135deg,#0f1b3d 0%,#1b2e5a 55%,#7c6212 100%);padding:22px;color:#ffffff;text-align:center">
+        <div style="font-size:11px;letter-spacing:.16em;color:#e9c85a;font-weight:700">TARJETA REGALO ${escapeHtml(store.toUpperCase())}</div>
+        <div style="font-size:34px;font-weight:800;margin:8px 0 14px;color:#ffffff">${formatEuro(card.amount)}</div>
+        <div style="font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:.14em;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:inline-block;padding:9px 14px;border-radius:9px;color:#ffffff;font-size:14px">${code}</div>
+      </td></tr>
+    </table>
+    <div style="text-align:center;margin:22px 0 6px">
+      <a href="${redeemUrl}" style="display:inline-block;background:#c9a227;color:#0f1b3d;text-decoration:none;font-weight:800;font-size:15px;padding:13px 28px;border-radius:10px">Canjear mi tarjeta</a>
+      <div style="font-size:11px;color:#9ca3af;margin-top:10px;line-height:1.6">El botón abre tu tarjeta y rellena el código.<br>Entra con <b style="color:#4b5563">${escapeHtml(card.recipientEmail || 'este correo')}</b> para que el saldo se sume a tu cuenta.</div>
+    </div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px">
+      <tr><td style="padding:14px 16px;font-size:12px;color:#4b5563;line-height:1.7">
+        <b style="color:#0f1b3d">Cómo usarla</b><br>
+        1. Pulsa «Canjear mi tarjeta» → el código se rellena solo.<br>
+        2. Inicia sesión (o crea tu cuenta con ese correo).<br>
+        3. El importe entra en tu saldo FIJA y puedes usarlo al pagar.
+        <div style="margin-top:8px"><a href="${home}#saldo" style="color:#0f1b3d;font-weight:700;text-decoration:underline">Ver mis tarjetas y saldo</a></div>
+      </td></tr>
+    </table>
+</td></tr>
+<tr><td style="padding:16px 24px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;line-height:1.6">
+No caduca. Si ya tienes una cuenta FIJA con otro correo, escríbenos a ${escapeHtml(support)} y la movemos.<br>
+Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti.
+</td></tr>
+</table></td></tr></table></body></html>`;
+            return html;
+        }
+        window.giftEmailHtml = giftEmailHtml;
         async function gcSendEmail(card) {
             const s = storeSettings() || {};
             const store = s.storeName || 'FIJA';
             const who = card.buyerName || 'Alguien';
             const subject = who + ' te ha regalado una tarjeta ' + store;
-            const html = `<!doctype html><html><body style="margin:0;background:#f3f4f6;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:24px 12px">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb">
-                <tr><td style="background:#0f1b3d;padding:18px 24px;color:#fff;font-weight:800;letter-spacing:.2em">FIJA</td></tr>
-                <tr><td style="padding:24px">
-                    <h1 style="margin:0 0 6px;font-size:20px;color:#0f1b3d">¡Tienes una tarjeta regalo!</h1>
-                    <p style="margin:0 0 16px;color:#6b7280;font-size:14px"><b>${escapeHtml(who)}</b> te regala <b>${formatEuro(card.amount)}</b> para gastar en ${escapeHtml(store)}.</p>
-                    ${card.message ? `<p style="margin:0 0 16px;padding:12px;background:#f9fafb;border-left:3px solid #c9a227;color:#374151;font-size:14px;font-style:italic">“${escapeHtml(card.message)}”</p>` : ''}
-                    <div style="background:linear-gradient(135deg,#0f1b3d,#1b2e5a 55%,#7c6212);border-radius:16px;padding:20px;color:#fff;text-align:center">
-                        <div style="font-size:11px;letter-spacing:.16em;opacity:.8">TARJETA REGALO</div>
-                        <div style="font-size:32px;font-weight:800;margin:8px 0 12px">${formatEuro(card.amount)}</div>
-                        <div style="font-family:ui-monospace,monospace;letter-spacing:.14em;background:rgba(255,255,255,.16);display:inline-block;padding:8px 12px;border-radius:9px">${escapeHtml(card.code)}</div>
-                    </div>
-                    <p style="margin:18px 0 0;font-size:13px;color:#6b7280">Canjéala en Mi Cuenta → Tarjetas y saldo (o al pagar, con «Tengo un código»). No caduca.</p>
-                    <div style="text-align:center;margin-top:18px"><a href="https://cpdd-1314.github.io/FIJA/" style="display:inline-block;background:#c9a227;color:#0f1b3d;text-decoration:none;font-weight:800;padding:12px 24px;border-radius:10px">Ir a la tienda</a></div>
-                </td></tr></table></body></html>`;
-            const text = `${who} te regala ${formatEuro(card.amount)} en ${store}. Código: ${card.code}. ${card.message || ''}`;
+            const html = giftEmailHtml(card);
+            const redeemUrl = 'https://cpdd-1314.github.io/FIJA/#tarjeta=' + encodeURIComponent(String(card.code || ''));
+            const text = `${who} te regala ${formatEuro(card.amount)} en ${store}. Código: ${card.code}. Canjéalo aquí: ${redeemUrl} ${card.message || ''}`;
             return deliverEmail(card.recipientEmail, subject, html, text, { kind: 'order' });
         }
         window.gcRedeem = async () => {
