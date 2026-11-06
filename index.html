@@ -1083,6 +1083,7 @@
         .fija-lvl-main { flex: 1 1 auto; min-width: 0; width: 100%; text-align: center; }
         .fija-lvl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; flex: 0 0 auto; width: 100%; }
         .fija-lvl-track { display: flex; gap: 5px; margin-top: 16px; align-items: flex-end; justify-content: center; overflow-x: auto; padding-bottom: 2px; }
+        @media (max-width: 480px) { .fija-lvl-track { gap: 0; } .fija-lvl-track > div > div { font-size: 7.5px; } }
         .fija-lvl-name { font-size: 26px; font-weight: 900; line-height: 1.15; margin: 0 0 4px; }
         .fija-lvl-hint { font-size: 13px; color: rgba(255, 255, 255, .72); margin: 0 0 12px; }
         .fija-lvl-bar { width: 100%; max-width: 420px; margin: 0 auto; }
@@ -4777,8 +4778,12 @@
             const couponCode = promo ? promo.code : null;
             const couponPercent = promo ? promo.value : 0;
             const couponDiscount = couponCode ? +(items.reduce((s, it) => s + it.paid, 0) * couponPercent / 100).toFixed(2) : 0;
-            const giftWrapFee = state.giftWrap ? GIFT_WRAP_PRICE : 0;
-            const beforeTotal = +(items.reduce((s, it) => s + it.paid, 0) - couponDiscount + giftWrapFee).toFixed(2);
+            const giftWrapFee = state.giftWrap ? (levelBenefits().wrapFree ? 0 : GIFT_WRAP_PRICE) : 0;
+            // Beneficios del nivel FIJA (se aplican de verdad al total)
+            const lvB = levelBenefits();
+            const itemsBase = +items.reduce((s, it) => s + it.paid, 0).toFixed(2);
+            const levelDiscount = +(itemsBase * lvB.pct / 100).toFixed(2);
+            const beforeTotal = +(itemsBase - couponDiscount - levelDiscount + giftWrapFee).toFixed(2);
             // Descuento pendiente ganado en la ruleta (se consume en esta compra)
             const pendPct = Math.max(0, Math.min(50, Number((state.profile || {}).pendingDiscountPct || 0)));
             const pendDiscount = pendPct > 0 ? +(items.reduce((s, it) => s + it.paid, 0) * pendPct / 100).toFixed(2) : 0;
@@ -4796,8 +4801,12 @@
             const pickupCode = 'FIJA-' + Array.from(rnd, b => codeAlphabet[b % codeAlphabet.length]).join('');
             const order = { id: uid(), items, total, commissionRate: COMMISSION_RATE, commissionTotal, netTotal, discountTotal,
                 couponCode, couponPercent, couponDiscount, giftWrapFee, pickupCode,
+                levelName: lvB.name, levelPct: lvB.pct, levelDiscount,
                 balanceUsed, rouletteDiscount: pendDiscount, roulettePct: pendPct,
                 method: (balanceUsed > 0 && total === 0) ? 'Saldo FIJA' : method, buyerUid: state.profile.userId, buyerName: state.profile.username, buyerEmail: state.profile.email, status: 'pending', createdAt: Date.now() };
+            // Puntos de nivel ganados: base (1 punto / 10 € + 2 por pedido) × multiplicador del nivel
+            const pointsBase = Math.max(fijaPoints(), legacyPoints());
+            const pointsEarned = Math.max(1, Math.round((totalBeforeBalance / 10 + 2) * lvB.mult));
             try {
                 await mutateCollection('orders', arr => arr.push(order));
                 // Descontar el saldo y consumir el descuento de la ruleta
@@ -4812,6 +4821,16 @@
                     if (pendPct > 0) state.profile.pendingDiscountPct = 0;
                     state.useBalance = false;
                 }
+                // Sumar los puntos del nivel (persistente, solo suben)
+                try {
+                    await mutateCollection('profiles', arr => {
+                        const p = arr.find(x => x.userId === state.profile.userId);
+                        if (!p) return;
+                        p.points = Math.floor(Math.max(Number(p.points) || 0, pointsBase) + pointsEarned);
+                    });
+                    state.profile.points = Math.floor(pointsBase + pointsEarned);
+                    state.lastPointsEarned = pointsEarned;
+                } catch (e) { console.warn('points', e); }
                 state.cart = []; updateCartBadge();
                 state.lastOrderId = order.id;
                 // Consumir el cupón (un solo uso) y limpiar extras de la cesta
@@ -7540,49 +7559,116 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
 
         // ---------- 32. NIVEL Y PROGRESO DEL USUARIO ----------
         // 7 niveles con escudo propio, de Bronce a Master.
+        // `relief` (0–1) controla el relieve del escudo: cuanto más alto el nivel,
+        // más grosor, bisel, brillo metálico, remaches y sombra proyectada.
+        // `pct` = descuento real aplicado en la cesta · `mult` = multiplicador de puntos
+        // `spins` = tiradas extra de ruleta al día · `wrapFree` = embalaje regalo gratis.
         const FIJA_LEVELS = [
-            { min: 0, key: 'bronce', name: 'Bronce', icon: 'fa-medal', c1: '#8a5a2b', c2: '#dfa96a', edge: '#6b4423',
-                perks: ['1 punto por cada euro gastado', 'Ofertas del día y cupones abiertos'] },
-            { min: 20, key: 'plata', name: 'Plata', icon: 'fa-shield-halved', c1: '#66727f', c2: '#d3dce6', edge: '#8b98a6',
-                perks: ['+10% de puntos en cada compra', 'Sorteos y ruleta con una tirada extra'] },
-            { min: 60, key: 'oro', name: 'Oro', icon: 'fa-crown', c1: '#a97a08', c2: '#f7dd8a', edge: '#87600a',
-                perks: ['Acceso anticipado a novedades', 'Soporte prioritario en tus incidencias'] },
-            { min: 120, key: 'platino', name: 'Platino', icon: 'fa-award', c1: '#2f5d8a', c2: '#bedcf3', edge: '#48779f',
-                perks: ['Reservas de recogida en 1 hora', 'Doble giro diario en la ruleta'] },
-            { min: 250, key: 'diamante', name: 'Diamante', icon: 'fa-gem', c1: '#12698a', c2: '#a3ecff', edge: '#0e5a73',
-                perks: ['Atención preferente en tienda', 'Regalo de cumpleaños en tu saldo'] },
-            { min: 420, key: 'elite', name: 'Élite', icon: 'fa-bolt', c1: '#4c1d95', c2: '#b9a4fb', edge: '#3b1573',
-                perks: ['Acceso al outlet privado FIJA', 'Invitaciones a eventos y lanzamientos'] },
-            { min: 650, key: 'master', name: 'Master', icon: 'fa-trophy', c1: '#0f1b3d', c2: '#e9c85a', edge: '#c9a227',
-                perks: ['Concierge FIJA en cada pedido', 'Escudo Master exclusivo en tu perfil'] }
+            { min: 0, key: 'bronce', name: 'Bronce', icon: 'fa-medal', c1: '#8a5a2b', c2: '#dfa96a', edge: '#6b4423', relief: 0.06,
+                pct: 0, mult: 1, spins: 0, wrapFree: false,
+                perks: ['1 punto por cada 10 € (+2 por pedido)', 'Ofertas del día y cupones abiertos'] },
+            { min: 120, key: 'plata', name: 'Plata', icon: 'fa-shield-halved', c1: '#66727f', c2: '#d3dce6', edge: '#8b98a6', relief: 0.24,
+                pct: 2, mult: 1.1, spins: 1, wrapFree: false,
+                perks: ['-2% en todas tus compras (automático)', '+10% de puntos en cada pedido', '+1 tirada de ruleta al día'] },
+            { min: 380, key: 'oro', name: 'Oro', icon: 'fa-crown', c1: '#a97a08', c2: '#f7dd8a', edge: '#87600a', relief: 0.42,
+                pct: 4, mult: 1.25, spins: 1, wrapFree: false,
+                perks: ['-4% en todas tus compras (automático)', '+25% de puntos en cada pedido', '+1 tirada de ruleta al día', 'Soporte prioritario en incidencias'] },
+            { min: 900, key: 'platino', name: 'Platino', icon: 'fa-award', c1: '#2f5d8a', c2: '#bedcf3', edge: '#48779f', relief: 0.58,
+                pct: 6, mult: 1.4, spins: 2, wrapFree: true,
+                perks: ['-6% en todas tus compras (automático)', '+40% de puntos en cada pedido', 'Embalaje regalo gratis', '+2 tiradas de ruleta al día'] },
+            { min: 1700, key: 'diamante', name: 'Diamante', icon: 'fa-gem', c1: '#12698a', c2: '#a3ecff', edge: '#0e5a73', relief: 0.72,
+                pct: 8, mult: 1.6, spins: 2, wrapFree: true,
+                perks: ['-8% en todas tus compras (automático)', '+60% de puntos en cada pedido', 'Embalaje regalo gratis', '+2 tiradas de ruleta al día', 'Atención preferente en tienda'] },
+            { min: 3000, key: 'elite', name: 'Élite', icon: 'fa-bolt', c1: '#4c1d95', c2: '#b9a4fb', edge: '#3b1573', relief: 0.86,
+                pct: 10, mult: 1.8, spins: 3, wrapFree: true,
+                perks: ['-10% en todas tus compras (automático)', '+80% de puntos en cada pedido', 'Embalaje regalo gratis', '+3 tiradas de ruleta al día', 'Acceso al outlet privado FIJA'] },
+            { min: 5000, key: 'master', name: 'Master', icon: 'fa-trophy', c1: '#0f1b3d', c2: '#e9c85a', edge: '#c9a227', relief: 1,
+                pct: 15, mult: 2, spins: 3, wrapFree: true,
+                perks: ['-15% en todas tus compras (automático)', 'El doble de puntos (×2) en cada pedido', 'Embalaje regalo gratis', '+3 tiradas de ruleta al día', 'Concierge FIJA y escudo Master exclusivo'] }
         ];
         // Escudo SVG de cada nivel (mismo dibujo, materiales distintos).
+        // El relieve crece con el nivel: grosor lateral, bisel interior, brillo
+        // metálico, remaches y sombra proyectada son proporcionales a `relief`.
         function levelShieldHTML(lv, size, opts) {
             const o = opts || {};
             const s = Number(size) || 64;
             const h = Math.round(s * 1.14);
             const uid = 'fs' + (lv.key || 'x') + Math.random().toString(36).slice(2, 8);
-            const shine = lv.key === 'master' ? 'opacity:.9' : 'opacity:.55';
-            return `<span style="position:relative;display:inline-block;width:${s}px;height:${h}px;vertical-align:middle;line-height:0;${o.dim ? 'opacity:.62;' : ''}">
+            const R = Math.max(0, Math.min(1, typeof lv.relief === 'number' ? lv.relief : 0.3));
+            // profundidad del relieve (en unidades del viewBox 100×114)
+            const depth = +(0.4 + R * 7).toFixed(2);       // grosor del canto inferior
+            const bevel = +(0.8 + R * 2.6).toFixed(2);   // bisel interior
+            const glowOp = +(0.08 + R * 0.5).toFixed(2); // sombra proyectada
+            const shadow = `0 ${(0.5 + R * 7).toFixed(1)}px ${(1 + R * 8).toFixed(1)}px rgba(15,27,61,${glowOp})`
+                + (R >= 0.55 ? `,0 0 ${Math.round(3 + R * 12)}px rgba(233,200,90,${(0.10 + R * 0.32).toFixed(2)})` : '');
+            const iconShadow = `0 ${(1 + R * 2).toFixed(1)}px ${(2.5 + R * 4).toFixed(1)}px rgba(0,0,0,${(0.35 + R * 0.4).toFixed(2)})` + (R >= 0.8 ? `,0 0 ${Math.round(6 + R * 10)}px rgba(233,200,90,${(R * 0.55).toFixed(2)})` : '');
+            return `<span style="position:relative;display:inline-block;width:${s}px;height:${h}px;vertical-align:middle;line-height:0;filter:drop-shadow(${shadow});${o.dim ? 'opacity:.6;' : ''}">
                 <svg viewBox="0 0 100 114" width="${s}" height="${h}" style="display:block;overflow:visible" aria-hidden="true">
                     <defs>
-                        <linearGradient id="${uid}a" x1="0.1" y1="0" x2="0.9" y2="1">
-                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="52%" stop-color="${lv.c1}"/><stop offset="100%" stop-color="${lv.c2}"/>
+                        <linearGradient id="${uid}a" x1="0.12" y1="0" x2="0.88" y2="1">
+                            <stop offset="0%" stop-color="${lv.c2}"/><stop offset="34%" stop-color="${lv.c1}"/>
+                            <stop offset="58%" stop-color="${lv.c2}"/><stop offset="100%" stop-color="${lv.c1}"/>
+                        </linearGradient>
+                        <linearGradient id="${uid}v" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#000" stop-opacity="${(0.06 + R * 0.22).toFixed(2)}"/>
+                            <stop offset="26%" stop-color="#fff" stop-opacity="${(0.04 + R * 0.3).toFixed(2)}"/>
+                            <stop offset="50%" stop-color="#000" stop-opacity="${(0.02 + R * 0.1).toFixed(2)}"/>
+                            <stop offset="76%" stop-color="#fff" stop-opacity="${(0.05 + R * 0.26).toFixed(2)}"/>
+                            <stop offset="100%" stop-color="#000" stop-opacity="${(0.08 + R * 0.26).toFixed(2)}"/>
                         </linearGradient>
                         <linearGradient id="${uid}b" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stop-color="#ffffff" stop-opacity=".7"/><stop offset="65%" stop-color="#ffffff" stop-opacity="0"/>
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="${(0.35 + R * 0.55).toFixed(2)}"/>
+                            <stop offset="70%" stop-color="#ffffff" stop-opacity="0"/>
                         </linearGradient>
+                        <linearGradient id="${uid}i" x1="0" y1="0" x2="0.2" y2="1">
+                            <stop offset="0%" stop-color="#fff" stop-opacity="${(0.25 + R * 0.6).toFixed(2)}"/>
+                            <stop offset="55%" stop-color="#fff" stop-opacity="0.02"/>
+                            <stop offset="100%" stop-color="#000" stop-opacity="${(0.12 + R * 0.34).toFixed(2)}"/>
+                        </linearGradient>
+                        <clipPath id="${uid}c"><path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z"/></clipPath>
                     </defs>
-                    <path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" fill="url(#${uid}a)" stroke="${lv.edge}" stroke-width="3.2"/>
-                    <path d="M50 12 L86 24 V54 C86 77 69 94 50 103 C31 94 14 77 14 54 V24 Z" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
-                    <path d="M50 3 L94 17 V29 C70 21 30 21 6 29 V17 Z" fill="url(#${uid}b)" style="${shine}"/>
-                    <circle cx="50" cy="8" r="3.2" fill="#fff" fill-opacity=".75"/>
+                    ${R > 0.12 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(${(depth * 0.42).toFixed(2)},${depth})" fill="${lv.edge}" fill-opacity="${(0.35 + R * 0.5).toFixed(2)}"/>` : ''}
+                    ${R >= 0.35 ? `<path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" transform="translate(50 57) scale(${(1 + R * 0.075).toFixed(3)}) translate(-50 -57)" fill="${lv.edge}" fill-opacity="${(0.28 + R * 0.5).toFixed(2)}"/>` : ''}
+                    <path d="M50 3 L94 17 V54 C94 82 74 101 50 111 C26 101 6 82 6 54 V17 Z" fill="url(#${uid}a)" stroke="${lv.edge}" stroke-width="${(2.6 + R * 1.1).toFixed(1)}" stroke-linejoin="round"/>
+                    <g clip-path="url(#${uid}c)">
+                        <rect x="0" y="0" width="100" height="114" fill="url(#${uid}v)"/>
+                        ${R > 0.2 ? `<path d="M50 3 L94 17 V29 C70 21 30 21 6 29 V17 Z" fill="url(#${uid}b)"/>` : ''}
+                        ${R > 0.55 ? `<ellipse cx="${(30 - R * 8).toFixed(1)}" cy="${(30 + R * 6).toFixed(1)}" rx="${(9 + R * 5).toFixed(1)}" ry="${(26 + R * 10).toFixed(1)}" fill="#fff" fill-opacity="${(0.06 + R * 0.16).toFixed(2)}" transform="rotate(-18 40 40)"/>` : ''}
+                    </g>
+                    <path d="M50 12 L86 24 V54 C86 77 69 94 50 103 C31 94 14 77 14 54 V24 Z" fill="none" stroke="url(#${uid}i)" stroke-width="${bevel.toFixed(1)}" stroke-linejoin="round"/>
+                    ${R > 0.3 ? `<path d="M50 6.4 L91.2 19.3 V54 C91.2 79.6 72.4 97.9 50 107.4 C27.6 97.9 8.8 79.6 8.8 54 V19.3 Z" fill="none" stroke="#fff" stroke-opacity="${(0.18 + R * 0.4).toFixed(2)}" stroke-width="${(0.7 + R * 0.9).toFixed(1)}" stroke-linejoin="round"/>` : ''}
+                    ${R >= 0.45 ? `<circle cx="22" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/><circle cx="78" cy="26" r="${(1.5 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.5 + R * 0.4).toFixed(2)}"/>` : ''}
+                    ${R >= 0.72 ? `<circle cx="50" cy="8.5" r="${(2 + R * 1.6).toFixed(1)}" fill="#fff" fill-opacity="${(0.6 + R * 0.35).toFixed(2)}" stroke="${lv.edge}" stroke-width=".7"/><circle cx="16" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/><circle cx="84" cy="46" r="${(1 + R).toFixed(1)}" fill="#fff" fill-opacity="${(0.35 + R * 0.4).toFixed(2)}"/>` : ''}
                 </svg>
-                <i class="fa-solid ${lv.icon}" style="position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(s * 0.33)}px;text-shadow:0 2px 5px rgba(0,0,0,.5)"></i>
+                <i class="fa-solid ${lv.icon}" style="position:absolute;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:${Math.round(s * 0.33)}px;text-shadow:${iconShadow}"></i>
                 ${o.rank ? `<span style="position:absolute;right:-7px;bottom:-5px;background:#0f1b3d;color:#fff;border:2px solid #fff;border-radius:999px;min-width:19px;height:19px;font-size:10px;font-weight:800;line-height:15px;text-align:center;padding:0 4px">${o.rank}</span>` : ''}
                 ${o.locked ? `<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(15,27,61,.72);color:#fff;border-radius:999px;width:${Math.round(s * 0.4)}px;height:${Math.round(s * 0.4)}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s * 0.17)}px"><i class="fa-solid fa-lock"></i></span>` : ''}
             </span>`;
         }
+        // ---- Puntos de nivel (se guardan en profiles.points, solo suben) ----
+        // Las cuentas antiguas sin el campo se calculan una vez a partir del historial.
+        function legacyPoints() {
+            const mine = state.orders.filter(o => o.buyerUid === (state.profile || {}).userId);
+            const spent = mine.reduce((s, o) => s + (Number(o.total) || 0), 0);
+            return Math.floor(spent / 10) + mine.length * 2;
+        }
+        function fijaPoints() {
+            const p = state.profile || {};
+            const stored = Number(p.points);
+            if (isFinite(stored) && stored > 0) return Math.floor(stored);
+            return legacyPoints();
+        }
+        // Beneficios activos del nivel actual: se usan de verdad en la cesta,
+        // en el pago, en los puntos ganados, en la ruleta y en el embalaje.
+        function levelBenefits(lv) {
+            const L = lv || currentLevel(fijaPoints());
+            return { pct: Number(L.pct) || 0, mult: Number(L.mult) || 1, spins: Number(L.spins) || 0, wrapFree: !!L.wrapFree, name: L.name };
+        }
+        window.levelDiscountPct = () => (state.session && state.profile) ? levelBenefits().pct : 0;
+        window.levelDiscount = (base) => +((Number(base) || 0) * levelDiscountPct() / 100).toFixed(2);
+        // Embalaje regalo: gratis a partir de Platino.
+        function wrapFee() { return state.giftWrap ? (levelBenefits().wrapFree ? 0 : GIFT_WRAP_PRICE) : 0; }
+        window.wrapFee = wrapFee;
         function userStats() {
             const mine = state.orders.filter(o => o.buyerUid === (state.profile || {}).userId);
             const spent = mine.reduce((s, o) => s + (Number(o.total) || 0), 0);
@@ -7592,7 +7678,7 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
                 reviews: mine.length * 1,
                 lists: getLists().length,
                 alerts: getAlerts().length,
-                points: Math.floor(spent / 10) + mine.length * 2
+                points: fijaPoints()
             };
         }
         function currentLevel(points) {
@@ -7610,9 +7696,9 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
             const pct = lv.next ? Math.min(100, Math.round((s.points - prevMin) / (nextMin - prevMin) * 100)) : 100;
             const track = FIJA_LEVELS.map((l, i) => {
                 const cur = i === lv.index, on = i <= lv.index;
-                return `<div>
+                return `<div style="width:${cur ? 50 : 40}px;text-align:center;flex:0 0 auto">
                     ${levelShieldHTML(l, cur ? 44 : 30, { dim: !on })}
-                    <div style="font-size:9px;margin-top:2px;white-space:nowrap;color:${cur ? '#e9c85a' : on ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.32)'};font-weight:${cur ? 800 : 600}">${escapeHtml(l.name)}</div>
+                    <div style="font-size:8.5px;margin-top:3px;line-height:1.15;white-space:nowrap;color:${cur ? '#e9c85a' : on ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.32)'};font-weight:${cur ? 800 : 600}">${escapeHtml(l.name)}</div>
                 </div>`;
             }).join('');
             el.innerHTML = `<div class="bg-fija-900 text-white rounded-2xl p-6">
@@ -7624,6 +7710,12 @@ Recibes este correo porque compraste en ${escapeHtml(store)} con la cuenta ${esc
                         <p class="fija-lvl-hint">${s.points} puntos${lv.next ? ` · te faltan <b class="text-white">${Math.max(0, nextMin - s.points)}</b> para ${escapeHtml(lv.next.name)}` : ' · nivel máximo alcanzado'}</p>
                         <div class="fija-lvl-bar bg-white/15 rounded-full h-2 overflow-hidden"><div class="bg-fija-gold h-full" style="width:${pct}%"></div></div>
                         <div class="fija-lvl-track">${track}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px">
+                            ${levelBenefits(lv).pct ? `<span style="font-size:10px;font-weight:800;background:rgba(233,200,90,.18);border:1px solid rgba(233,200,90,.45);color:#f6e3a1;border-radius:999px;padding:2px 8px">-${levelBenefits(lv).pct}% en tus compras</span>` : ''}
+                            <span style="font-size:10px;font-weight:800;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#e5e7eb;border-radius:999px;padding:2px 8px">×${levelBenefits(lv).mult} puntos</span>
+                            ${levelBenefits(lv).spins ? `<span style="font-size:10px;font-weight:800;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#e5e7eb;border-radius:999px;padding:2px 8px">+${levelBenefits(lv).spins} ruleta/día</span>` : ''}
+                            ${levelBenefits(lv).wrapFree ? `<span style="font-size:10px;font-weight:800;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#e5e7eb;border-radius:999px;padding:2px 8px">embalaje gratis</span>` : ''}
+                        </div>
                     </div>
                     <div class="fija-lvl-stats">
                         ${[["fa-box", s.orders, 'Pedidos'], ["fa-heart", s.favorites, 'Favoritos'], ["fa-list-check", s.lists, 'Listas'], ["fa-star", s.reviews, 'Opiniones']]
@@ -8845,13 +8937,15 @@ const FIJA_THEMES = {
             const issues = [];
             state.cart.forEach(c => { if (stockState(c.product).k === 'out') issues.push(c.product.title + ' está agotado'); });
             if (state.giftWrap) issues.push('Has añadido embalaje regalo (' + formatEuro(GIFT_WRAP_PRICE) + ')');
+            const lvSum = levelBenefits();
+            if (lvSum.pct > 0) issues.push('Se aplica tu descuento de nivel ' + lvSum.name + ' (-' + lvSum.pct + '%)');
             const groups = cartGroupedBySeller();
             showGenericModal('Revisar cesta antes de pagar', `
                 ${Object.keys(groups).length > 1 ? `<div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-xs text-amber-800"><i class="fa-solid fa-circle-exclamation mr-1"></i>Tu cesta tiene productos de ${Object.keys(groups).length} vendedores distintos. Cada tienda prepara su parte por separado en el punto de recogida.</div>` : ''}
                 ${issues.length ? `<div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-xs text-red-700">${issues.map(i => '<p class="mb-1">• ' + escapeHtml(i) + '</p>').join('')}</div>` : ''}
                 <table class="w-full text-sm"><tbody>${state.cart.map(c => `<tr class="border-b border-gray-100">
                     <td class="py-2 truncate pr-2">${escapeHtml(c.product.title)} × ${c.quantity}</td><td class="py-2 text-right font-medium">${formatEuro(effectivePrice(c.product) * c.quantity)}</td></tr>`).join('')}</tbody></table>
-                <div class="flex justify-between font-bold mt-3 pt-2 border-t"><span>Total</span><span>${formatEuro(cartSubtotal() + (state.giftWrap ? GIFT_WRAP_PRICE : 0) - promoDiscount(cartSubtotal()))}</span></div>
+                <div class="flex justify-between font-bold mt-3 pt-2 border-t"><span>Total</span><span>${formatEuro(Math.max(0, cartSubtotal() - promoDiscount(cartSubtotal()) - levelDiscount(cartSubtotal() - promoDiscount(cartSubtotal())) + (state.giftWrap ? wrapFee() : 0)))}</span></div>
                 <button type="button" onclick="closeModal('generic-modal'); openPaymentGateway()" class="f-btn f-btn-gold w-full mt-4"><i class="fa-solid fa-lock mr-1"></i>Continuar al pago</button>`);
         };
         window.openBulkActions = () => {
@@ -9394,11 +9488,12 @@ const FIJA_THEMES = {
                 </div>`;
             }).join('');
             const disc = promoDiscount(total);
-            const grand = Math.max(0, +(total - disc).toFixed(2));
+            const lvlDisc = levelDiscount(total - disc);
+            const grand = Math.max(0, +(total - disc - lvlDisc).toFixed(2));
             DOM.cartSubtotal.textContent = formatEuro(total);
             // --- Saldo FIJA (tarjetas regalo) ---
             const bal = Math.max(0, Number((state.profile || {}).balance || 0));
-            const wrapFee0 = state.giftWrap ? GIFT_WRAP_PRICE : 0;
+            const wrapFee0 = state.giftWrap ? (levelBenefits().wrapFree ? 0 : GIFT_WRAP_PRICE) : 0;
             const withWrap = +(grand + wrapFee0).toFixed(2);
             const balUsed = (state.useBalance && bal > 0) ? Math.min(bal, withWrap) : 0;
             const rowBal = document.getElementById('cart-balance-row');
@@ -9416,11 +9511,22 @@ const FIJA_THEMES = {
             // breakdown de descuento en el resumen lateral
             const sum = document.querySelector('#view-cart .sticky');
             if (sum) {
+                // Las líneas de descuento van ANTES de la fila del total
+                const box = sum.querySelector('.space-y-3');
+                const anchor = box ? box.lastElementChild : null;
+                const place = (node) => { if (!box) return; if (anchor && anchor !== node && anchor.parentNode === box) box.insertBefore(node, anchor); else box.appendChild(node); };
                 let extra = document.getElementById('cart-discount-row');
                 if (disc > 0) {
-                    if (!extra) { extra = document.createElement('div'); extra.id = 'cart-discount-row'; extra.className = 'flex justify-between text-green-600 font-medium mb-3'; sum.querySelector('.space-y-3').appendChild(extra); }
+                    if (!extra) { extra = document.createElement('div'); extra.id = 'cart-discount-row'; extra.className = 'flex justify-between text-green-600 font-medium mb-3'; place(extra); }
                     extra.innerHTML = `<span>Descuento ${escapeHtml(state.promo.code)} (${state.promo.value}%)</span><span>-${formatEuro(disc)}</span>`;
                 } else if (extra) extra.remove();
+                // Descuento automático por nivel FIJA
+                let lrow = document.getElementById('cart-level-row');
+                if (lvlDisc > 0) {
+                    if (!lrow) { lrow = document.createElement('div'); lrow.id = 'cart-level-row'; lrow.className = 'flex justify-between text-green-600 font-medium mb-3'; place(lrow); }
+                    const lb = levelBenefits();
+                    lrow.innerHTML = `<span><i class="fa-solid fa-shield-halved mr-1"></i>Nivel ${escapeHtml(lb.name)} (-${lb.pct}%)</span><span>-${formatEuro(lvlDisc)}</span>`;
+                } else if (lrow) lrow.remove();
             }
             // aviso de cesta guardada
             const saved = document.getElementById('saved-cart-hint');
@@ -9439,7 +9545,9 @@ const FIJA_THEMES = {
                     d.className = 'flex justify-between text-gray-600 mb-3';
                     wrapBox.appendChild(d);
                 }
-                if (wrap) wrap.innerHTML = `<span><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span>${formatEuro(GIFT_WRAP_PRICE)}</span>`;
+                if (wrap) wrap.innerHTML = levelBenefits().wrapFree
+                    ? `<span><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo <b class="text-green-600">(gratis por nivel)</b></span><span class="text-green-600">0,00 €</span>`
+                    : `<span><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span>${formatEuro(GIFT_WRAP_PRICE)}</span>`;
             } else if (wrap) wrap.remove();
             const tEl = DOM.cartTotal;
             if (tEl && (wrap || state.giftWrap)) tEl.textContent = formatEuro(+(withWrap - balUsed).toFixed(2));
@@ -9650,8 +9758,9 @@ const FIJA_THEMES = {
         window.cartCountUnits = () => sumBy(state.cart, i => i.quantity || 1);
         window.cartTotalRaw = () => sumBy(state.cart, i => effectivePrice(i.product) * (i.quantity || 1));
         window.cartSavings = () => sumBy(state.cart, i => (Number(i.product.oldPrice) || effectivePrice(i.product)) * (i.quantity || 1)) - cartTotalRaw();
-        window.cartGiftWrapFee = () => state.giftWrap ? 2.9 : 0;
-        window.cartTotal = () => Math.max(0, +(cartTotalRaw() - promoDiscount(cartTotalRaw()) + cartGiftWrapFee()).toFixed(2));
+        window.cartGiftWrapFee = () => state.giftWrap ? (levelBenefits().wrapFree ? 0 : 2.9) : 0;
+        window.cartLevelDiscount = () => levelDiscount(cartTotalRaw() - promoDiscount(cartTotalRaw()));
+        window.cartTotal = () => Math.max(0, +(cartTotalRaw() - promoDiscount(cartTotalRaw()) - cartLevelDiscount() + cartGiftWrapFee()).toFixed(2));
         window.cartSellerGroups = () => groupBy(state.cart, i => i.product.sellerName || 'Tienda');
         window.updateCartQty = (pid, delta) => { const it = state.cart.find(x => x.product.id === pid); if (!it) return;
             it.quantity = Math.max(1, Math.min(20, (it.quantity || 1) + delta)); renderCart(); renderMiniCart(); };
@@ -9837,7 +9946,7 @@ const FIJA_THEMES = {
                     `<button type="button" onclick="redeemPoints(${x[1]})" class="w-full f-card f-card-hover px-4 py-3 flex items-center justify-between text-sm"><span>${x[0]}</span><span class="font-bold text-yellow-600">${x[1]} pts</span></button>`).join('')}</div>`); };
         window.redeemPoints = (cost) => { if (pointsAvailable() < cost) return showToast('No tienes puntos suficientes', true);
             addPoints(-cost); showToast('Canjeado: se aplicará en el próximo pedido'); openPointsStore(); };
-        window.levelProgress = () => { const lv = currentLevel(pointsAvailable()); return { level: lv.name, next: lv.next ? lv.next.min : null, missing: lv.next ? Math.max(0, lv.next.min - pointsAvailable()) : 0 }; };
+        window.levelProgress = () => { const p = fijaPoints(); const lv = currentLevel(p); return { level: lv.name, next: lv.next ? lv.next.min : null, missing: lv.next ? Math.max(0, lv.next.min - p) : 0 }; };
         window.openLevelBenefits = () => {
             let s = { points: 0 };
             try { s = userStats(); } catch (e) {}
@@ -9845,6 +9954,7 @@ const FIJA_THEMES = {
             const cards = FIJA_LEVELS.map((l, i) => {
                 const on = i === cur.index, got = i <= cur.index;
                 const miss = Math.max(0, l.min - (s.points || 0));
+                const b = levelBenefits(l);
                 return `<div style="border:1.5px solid ${on ? '#c9a227' : '#e5e7eb'};background:${on ? '#fffdf5' : '#ffffff'};border-radius:16px;padding:14px;display:flex;gap:12px;align-items:flex-start">
                     <div style="flex:0 0 auto">${levelShieldHTML(l, 54, { dim: !got })}</div>
                     <div style="min-width:0;flex:1">
@@ -9854,6 +9964,12 @@ const FIJA_THEMES = {
                             ${(!got && l.min > 0) ? `<span style="background:#f3f4f6;color:#6b7280;font-size:10px;font-weight:700;border-radius:999px;padding:2px 8px">faltan ${miss} pts</span>` : ''}
                         </div>
                         <div style="font-size:11px;color:#9ca3af;margin-top:2px">${l.min} puntos${i === 0 ? ' · nivel de bienvenida' : ''}</div>
+                        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">
+                            ${b.pct ? `<span style="font-size:10px;font-weight:800;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;border-radius:999px;padding:2px 7px">-${b.pct}% dto.</span>` : ''}
+                            <span style="font-size:10px;font-weight:800;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:2px 7px">×${b.mult} puntos</span>
+                            ${b.spins ? `<span style="font-size:10px;font-weight:800;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;border-radius:999px;padding:2px 7px">+${b.spins} ruleta/día</span>` : ''}
+                            ${b.wrapFree ? `<span style="font-size:10px;font-weight:800;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:999px;padding:2px 7px">embalaje gratis</span>` : ''}
+                        </div>
                         <ul style="margin:8px 0 0;padding-left:16px;font-size:11.5px;color:#4b5563;line-height:1.6">
                             ${(l.perks || []).map(x => `<li>${escapeHtml(x)}</li>`).join('')}
                         </ul>
@@ -9861,9 +9977,9 @@ const FIJA_THEMES = {
                 </div>`;
             }).join('');
             showGenericModal('Niveles FIJA', `
-                <div style="font-size:13px;color:#4b5563;margin-bottom:14px">Cada <b>1 €</b> gastado suma <b>1 punto</b> y cada pedido <b>2 puntos</b> extra. Hay <b>${FIJA_LEVELS.length} escudos</b>: de Bronce a Master.</div>
+                <div style="font-size:13px;color:#4b5563;margin-bottom:14px">Cada <b>10 €</b> gastados suma <b>1 punto</b> y cada pedido <b>2 puntos</b> extra. Subir de nivel cuesta cada vez más (los 7 escudos van de <b>0</b> a <b>5.000</b> puntos), pero cada ventaja <b>se aplica sola</b>: el descuento entra en la cesta, los puntos se multiplican y la ruleta te da tiradas extra.</div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px">${cards}</div>
-                <div style="margin-top:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px;font-size:12px;color:#4b5563"><i class="fa-solid fa-circle-info" style="color:#0f1b3d;margin-right:6px"></i>Tu escudo se ve en el carné de nivel de la tienda y en Mi cuenta. Ahora mismo estás en <b>${escapeHtml(cur.name)}</b>.</div>`);
+                <div style="margin-top:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:12px;font-size:12px;color:#4b5563"><i class="fa-solid fa-circle-info" style="color:#0f1b3d;margin-right:6px"></i>Tu escudo se ve en el carné de nivel de la tienda y en Mi cuenta. Ahora mismo estás en <b>${escapeHtml(cur.name)}</b>${cur.pct ? ` con <b>-${cur.pct}%</b> en todas tus compras` : ''}.</div>`);
         };
         window.openMyAchievements = () => openAchievements();
         window.openStreakInfo = () => { const days = JSON.parse(localStorage.getItem('fija_streak') || '[]');
@@ -10781,17 +10897,22 @@ function renderPaymentPageUI() {
     // Poblar resumen, mapa y métodos (lógica antes en openPaymentGateway)
     const total = state.cart.reduce((s, c) => s + effectivePrice(c.product) * c.quantity, 0);
     const disc = promoDiscount(total);
-    const grand = Math.max(0, +(total - disc).toFixed(2));
-    const payTotal = +(grand + (state.giftWrap ? GIFT_WRAP_PRICE : 0)).toFixed(2);
+    const lvlDisc = levelDiscount(total - disc);
+    const lb = levelBenefits();
+    const wrapFeeNow = state.giftWrap ? (lb.wrapFree ? 0 : GIFT_WRAP_PRICE) : 0;
+    const grand = Math.max(0, +(total - disc - lvlDisc).toFixed(2));
+    const payTotal = +(grand + wrapFeeNow).toFixed(2);
     const balAvail = Math.max(0, Number((state.profile || {}).balance || 0));
     const balUsed = (state.useBalance && balAvail > 0) ? Math.min(balAvail, payTotal) : 0;
     const payFinal = +(payTotal - balUsed).toFixed(2);
     const couponRow = (state.promo && disc > 0) ? `<div class="flex justify-between text-green-600"><span class="truncate pr-3"><i class="fa-solid fa-ticket mr-1"></i>Cupón ${escapeHtml(state.promo.code)} (${state.promo.value}%)</span><span class="font-medium">-${formatEuro(disc)}</span></div>` : '';
-    const wrapRow = state.giftWrap ? `<div class="flex justify-between"><span class="text-gray-700 truncate pr-3"><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span class="font-medium">${formatEuro(GIFT_WRAP_PRICE)}</span></div>` : '';
+    const levelRow = lvlDisc > 0 ? `<div class="flex justify-between text-green-600"><span class="truncate pr-3"><i class="fa-solid fa-shield-halved mr-1"></i>Nivel ${escapeHtml(lb.name)} (-${lb.pct}%)</span><span class="font-medium">-${formatEuro(lvlDisc)}</span></div>` : '';
+    const wrapRow = state.giftWrap ? `<div class="flex justify-between"><span class="text-gray-700 truncate pr-3"><i class="fa-solid fa-gift mr-1"></i>Embalaje regalo</span><span class="font-medium">${lb.wrapFree ? '<span class="text-green-600 font-semibold">Gratis</span>' : formatEuro(GIFT_WRAP_PRICE)}</span></div>` : '';
     const balRow = balUsed > 0 ? `<div class="flex justify-between text-emerald-700"><span><i class="fa-solid fa-wallet mr-1"></i>Saldo FIJA</span><span class="font-medium">-${formatEuro(balUsed)}</span></div>` : '';
     document.getElementById('pay-summary').innerHTML = state.cart.map(c => `<div class="flex justify-between"><span class="text-gray-700 truncate pr-3">${escapeHtml(c.product.title)} × ${c.quantity}</span><span class="font-medium">${formatEuro(effectivePrice(c.product) * c.quantity)}</span></div>`).join('')
-        + couponRow + wrapRow + balRow
-        + `<div class="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold"><span>Total</span><span>${formatEuro(payFinal)}</span></div>`;
+        + couponRow + levelRow + wrapRow + balRow
+        + `<div class="border-t border-gray-100 mt-2 pt-2 flex justify-between font-bold"><span>Total</span><span>${formatEuro(payFinal)}</span></div>`
+        + (lb.pct || lb.mult > 1 ? `<div class="mt-2 text-[11px] text-gray-500"><i class="fa-solid fa-shield-halved mr-1 text-fija-gold"></i>Ventajas ${escapeHtml(lb.name)} aplicadas${lb.mult > 1 ? ` · ganarás ×${lb.mult} puntos` : ''}</div>` : '');
     const first = state.cart[0].product;
     const addr = pickupAddressFor(first) || 'Punto central FIJA, Madrid';
     document.getElementById('pay-address').textContent = addr;
@@ -10824,6 +10945,13 @@ function renderOrderConfirmPageUI() {
             <h2 class="text-2xl font-bold text-fija-900 mb-2">¡Pedido Creado!</h2>
             <p class="text-gray-600 mb-1 text-sm">Tu pedido se ha registrado como <strong>Click &amp; Collect</strong>.</p>
             <p class="text-xs text-gray-400 mb-4">Recógelo en el punto del vendedor. ID: <span class="font-mono text-fija-900">${escapeHtml((o.id || '').slice(0, 8).toUpperCase())}</span></p>
+            ${(() => {
+                const lv = currentLevel(fijaPoints());
+                const parts = [];
+                if (o.levelDiscount > 0) parts.push(`<span class="text-green-700"><i class="fa-solid fa-shield-halved mr-1"></i>Descuento ${escapeHtml(o.levelName || lv.name)} (-${o.levelPct}%): -${formatEuro(o.levelDiscount)}</span>`);
+                if (state.lastPointsEarned) parts.push(`<span class="text-fija-900"><i class="fa-solid fa-star mr-1 text-fija-gold"></i>+${state.lastPointsEarned} puntos (×${levelBenefits(lv).mult})</span>`);
+                return parts.length ? `<div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 mb-4 text-[12px] flex flex-col gap-1 text-left">${parts.join('')}</div>` : '';
+            })()}
             <div id="order-confirm-mail" class="mb-4"></div>
             <button onclick="openOrderQR('${o.id}')" class="w-full bg-fija-gold hover:bg-yellow-600 text-fija-900 font-semibold py-3 rounded-lg transition-colors mb-2"><i class="fa-solid fa-qrcode mr-2"></i>Ver QR de recogida</button>
             <button onclick="exitPageTo('user-dashboard')" class="w-full bg-fija-900 hover:bg-fija-800 text-white font-medium py-3 rounded-lg transition-colors mb-2">Ver en Mi Cuenta</button>
@@ -11422,7 +11550,7 @@ window.favCount22 = () => Array.isArray(state.profile&&state.profile.favorites)?
 window.recentCount22 = () => (state.recent||[]).length;
 window.alertCount22 = () => (state.alerts||[]).length;
 window.pointsBalance22 = () => (state.profile&&state.profile.points)||0;
-window.levelName22 = () => { try { return currentLevel(pointsAvailable()).name; } catch (e) { return 'Bronce'; } };
+window.levelName22 = () => { try { return currentLevel(fijaPoints()).name; } catch (e) { return 'Bronce'; } };
 window.savingsTotal2 = () => (state.cart||[]).reduce((s,i)=>{ const p=state.products.find(x=>x.id===i.id); return s+(p?(Number(p.oldPrice||p.price)-effectivePrice(p))*(Number(i.qty)||0):0); },0);
 window.bestDealProduct2 = () => { const ps=(state.products||[]).filter(p=>(Number(p.discountPercent)||0)>0); ps.sort((a,b)=>(Number(b.discountPercent)||0)-(Number(a.discountPercent)||0)); return ps[0]||null; };
 window.worstRatedProduct2 = () => { const ps=(state.products||[]).filter(p=>productRating(p).count>0); ps.sort((a,b)=>productRating(a).avg-productRating(b).avg); return ps[0]||null; };
@@ -12328,15 +12456,20 @@ window.__LOTE9_OK = true;
         function rouletteState() {
             const r = (state.profile || {}).roulette || {};
             const today = new Date().toDateString();
-            const last = r.last ? new Date(r.last).toDateString() : '';
-            const extra = Number(r.extra || 0);
-            return { fresh: last !== today, extra: extra, can: (last !== today) || extra > 0, last: r.last || 0 };
+            const bonus = (state.session && state.profile) ? levelBenefits().spins : 0;
+            const perDay = 1 + bonus;                       // tiradas diarias según nivel
+            const sameDay = r.day ? r.day === today : (r.last ? new Date(r.last).toDateString() === today : false);
+            const used = sameDay ? Math.max(0, Number(r.used || 0)) : 0;
+            const extra = Math.max(0, Number(r.extra || 0)); // giros extra ganados en la ruleta
+            const left = Math.max(0, perDay - used) + extra;
+            return { fresh: !sameDay, extra: extra, used: used, perDay: perDay, left: left, can: left > 0, last: r.last || 0 };
         }
         function roulettePanelHtml() {
             const st = rouletteState();
+            const bonusTxt = st.perDay > 1 ? ` <span style="color:#6d28d9;font-weight:700">(nivel: ${st.perDay}/día)</span>` : '';
             const status = st.can
-                ? (st.fresh ? '<b style="color:#047857">Tienes 1 tirada gratis hoy</b>' : '<b style="color:#047857">Tienes ' + st.extra + ' giro(s) extra</b>')
-                : '<b style="color:#92400e">Ya has tirado hoy.</b> Vuelve mañana para otra tirada gratis.';
+                ? `<b style="color:#047857">Te quedan ${st.left} tirada(s) hoy</b>${bonusTxt}`
+                : `<b style="color:#92400e">Ya has tirado hoy.</b> Vuelve mañana para otra tirada gratis.${bonusTxt}`;
             const pend = Number((state.profile || {}).pendingDiscountPct || 0);
             return `<div style="text-align:center">
                 ${rouletteWheel(260)}
@@ -12344,7 +12477,7 @@ window.__LOTE9_OK = true;
                 ${pend > 0 ? `<div style="margin-top:6px;font-size:12px;color:#047857"><i class="fa-solid fa-percent"></i> Tienes un <b>${pend}%</b> de descuento para tu próxima compra (se aplica solo en el pago).</div>` : ''}
                 <button type="button" id="roulette-btn" onclick="rouletteSpin()" ${st.can ? '' : 'disabled'} style="margin-top:14px;width:100%;max-width:260px;background:${st.can ? '#c9a227' : '#e5e7eb'};color:${st.can ? '#0f1b3d' : '#9ca3af'};font-weight:800;padding:13px;border-radius:12px;border:0">${st.can ? 'Girar la ruleta' : 'Vuelve mañana'}</button>
                 ${(_lastPrize && Date.now() - _lastPrize.at < 120000) ? `<div style="margin-top:12px;font-size:14px;font-weight:600;color:#0f1b3d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px">${_lastPrize.msg}</div>` : `<div id="roulette-result" style="margin-top:12px;font-size:14px;min-height:22px;font-weight:600;color:#0f1b3d"></div>`}
-                <p style="margin-top:14px;font-size:11px;color:#9ca3af">Premios: saldo FIJA de 2 a 20 €, descuentos del 5% y 10% para tu próxima compra y giros extra. Una tirada gratis al día.</p>
+                <p style="margin-top:14px;font-size:11px;color:#9ca3af">Premios: saldo FIJA de 2 a 20 €, descuentos del 5% y 10% para tu próxima compra y giros extra. Una tirada gratis al día (tu nivel suma tiradas extra).</p>
             </div>`;
         }
         window.openRoulette = () => {
@@ -12389,20 +12522,24 @@ window.__LOTE9_OK = true;
             await new Promise(res => setTimeout(res, 4400));
             const prize = ROULETTE[idx];
             const today = new Date().toDateString();
-            const isFresh = st.fresh;
-            const extraLeft = isFresh ? st.extra : st.extra - 1;
+            // Consumo de tiradas: primero las del día según nivel, luego las extra ganadas
+            const dailyLeft = Math.max(0, st.perDay - (st.fresh ? 0 : st.used));
+            const consumesDaily = dailyLeft > 0;
+            const newUsed = consumesDaily ? (st.fresh ? 0 : st.used) + 1 : (st.fresh ? 0 : st.used);
+            const extraLeft = consumesDaily ? st.extra : Math.max(0, st.extra - 1);
+            const nextRoulette = { last: Date.now(), day: today, used: newUsed, extra: Math.max(0, prize.k === 'spin' ? extraLeft + 1 : extraLeft) };
             // aplicar premio + estado de la tirada
             try {
                 await mutateCollection('profiles', arr => {
                     const p = arr.find(x => x.userId === state.profile.userId);
                     if (!p) return;
-                    p.roulette = { last: Date.now(), extra: Math.max(0, prize.k === 'spin' ? extraLeft + 1 : extraLeft) };
+                    p.roulette = nextRoulette;
                     if (prize.k === 'saldo') p.balance = +(Math.max(0, Number(p.balance) || 0) + prize.v).toFixed(2);
                     if (prize.k === 'pct') p.pendingDiscountPct = Math.max(Number(p.pendingDiscountPct) || 0, prize.v);
                 });
                 if (prize.k === 'saldo') setBalanceLocal(myBalance() + prize.v);
                 if (prize.k === 'pct') state.profile.pendingDiscountPct = Math.max(Number(state.profile.pendingDiscountPct) || 0, prize.v);
-                state.profile.roulette = { last: Date.now(), extra: Math.max(0, prize.k === 'spin' ? extraLeft + 1 : extraLeft) };
+                state.profile.roulette = nextRoulette;
             } catch (e) { console.warn('ruleta', e); }
             const res = document.getElementById('roulette-result');
             const msg = prize.k === 'saldo' ? `<i class="fa-solid fa-coins" style="color:#047857"></i> ¡Has ganado <b>${formatEuro(prize.v)}</b> de saldo!`
