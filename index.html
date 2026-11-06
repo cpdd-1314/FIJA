@@ -6976,14 +6976,14 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         function kamiEs(t) {
             if (!t || !/[\u4e00-\u9fa5]/.test(t)) return t;
             const map = [
-                [/网络|错误重试/, 'Error de conexión. Inténtalo de nuevo.'],
-                [/验证中/, 'Verificando...'],
-                [/请输入卡密/, 'Escribe el código'],
-                [/不存在|无效|验证失败/, 'Código no válido'],
-                [/过期|失效|已到期/, 'Este código ha caducado'],
-                [/已使用|已绑定|已被|占用/, 'Este código ya está en uso'],
-                [/禁用|停用|封禁/, 'Este código está desactivado'],
-                [/次数|配额|上限/, 'Este código ya no tiene usos disponibles']
+                [/网络|错误重试|network|connection|try again|请求失败/i, 'Error de conexión. Inténtalo de nuevo.'],
+                [/验证中|verifying|checking|loading/i, 'Verificando...'],
+                [/请输入卡密|enter.{0,20}(code|key)|license key/i, 'Escribe el código'],
+                [/不存在|无效|验证失败|invalid|not valid|not found|does not exist/i, 'Código no válido'],
+                [/过期|失效|已到期|expired/i, 'Este código ha caducado'],
+                [/已使用|已绑定|已被|占用|already used|in use|bound/i, 'Este código ya está en uso'],
+                [/禁用|停用|封禁|disabled|banned|blocked/i, 'Este código está desactivado'],
+                [/次数|配额|上限|limit|quota|exceed/i, 'Este código ya no tiene usos disponibles']
             ];
             for (const [re, es] of map) if (re.test(t)) return es;
             return 'No se pudo validar el código.';
@@ -6991,20 +6991,39 @@ create policy "escritura publica" on fija_data for all using (true) with check (
         function kamiLocalize() {
             const ov = document.getElementById('kami-overlay');
             if (!ov) return;
+            // El servicio responde en chino o en inglés según el navegador: aquí se pasa todo a español.
+            const notEs = (t) => !t ? false : (/[\u4e00-\u9fa5]/.test(t) || /\b(enter|verify|license|key|code|invalid|expired|error|verifying|checking|page)\b/i.test(t));
             const h2 = ov.querySelector('h2');
-            if (h2 && /[\u4e00-\u9fa5]/.test(h2.textContent)) h2.textContent = 'Introduce tu código de acceso';
+            if (h2 && notEs(h2.textContent)) h2.textContent = 'Introduce tu código de acceso';
             const tip = ov.querySelector('h2 + p');
-            if (tip && /[\u4e00-\u9fa5]/.test(tip.textContent)) tip.textContent = 'Escribe el código que te hemos facilitado para entrar en FIJA.';
+            if (tip && notEs(tip.textContent)) tip.textContent = 'Escribe el código que te hemos facilitado para entrar en FIJA.';
             const btn = ov.querySelector('#kami-btn');
-            if (btn && /[\u4e00-\u9fa5]/.test(btn.textContent)) btn.textContent = /验证中/.test(btn.textContent) ? 'Verificando...' : 'Verificar';
+            if (btn) {
+                const bt = btn.textContent || '';
+                if (/验证中|verifying|checking/i.test(bt)) btn.textContent = 'Verificando...';
+                else if (!/Verificar/.test(bt)) btn.textContent = 'Verificar';
+                if (btn.dataset.fijaBtn !== '1') {
+                    btn.dataset.fijaBtn = '1';
+                    btn.style.background = '#0f1b3d';
+                    btn.style.borderColor = '#0f1b3d';
+                    btn.style.borderRadius = '12px';
+                    btn.style.fontWeight = '700';
+                    btn.style.letterSpacing = '.04em';
+                }
+            }
             const msg = ov.querySelector('#kami-msg');
-            if (msg && /[\u4e00-\u9fa5]/.test(msg.textContent)) msg.textContent = kamiEs(msg.textContent);
+            if (msg && msg.textContent.trim() && notEs(msg.textContent)) msg.textContent = kamiEs(msg.textContent);
             const inp = ov.querySelector('#kami-code');
             if (inp) inp.setAttribute('placeholder', 'XXXX-XXXX-XXXX-XXXX');
-            const icon = ov.querySelector('div[style*="font-size:40px"]');
-            if (icon && icon.dataset.fijaKey !== '1') {
-                icon.dataset.fijaKey = '1';
-                icon.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0f1b3d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"></circle><path d="M11 11l8 8"></path><path d="M15.5 15.5l2-2"></path><path d="M18.5 18.5l2-2"></path></svg>';
+            // El icono del servicio es un emoji: en muchos equipos se ve como un cuadro.
+            // Se sustituye por una llave SVG de FIJA (una sola vez).
+            if (!ov.dataset.fijaKey) {
+                const emoji = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/u;
+                const cand = Array.from(ov.querySelectorAll('div, span')).find(el => !el.children.length && el.textContent && el.textContent.trim().length <= 3 && emoji.test(el.textContent));
+                if (cand) {
+                    ov.dataset.fijaKey = '1';
+                    cand.innerHTML = '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0f1b3d" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"></circle><path d="M11 11l8 8"></path><path d="M15.5 15.5l2-2"></path><path d="M18.5 18.5l2-2"></path></svg>';
+                }
             }
         }
         let _kamiBodyObs = null;
