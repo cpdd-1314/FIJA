@@ -934,7 +934,8 @@
 
 /* ── 033 · icono dentro del campo ─────────────────────────────────────── */
 .fx-input-icon { position: relative; }
-.fx-input-icon > i.fx-in-icon { position:absolute; left:11px; top:50%; transform: translateY(-50%);
+.fx-input-icon > i.fa-search { display: none; }
+.fx-input-icon > i.fx-in-icon { position:absolute; left:15px; top:50%; transform: translateY(-50%);
     font-size:.75rem; color:#a1a1aa; pointer-events:none; transition: color .2s; }
 .fx-input-icon:focus-within > i.fx-in-icon { color:#c9a227; }
 .fx-input-icon > input { padding-left: 2.1rem !important; }
@@ -1378,7 +1379,7 @@ nav.fx-nav-shadow.is-stuck { box-shadow: 0 10px 30px -18px rgba(24,24,27,.5); }
 @keyframes fxCartShake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-9deg); } 55% { transform: rotate(7deg); } 80% { transform: rotate(-3deg); } }
 
 /* ── 118 · atajo de teclado ───────────────────────────────────────────── */
-.fx-kbd-hint { position:absolute; right:8px; top:50%; transform: translateY(-50%); display:none;
+.fx-kbd-hint { position:absolute; right:76px; top:50%; transform: translateY(-50%); display:none;
     font-size:9px; font-weight:700; color:#a1a1aa; border:1px solid #e4e4e7; border-radius:4px;
     padding:1px 4px; background:#fafafa; pointer-events:none; }
 @media (min-width: 768px) { .fx-kbd-hint { display:block; } }
@@ -1963,7 +1964,7 @@ nav.fx-nav-line.is-stuck::after { opacity:1; }
                 </div>
                 <div class="flex-1 max-w-2xl px-8 hidden md:block relative">
                     <div class="relative">
-                        <input type="text" id="search-input" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-suggest" class="w-full bg-gray-100 rounded-lg py-2 pl-10 pr-20 focus:outline-none focus:ring-2 focus:ring-fija-900 focus:bg-white transition-all text-sm" placeholder="Buscar en FIJA...">
+                        <input type="text" id="search-input" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="search-suggest" class="w-full bg-gray-100 rounded-lg py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-fija-900 focus:bg-white transition-all text-sm" style="padding-right:136px" placeholder="Buscar en FIJA...">
                         <i class="fa-solid fa-search absolute left-4 top-2.5 text-gray-400"></i>
                         <button type="button" onclick="startVoiceSearch()" id="voice-btn" title="Buscar por voz" class="absolute right-10 top-1.5 text-gray-400 hover:text-fija-900 text-sm px-1"><i class="fa-solid fa-microphone"></i></button>
                         <button type="button" onclick="runSearch(true)" title="Buscar" class="absolute right-1.5 top-1.5 bg-fija-900 text-white rounded-md px-2.5 py-1.5 text-xs font-semibold hover:bg-fija-800 transition-colors">Buscar</button>
@@ -14628,6 +14629,8 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         var w = el.parentElement;
         if (!w) return;
         w.classList.add('fx-clear-wrap');
+        var oldBtns = w.querySelectorAll('.fx-clear-btn');
+        for (var ob = 0; ob < oldBtns.length; ob++) { if (oldBtns[ob].parentNode) oldBtns[ob].parentNode.removeChild(oldBtns[ob]); }
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'fx-clear-btn'; b.setAttribute('aria-label', 'Borrar');
         b.innerHTML = '<i class="fa-solid fa-xmark"></i>';
@@ -14685,6 +14688,8 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         if (!w) return;
         if (getComputedStyle(w).position === 'static') w.style.position = 'relative';
         w.classList.add('fx-input-icon');
+        var oldIcons = w.querySelectorAll('.fx-in-icon');
+        for (var oi = 0; oi < oldIcons.length; oi++) { if (oldIcons[oi].parentNode) oldIcons[oi].parentNode.removeChild(oldIcons[oi]); }
         var i = document.createElement('i');
         i.className = 'fa-solid ' + (icon || 'fa-magnifying-glass') + ' fx-in-icon';
         w.appendChild(i);
@@ -14771,10 +14776,16 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
     }
     function boot() {
         /* los enlaces de texto del menu, listos para animarse */
-        qa('nav button').forEach(function (b) {
-            var t = (b.textContent || '').trim();
-            if (t.length > 2 && t.length < 26) b.classList.add('fx-nav-item');
-        });
+        (function () {
+            var RE_NAV = /navigate\(|toggleMegaMenu|openCompare|openHelp|openStoresDirectory/;
+            qa('nav button').forEach(function (b) {
+                var t = (b.textContent || '').trim();
+                var code = b.getAttribute('onclick') || '';
+                var ok = t.length > 2 && t.length < 26 && RE_NAV.test(code) && !b.closest('.relative');
+                if (ok) b.classList.add('fx-nav-item');
+                else if (b.classList.contains('fx-nav-item')) b.classList.remove('fx-nav-item');
+            });
+        })();
 
         /* tarjeta de canje y entrega, dentro de la cesta */
         function buildExtra() {
@@ -14884,7 +14895,10 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         C('038', 'fx-suggest', '#search-input', function (el) {
             var w = el.parentElement; if (!w) return;
             if (getComputedStyle(w).position === 'static') w.style.position = 'relative';
+            var prev = w.querySelectorAll('.fx-suggest-out');
+            for (var ps = 0; ps < prev.length; ps++) { if (prev[ps].parentNode) prev[ps].parentNode.removeChild(prev[ps]); }
             var out = document.createElement('span');
+            out.className = 'fx-suggest-out';
             out.style.cssText = 'position:absolute;left:2px;top:100%;margin-top:2px;font-size:10px;font-weight:600;color:#71717a;pointer-events:none;opacity:0;transition:opacity .2s';
             w.appendChild(out);
             on(el, 'input', function () {
@@ -14930,7 +14944,7 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
                 else el.classList.remove('is-good');
             });
         }, true);
-        C('042', 'fx-hit', '#search-input', null);
+        C('042', 'fx-hit', q('#hero-section h1 span') || qa('#deals-section .uppercase')[0], null);
         C('043', 'fx-scanline', '#chatbot-input', function (el) {
             var w = el.parentElement;
             if (w) w.classList.add('fx-scanline');
@@ -15182,10 +15196,24 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         }, true);
         C('116', 'fx-logo-glow', 'nav img', null);
         C('117', 'fx-cart-shake', '#cart-count', null);
-        C('118', 'fx-kbd-hint', '#search-input', function (el) {
-            var k = document.createElement('kbd'); k.className = 'fx-kbd-hint'; k.textContent = 'Ctrl K';
-            el.parentElement.style.position = 'relative';
-            el.parentElement.appendChild(k);
+        C('118', null, '#search-input', function (el) {
+            /* el atajo es una etiqueta aparte: el input nunca debe recibir esta clase
+               (es position:absolute y lo sacaria del flujo del header) */
+            el.classList.remove('fx-kbd-hint');
+            el.removeAttribute('data-fx');
+            var host = el.parentElement;
+            if (!host) return null;
+            host.style.position = 'relative';
+            var old = host.querySelectorAll('.fx-kbd-hint');
+            for (var i = 1; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+            var k = old[0];
+            if (!k) {
+                k = document.createElement('kbd');
+                k.className = 'fx-kbd-hint';
+                k.textContent = 'Ctrl K';
+                host.appendChild(k);
+            }
+            return k;
         });
         C('119', 'fx-theme-slider', '#theme-btn', null);
         C('120', 'fx-scroll-hint', '.hero-dot', null, true);
