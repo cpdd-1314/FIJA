@@ -15386,6 +15386,33 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         });
         C('167', 'fx-gold-frame', '#hero-section', null);
         C('168', 'fx-grad-ring', '.hero-dot', null);
+        /* los puntos del carrusel se recrean al cambiar de slide: se vuelven a marcar */
+        (function () {
+            try {
+                var first = q('.hero-dot');
+                var host = first && first.parentElement;
+                if (!host || !window.MutationObserver || host.__fxObs) return;
+                host.__fxObs = 1;
+                var t = null;
+                new MutationObserver(function () {
+                    clearTimeout(t);
+                    t = setTimeout(function () {
+                        var firstNow = q('.hero-dot');
+                        qa('.hero-dot').forEach(function (d) {
+                            var v = d.getAttribute('data-fx') || '';
+                            if (v.indexOf('120') < 0) {
+                                d.classList.add('fx-scroll-hint');
+                                d.setAttribute('data-fx', (v ? v + ' ' : '') + '120');
+                            }
+                            if (d === firstNow && (d.getAttribute('data-fx') || '').indexOf('168') < 0) {
+                                d.classList.add('fx-grad-ring');
+                                d.setAttribute('data-fx', (d.getAttribute('data-fx') || '') + ' 168');
+                            }
+                        });
+                    }, 220);
+                }).observe(host, { childList: true });
+            } catch (e) { }
+        })();
         C('169', 'fx-glass-reflection', '#hero-section', null);
         C('170', 'fx-stacked-shadow-text', '#hero-section .uppercase', null);
         C('171', 'fx-text-glow', '#hero-section .text-fija-gold', null);
