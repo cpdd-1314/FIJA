@@ -14475,6 +14475,12 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
     }
     /* C(id, clases, selector, comportamiento, todos) */
     function C(id, cls, sel, fn, all) {
+        if (DONE[id] && !all) {
+            var alive = null;
+            try { alive = document.querySelector('[data-fx~="' + id + '"]'); } catch (e) { }
+            if (alive) return;
+            DONE[id] = 0;
+        }
         var els;
         if (sel && sel.nodeType) els = [sel];
         else if (Object.prototype.toString.call(sel) === '[object Array]') els = sel;
@@ -14482,6 +14488,8 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         els = els.filter(Boolean);
         if (!els.length) { MISS.push(id + '|' + sel); return; }
         els.forEach(function (el, i) {
+            var seen = el.getAttribute && el.getAttribute('data-fx');
+            if (seen && (' ' + seen + ' ').indexOf(' ' + id + ' ') >= 0) return;
             try {
                 if (cls) cls.split(' ').forEach(function (c) { if (c) el.classList.add(c); });
                 var r = fn ? fn(el, i) : null;
@@ -14863,7 +14871,7 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
         C('030', 'fx-tag-input', '#active-filters', null);
 
         /* ══════════ 2 · CAMPOS (031-060) ══════════ */
-        var extra = buildExtra();
+        var extra = window.__fxExtra || (window.__fxExtra = buildExtra());
         C('031', null, '#promo-input', floatLabel);
         C('032', 'fx-focus-halo', '#search-input', null);
         C('033', null, '#search-input', function (el) { inputIcon(el, 'fa-magnifying-glass'); });
@@ -15562,6 +15570,7 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
     else boot();
+    [2500, 6000, 11000].forEach(function (ms) { setTimeout(boot, ms); });
     setTimeout(function () {
         try {
             if (window.FIJA_FX && window.FIJA_FX.applied() < 200) {
