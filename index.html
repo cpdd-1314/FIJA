@@ -679,6 +679,55 @@
             box-shadow: 0 5px 16px -11px rgba(220,38,38,.9); }
         .f-btn-danger:active { transform: translateY(1px) scale(.985); }
 
+        /* ============================================================
+           CAPA 4 — MOVIMIENTO CON SENTIDO
+           Avisos flotantes, vuelo al carrito, barrido de luz en las
+           tarjetas, entrada de vista y pequenos gestos.
+           ============================================================ */
+        /* --- Aviso flotante (tooltip) --- */
+        .f-tip-pop { position: fixed; z-index: 95; pointer-events: none; left: 0; top: 0;
+            padding: 5px 9px; border-radius: 7px; font-size: 11px; font-weight: 600; letter-spacing: .01em;
+            color: #faf7ef; background: rgba(24,24,27,.95); border: 1px solid rgba(212,175,55,.28);
+            box-shadow: 0 8px 22px -12px rgba(24,24,27,.8); white-space: nowrap;
+            opacity: 0; transform: translate(-50%, 4px) scale(.97); transition: opacity .16s ease, transform .16s var(--f-ease); }
+        .f-tip-pop.on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        .f-tip-pop::after { content:""; position: absolute; left: 50%; bottom: -4px; width: 7px; height: 7px;
+            margin-left: -3.5px; transform: rotate(45deg); background: rgba(24,24,27,.95);
+            border-right: 1px solid rgba(212,175,55,.28); border-bottom: 1px solid rgba(212,175,55,.28); }
+        .f-tip-pop.below { transform: translate(-50%, -4px) scale(.97); }
+        .f-tip-pop.below.on { transform: translate(-50%, 0) scale(1); }
+        .f-tip-pop.below::after { bottom: auto; top: -4px; border: none;
+            border-left: 1px solid rgba(212,175,55,.28); border-top: 1px solid rgba(212,175,55,.28); }
+
+        /* --- Vuelo del producto hasta la cesta --- */
+        .f-fly-img { position: fixed; z-index: 9998; pointer-events: none; object-fit: cover;
+            box-shadow: 0 14px 34px -16px rgba(0,0,0,.6);
+            transition: transform .62s cubic-bezier(.22,.8,.28,1), opacity .62s ease-in, border-radius .62s ease; }
+
+        /* --- Entrada de vista --- */
+        .f-view-in { animation: fijaViewIn .32s var(--f-ease); }
+        @keyframes fijaViewIn { from { opacity: 0; transform: translateY(7px); } }
+
+        /* --- Barrido de luz sobre la tarjeta --- */
+        @media (hover:hover) and (pointer:fine) {
+            .amz-card { overflow: hidden; }
+            .amz-card::before { content:""; position:absolute; inset:-1px; z-index:2; pointer-events:none; opacity:0;
+                background: linear-gradient(112deg, rgba(255,255,255,0) 34%, rgba(255,255,255,.5) 47%,
+                            rgba(255,255,255,.16) 55%, rgba(255,255,255,0) 66%);
+                -webkit-mask-image: linear-gradient(180deg, #000 0 46%, transparent 64%);
+                mask-image: linear-gradient(180deg, #000 0 46%, transparent 64%);
+                transform: translateX(-130%); }
+            .amz-card:hover::before { opacity:.6; animation: fijaSweep .95s cubic-bezier(.3,.7,.3,1); }
+            @keyframes fijaSweep { from { transform: translateX(-130%); } to { transform: translateX(130%); } }
+        }
+
+        /* --- Gestos pequenos --- */
+        button:hover > i.fa-bell, button:hover > i.fa-bell-slash,
+        a:hover > i.fa-bell { animation: fijaBell .7s var(--f-ease); transform-origin: 50% 10%; }
+        @keyframes fijaBell { 0%,100% { transform: rotate(0); } 22% { transform: rotate(11deg); } 48% { transform: rotate(-9deg); } 72% { transform: rotate(4deg); } }
+        .modal-backdrop button:hover > i.fa-xmark, .modal-backdrop button:hover > i.fa-times {
+            transform: rotate(90deg); transition: transform .28s var(--f-ease); }
+
         @media (max-width: 640px) {
             #storefront-home > section > div > h2 { padding-left: 11px; }
             #fija-top { right: 14px; bottom: 84px; width: 38px; height: 38px; }
@@ -4260,6 +4309,13 @@
             if (viewId === 'cart') renderCart();
             if (viewId === 'user-dashboard') renderUserDashboard();
             saveRestoreState();
+            try {
+                var shown = document.querySelector('.view-section:not(.hide):not(.hidden)');
+                if (shown && !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+                    shown.classList.remove('f-view-in'); void shown.offsetWidth; shown.classList.add('f-view-in');
+                    setTimeout(function () { shown.classList.remove('f-view-in'); }, 360);
+                }
+            } catch (_) { }
             try { if (window.fijaReveal) setTimeout(window.fijaReveal, 40); } catch (e) {}
         };
         // ===================== Persistencia de zona al recargar =====================
@@ -5070,7 +5126,9 @@
             const n = Math.max(1, Math.min(99, Number(qty) || 1));
             const existing = state.cart.find(item => item.product.id === productId);
             if (existing) existing.quantity += n; else state.cart.push({ product, quantity: n });
-            updateCartBadge(); if (!silent) showToast(`Añadido a la cesta: ${product.title}${n > 1 ? ' ×' + n : ''}`);
+            updateCartBadge();
+            if (!silent) { try { window.fijaFlyToCart && window.fijaFlyToCart(); } catch (_) { } }
+            if (!silent) showToast(`Añadido a la cesta: ${product.title}${n > 1 ? ' ×' + n : ''}`);
         };
         // Cambia la cantidad exacta de una línea de la cesta (input manual o +/-)
         window.setCartQty = (productId, qty) => {
@@ -10830,6 +10888,102 @@ const FIJA_THEMES = {
                     b.appendChild(s);
                     setTimeout(function () { s.remove(); }, 700);
                 }, { passive: true });
+            } catch (_) { }
+        })();
+
+        // Aviso flotante al pasar el cursor por los botones de icono
+        (function () {
+            try {
+                if (!window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+                var tip = document.createElement('div');
+                tip.className = 'f-tip-pop';
+                tip.setAttribute('role', 'tooltip');
+                document.body.appendChild(tip);
+                var cur = null, timer = null;
+
+                function hide() {
+                    cur = null; tip.classList.remove('on');
+                }
+                function show(el, text) {
+                    cur = el;
+                    tip.textContent = text;
+                    tip.classList.remove('on', 'below');
+                    tip.style.visibility = 'hidden';
+                    tip.style.display = 'block';
+                    var r = el.getBoundingClientRect();
+                    var tw = tip.offsetWidth, th = tip.offsetHeight;
+                    var below = r.top - th - 10 < 8;
+                    if (below) tip.classList.add('below');
+                    var left = Math.min(Math.max(r.left + r.width / 2, tw / 2 + 6), window.innerWidth - tw / 2 - 6);
+                    tip.style.left = left + 'px';
+                    tip.style.top = (below ? r.bottom + 9 : r.top - th - 9) + 'px';
+                    tip.style.visibility = '';
+                    requestAnimationFrame(function () { tip.classList.add('on'); });
+                }
+                document.addEventListener('pointerover', function (e) {
+                    var t = e.target;
+                    var b = t && t.closest ? t.closest('button[aria-label], [data-tip]') : null;
+                    if (!b || cur === b) return;
+                    var label = b.getAttribute('data-tip') || b.getAttribute('aria-label') || '';
+                    clearTimeout(timer);
+                    if (!label || label.length < 6 || b.disabled) { hide(); return; }
+                    timer = setTimeout(function () { show(b, label); }, 380);
+                }, { passive: true });
+                document.addEventListener('pointerout', function (e) {
+                    var t = e.target;
+                    if (t && t.closest && t.closest('button[aria-label], [data-tip]')) { clearTimeout(timer); hide(); }
+                }, { passive: true });
+                document.addEventListener('pointerdown', function () { clearTimeout(timer); hide(); }, { passive: true });
+                window.addEventListener('scroll', function () { clearTimeout(timer); hide(); }, { passive: true });
+            } catch (_) { }
+        })();
+
+        // El producto "vuela" hasta el icono de la cesta al anadirlo
+        (function () {
+            try {
+                var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+                if (reduce) return;
+                var last = null;
+                document.addEventListener('click', function (e) {
+                    var t = e.target;
+                    var b = t && t.closest ? t.closest('button') : null;
+                    if (!b) { last = null; return; }
+                    var txt = (b.textContent || '').toLowerCase();
+                    if (txt.indexOf('añadir') < 0 && txt.indexOf('anadir') < 0 && !b.querySelector('.fa-cart-plus')) { last = null; return; }
+                    last = { el: b, at: Date.now() };
+                }, true);
+
+                window.fijaFlyToCart = function (srcEl) {
+                    try {
+                        var box = srcEl || (last && Date.now() - last.at < 600 ? last.el : null);
+                        if (!box || !document.contains(box)) return;
+                        var card = box.closest('.amz-card') || box.parentElement;
+                        var img = card ? card.querySelector('img') : null;
+                        var badge = document.getElementById('cart-count');
+                        if (!img || !badge) return;
+                        var br = badge.getBoundingClientRect();
+                        if (!br.width) return;
+                        var r = img.getBoundingClientRect();
+                        if (!r.width || r.bottom < 0) return;
+                        var fly = document.createElement('img');
+                        fly.className = 'f-fly-img';
+                        fly.src = img.currentSrc || img.src;
+                        fly.style.left = r.left + 'px';
+                        fly.style.top = r.top + 'px';
+                        fly.style.width = r.width + 'px';
+                        fly.style.height = r.height + 'px';
+                        fly.style.borderRadius = '10px';
+                        document.body.appendChild(fly);
+                        var sx = (br.left + br.width / 2) - (r.left + r.width / 2);
+                        var sy = (br.top + br.height / 2) - (r.top + r.height / 2);
+                        requestAnimationFrame(function () {
+                            fly.style.transform = 'translate(' + sx + 'px,' + sy + 'px) scale(.09)';
+                            fly.style.opacity = '.2';
+                            fly.style.borderRadius = '50%';
+                        });
+                        setTimeout(function () { fly.remove(); }, 680);
+                    } catch (_) { }
+                };
             } catch (_) { }
         })();
 
