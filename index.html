@@ -549,6 +549,21 @@
         #fija-top.on { opacity: 1; visibility: visible; transform: none; }
         #fija-top:hover { background: #fff; border-color: #d4af37; }
 
+        /* --- Buscador: se enciende en oro al escribir --- */
+        #search-input:focus, #search-input-mobile:focus {
+            background: #fff !important;
+            box-shadow: 0 0 0 2px rgba(212,175,55,.55), 0 8px 24px -16px rgba(212,175,55,.9) !important; }
+
+        /* --- Foco de teclado siempre visible y en oro --- */
+        .f-btn:focus-visible, .f-switch:focus-visible, a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid rgba(212,175,55,.65); outline-offset: 2px; }
+
+        /* --- Encabezados de cesta y cuenta --- */
+        #view-cart h1, #view-user-dashboard > div > h1 { position: relative; padding-left: 15px; }
+        #view-cart h1::before, #view-user-dashboard > div > h1::before {
+            content:""; position:absolute; left:0; top:.16em; bottom:.16em; width:4px; border-radius:3px;
+            background: linear-gradient(180deg,#e9c85a,#b8932f); }
+
         @media (max-width: 640px) {
             #storefront-home > section > div > h2 { padding-left: 11px; }
             #fija-top { right: 14px; bottom: 84px; width: 38px; height: 38px; }
