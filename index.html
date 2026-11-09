@@ -15224,9 +15224,15 @@ Recibes este correo porque ${escapeHtml(who)} compró una tarjeta regalo para ti
                 setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 280); }, 2600);
             };
             on(document, 'click', function (e) {
-                var b = e.target.closest && e.target.closest('[onclick*="addToCart"], [onclick*="applyPromoCode"], [onclick*="addGiftWrap"]');
-                if (b) setTimeout(function () { window.fxToast('Listo, guardado en tu cesta'); }, 260);
-            });
+                var b = e.target.closest && e.target.closest('button, a');
+                if (!b) return;
+                var txt = (b.textContent || '').trim();
+                var code = b.getAttribute('onclick') || '';
+                var isTheme = code.indexOf('toggleTheme') >= 0 || b.id === 'theme-btn';
+                var isList = code.indexOf('openListPicker') >= 0 || code.indexOf('saveCartForLater') >= 0;
+                if (isTheme) setTimeout(function () { window.fxToast('Tema actualizado', 'fa-moon'); }, 220);
+                else if (isList) setTimeout(function () { window.fxToast('Guardado para despues', 'fa-clock'); }, 320);
+            }, true);
         });
         C('127', 'fx-skeleton', '#cart-items', null);
         C('128', 'fx-skel-swap', '#cart-items', null);
