@@ -1491,6 +1491,8 @@ nav.fx-nav-line.is-stuck::after { opacity:1; }
 @media (max-width: 767px) {
     .fx-cookie-bar { display: none !important; }
     main { padding-bottom: 68px; }
+    /* el carrusel ya se pasa con el dedo: sus flechas no deben tapar el texto */
+    #hero-section button[class*="-translate-y-1/2"] { display: none; }
 }
 
 /* ── 138 · número que sube ────────────────────────────────────────────── */
