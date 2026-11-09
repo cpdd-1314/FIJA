@@ -526,11 +526,13 @@
         footer.bg-fija-900 a:hover { color: var(--f-gold-soft); }
 
         /* --- Onda al pulsar --- */
-        .f-btn > span.f-ripple { position: absolute; border-radius: 50%; pointer-events: none; z-index: 3;
+        span.f-ripple { position: absolute; border-radius: 50%; pointer-events: none; z-index: 3;
             width: 12px; height: 12px; margin: -6px 0 0 -6px; transform: scale(0); opacity: .7;
             background: radial-gradient(circle, rgba(255,255,255,.75), rgba(255,255,255,0) 72%);
             animation: fijaRipple .62s ease-out forwards; }
         .f-btn-gold > span.f-ripple { background: radial-gradient(circle, rgba(255,255,255,.95), rgba(255,255,255,0) 72%); }
+        /* los botones de fondo claro reciben una onda de tinta, no de luz */
+        .f-ripple-light > span.f-ripple { background: radial-gradient(circle, rgba(24,24,27,.26), rgba(24,24,27,0) 72%); opacity:.5; }
         @keyframes fijaRipple { to { transform: scale(3.2); opacity: 0; } }
 
         /* --- Entrada escalonada de secciones --- */
@@ -563,6 +565,119 @@
         #view-cart h1::before, #view-user-dashboard > div > h1::before {
             content:""; position:absolute; left:0; top:.16em; bottom:.16em; width:4px; border-radius:3px;
             background: linear-gradient(180deg,#e9c85a,#b8932f); }
+
+        /* ============================================================
+           CAPA 3 — TODA LA INTERFAZ
+           Los mismos acabados, aplicados a TODOS los botones, campos,
+           pestanas y chips, incluidos los escritos en Tailwind directo.
+           ============================================================ */
+        /* --- Base: cualquier boton responde al pulsar --- */
+        button, [role="button"] {
+            transition: transform .16s var(--f-ease), box-shadow .22s ease, background-color .22s ease,
+                        border-color .22s ease, color .22s ease, filter .22s ease;
+        }
+        button:not([class*="-translate-"]):not(.fija-zoom-nav):not(.fija-zoom-close):not(.fija-zoom-prev):not(.fija-zoom-next):not(#fija-top):active {
+            transform: translateY(1px) scale(.985);
+        }
+        button:disabled, button[aria-disabled="true"] { opacity: .55; cursor: not-allowed; }
+        button:disabled:active, button[aria-disabled="true"]:active { transform: none; }
+
+        /* --- Botones de tinta escritos en Tailwind --- */
+        button[class*="bg-fija-900"]:not(.f-btn) { background-image: linear-gradient(180deg,#2b2b30,#18181b);
+            box-shadow: 0 1px 2px rgba(24,24,27,.2), inset 0 1px 0 rgba(255,255,255,.15); }
+        button[class*="bg-fija-900"]:not(.f-btn):hover { background-image: linear-gradient(180deg,#3f3f46,#27272a);
+            box-shadow: 0 10px 22px -12px rgba(24,24,27,.7), inset 0 1px 0 rgba(255,255,255,.2); transform: translateY(-1px); }
+        button[class*="bg-fija-900"]:not(.f-btn):active { transform: translateY(0) scale(.985);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,.45); }
+
+        /* --- Botones dorados directos: mismo barrido de luz --- */
+        button[class*="bg-fija-gold"]:not(.f-btn), button[class*="bg-yellow-5"]:not(.f-btn) {
+            position: relative; overflow: hidden; isolation: isolate;
+            background-image: linear-gradient(135deg,#d4af37 0%,#e9cd74 44%,#c39f2c 100%);
+            box-shadow: 0 1px 2px rgba(212,175,55,.35), inset 0 1px 0 rgba(255,255,255,.5); }
+        button[class*="bg-fija-gold"]:not(.f-btn)::after, button[class*="bg-yellow-5"]:not(.f-btn)::after {
+            content:""; position:absolute; top:-130%; left:-40%; width:46%; height:360%;
+            transform: rotate(20deg) translateX(-280%); pointer-events:none;
+            background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.6) 32%, rgba(255,255,255,.98) 50%, rgba(255,255,255,.6) 68%, rgba(255,255,255,0));
+            filter: blur(1px); }
+        button[class*="bg-fija-gold"]:not(.f-btn):hover::after, button[class*="bg-yellow-5"]:not(.f-btn):hover::after {
+            animation: fijaShine .75s cubic-bezier(.35,0,.2,1); }
+        button[class*="bg-fija-gold"]:not(.f-btn):hover, button[class*="bg-yellow-5"]:not(.f-btn):hover {
+            transform: translateY(-1px); filter: brightness(1.03);
+            box-shadow: 0 7px 20px -9px rgba(212,175,55,.8), inset 0 1px 0 rgba(255,255,255,.55); }
+
+        /* --- Botones redondos de icono: anillo dorado --- */
+        button[class*="rounded-full"]:not(.f-btn):not([class*="text-white"]):not([class*="bg-fija-900"]):not([class*="bg-fija-gold"]) {
+            background-color: #fff; }
+        button[class*="rounded-full"]:not(.f-btn):not([class*="text-white"]):not([class*="bg-fija-900"]):not([class*="bg-fija-gold"]):hover {
+            border-color: rgba(212,175,55,.62); color: #18181b; background-color: #fffdf7;
+            box-shadow: 0 0 0 3px rgba(212,175,55,.12), 0 7px 16px -10px rgba(212,175,55,.9); }
+
+        /* --- Contornos neutros: se doran al pasar --- */
+        button[class*="border-gray-2"]:not(.f-btn):not([class*="rounded-full"]):hover,
+        button[class*="border-gray-3"]:not(.f-btn):not([class*="rounded-full"]):hover {
+            border-color: rgba(212,175,55,.62); background-color: #fffdf7;
+            box-shadow: 0 5px 15px -11px rgba(212,175,55,.95); }
+
+        /* --- Pestanas de cuenta: subrayado que crece --- */
+        .ud-tab-btn { position: relative; }
+        .ud-tab-btn::after { content:""; position:absolute; left:6%; right:6%; bottom:-1px; height:2px; border-radius:2px;
+            background: linear-gradient(90deg, rgba(212,175,55,0), #d4af37 22%, #f0d888 50%, #d4af37 78%, rgba(212,175,55,0));
+            transform: scaleX(0); transform-origin: center; transition: transform .34s var(--f-ease); }
+        .ud-tab-btn:hover::after { transform: scaleX(.42); }
+        .ud-tab-btn.active { border-color: transparent; }
+        .ud-tab-btn.active::after { transform: scaleX(1); }
+
+        /* --- Chips de orden y filtros (antes sin estilo) --- */
+        .f-chip { display: inline-flex; align-items: center; gap: .35rem; border: 1px solid #e4e4e7; background: #fff;
+            border-radius: 999px; padding: .48rem .9rem; font-size: .78rem; font-weight: 600; color: #52525b;
+            white-space: nowrap; transition: all .22s var(--f-ease); }
+        .f-chip:hover { border-color: #d4af37; color: #18181b; background: #fffdf7;
+            box-shadow: 0 5px 14px -9px rgba(212,175,55,.85); transform: translateY(-1px); }
+        .f-chip.is-on { background-image: linear-gradient(135deg,#d4af37,#e9cd74 55%,#cfa93a); color: #18181b;
+            border-color: #c9a227; box-shadow: 0 4px 14px -8px rgba(212,175,55,.9), inset 0 1px 0 rgba(255,255,255,.6); }
+        .f-chip.is-on:hover { transform: none; }
+
+        /* --- Campos: el mismo aro dorado en toda la tienda --- */
+        input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+        input[type="search"], input[type="tel"], input[type="url"], input[type="date"], textarea, select {
+            transition: border-color .2s ease, box-shadow .22s ease, background-color .2s ease; }
+        input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="number"]:focus,
+        input[type="search"]:focus, input[type="tel"]:focus, input[type="url"]:focus, input[type="date"]:focus,
+        textarea:focus, select:focus {
+            border-color: rgba(212,175,55,.72) !important;
+            box-shadow: 0 0 0 3px rgba(212,175,55,.16) !important;
+            outline: none !important; }
+        input::placeholder, textarea::placeholder { color: #a1a1aa; }
+        input[type="checkbox"]:not(.f-switch), input[type="radio"] { accent-color: #c9a227; }
+        select:not([multiple]) { -webkit-appearance: none; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a1a1aa' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right .6rem center; background-size: 10px 6px;
+            padding-right: 1.75rem !important; }
+
+        /* --- Contador de la cesta: late al cambiar --- */
+        .f-badge-pulse { animation: fijaBadge .5s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes fijaBadge { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
+
+        /* --- Entrada escalonada de las tarjetas de producto --- */
+        @media (prefers-reduced-motion: no-preference) {
+            #products-grid > * { animation: fijaCardIn .46s var(--f-ease) backwards; }
+            #products-grid > *:nth-child(2) { animation-delay: .04s; }
+            #products-grid > *:nth-child(3) { animation-delay: .08s; }
+            #products-grid > *:nth-child(4) { animation-delay: .12s; }
+            #products-grid > *:nth-child(5) { animation-delay: .16s; }
+            #products-grid > *:nth-child(6) { animation-delay: .2s; }
+            #products-grid > *:nth-child(7) { animation-delay: .23s; }
+            #products-grid > *:nth-child(8) { animation-delay: .26s; }
+            #products-grid > *:nth-child(9) { animation-delay: .28s; }
+            #products-grid > *:nth-child(n+10) { animation-delay: .3s; }
+        }
+        @keyframes fijaCardIn { from { opacity: 0; transform: translateY(16px) scale(.99); } }
+
+        /* --- Botones de peligro: mismo lenguaje, en rojo --- */
+        .f-btn-danger:hover { border-color: rgba(220,38,38,.55); background: #fff7f7;
+            box-shadow: 0 5px 16px -11px rgba(220,38,38,.9); }
+        .f-btn-danger:active { transform: translateY(1px) scale(.985); }
 
         @media (max-width: 640px) {
             #storefront-home > section > div > h2 { padding-left: 11px; }
@@ -5136,7 +5251,7 @@
             const count = state.cart.reduce((sum, item) => sum + item.quantity, 0);
             DOM.cartCount.textContent = count;
             if (typeof renderMiniCart === 'function') { try { renderMiniCart(); } catch (e) { console.warn(e); } }
-            if (count > 0) { DOM.cartCount.classList.add('animate-bounce'); setTimeout(() => DOM.cartCount.classList.remove('animate-bounce'), 1000); }
+            if (count > 0) { DOM.cartCount.classList.remove('f-badge-pulse'); void DOM.cartCount.offsetWidth; DOM.cartCount.classList.add('f-badge-pulse'); setTimeout(() => DOM.cartCount.classList.remove('f-badge-pulse'), 600); }
         }
 
         // ===================== Render: Storefront (estilo Amazon) =====================
@@ -5703,6 +5818,9 @@
                 const off = 'px-3 py-1.5 rounded-lg text-xs border border-gray-300 text-gray-600 hover:border-fija-900 font-medium';
                 g.className = v === 'grid' ? on : off; l.className = v === 'list' ? on : off;
             }
+            document.querySelectorAll('.f-chip[data-grid]').forEach(function (b) {
+                b.classList.toggle('is-on', b.getAttribute('data-grid') === v);
+            });
             renderStorefront();
         };
 
@@ -10686,12 +10804,24 @@ const FIJA_THEMES = {
             } catch (_) { }
         })();
 
-        // Onda luminosa al pulsar cualquier boton FIJA
+        // Onda luminosa al pulsar CUALQUIER boton (no solo los .f-btn)
         (function () {
             try {
                 document.addEventListener('pointerdown', function (e) {
-                    var b = e.target && e.target.closest ? e.target.closest('.f-btn') : null;
-                    if (!b || b.disabled) return;
+                    var t = e.target;
+                    var b = t && t.closest ? t.closest('button, [role="button"], a.f-btn') : null;
+                    if (!b || b.disabled || b.getAttribute('aria-disabled') === 'true') return;
+                    if (b.dataset.noRipple === '1') return;
+                    var cs = window.getComputedStyle(b);
+                    // posicionar/confinar sin romper botones que ya son absolute o fixed
+                    if (cs.position === 'static') b.style.position = 'relative';
+                    if (cs.overflow === 'visible') b.style.overflow = 'hidden';
+                    if (!b.classList.contains('f-btn-gold')) {
+                        var m = (cs.backgroundColor || '').match(/[\d.]+/g) || [];
+                        var lum = (0.299 * (+m[0] || 255) + 0.587 * (+m[1] || 255) + 0.114 * (+m[2] || 255)) / 255;
+                        var alpha = m.length > 3 ? +m[3] : 1;
+                        b.classList.toggle('f-ripple-light', lum > 0.6 && alpha > 0.35);
+                    }
                     var r = b.getBoundingClientRect();
                     var s = document.createElement('span');
                     s.className = 'f-ripple';
@@ -11082,15 +11212,18 @@ function fijaListRowHTML(p) {
 function pageShell(title, subtitle, icon, list, def) {
     const crumb = (Array.isArray(state.breadcrumb) ? state.breadcrumb : ['Tienda'])
         .map(c => `<span class="text-gray-400">${escapeHtml(c)}</span>`).join(' <i class="fa-solid fa-chevron-right text-[10px] text-gray-300 mx-1"></i> ');
+    const curSort = state.listingSort || 'relevance';
+    const curGrid = state.gridView || 'grid';
+    const sortChip = (k, label) => `<button class="f-chip${curSort === k ? ' is-on' : ''}" data-sort="${k}" onclick="setListingSort('${k}')">${label}</button>`;
     const sortBar = `<div class="flex flex-wrap items-center gap-2 mb-4">
-        <button class="f-chip" onclick="setListingSort('relevance')">Relevancia</button>
-        <button class="f-chip" onclick="setListingSort('priceAsc')">Precio: menor</button>
-        <button class="f-chip" onclick="setListingSort('priceDesc')">Precio: mayor</button>
-        <button class="f-chip" onclick="setListingSort('rating')">Mejor valorados</button>
-        <button class="f-chip" onclick="setListingSort('bestseller')">Más vendidos</button>
-        <button class="f-chip" onclick="setListingSort('newest')">Más recientes</button>
-        <button class="f-chip" onclick="setGridView('grid')"><i class="fa-solid fa-grip"></i></button>
-        <button class="f-chip" onclick="setGridView('list')"><i class="fa-solid fa-list"></i></button>
+        ${sortChip('relevance', 'Relevancia')}
+        ${sortChip('priceAsc', 'Precio: menor')}
+        ${sortChip('priceDesc', 'Precio: mayor')}
+        ${sortChip('rating', 'Mejor valorados')}
+        ${sortChip('bestseller', 'Más vendidos')}
+        ${sortChip('newest', 'Más recientes')}
+        <button class="f-chip${curGrid === 'grid' ? ' is-on' : ''}" data-grid="grid" onclick="setGridView('grid')" aria-label="Vista de cuadrícula"><i class="fa-solid fa-grip"></i></button>
+        <button class="f-chip${curGrid === 'list' ? ' is-on' : ''}" data-grid="list" onclick="setGridView('list')" aria-label="Vista de lista"><i class="fa-solid fa-list"></i></button>
         <button class="f-chip" onclick="pageBack()"><i class="fa-solid fa-arrow-left mr-1"></i>Volver</button>
     </div>`;
     const isList = state.gridView === 'list';
